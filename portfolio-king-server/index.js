@@ -381,7 +381,7 @@ app.post('/login', async function (req, res) {
 
     const { userType, username, password, socketId } = req.body;
     if (userType === 'Admin') {
-        if (!username || !password) {
+        if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
             return res.status(400).json({ message: 'Missing required fields.' });
         }
         if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
@@ -417,8 +417,12 @@ app.post('/login', async function (req, res) {
             return res.status(401).json({ message: 'Invalid Admin ID or Password.' });
         }
     } else if (userType === 'Player') {
-        const teamId = (req.body.teamId || username || '').trim();
-        if (!teamId || !password) {
+        const rawTeamId = req.body.teamId || username;
+        if (!rawTeamId || !password || typeof rawTeamId !== 'string' || typeof password !== 'string') {
+            return res.status(400).json({ message: 'Missing required fields.' });
+        }
+        const teamId = rawTeamId.trim();
+        if (!teamId || !password.trim()) {
             return res.status(400).json({ message: 'Missing required fields.' });
         }
         try {

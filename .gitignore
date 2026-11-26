@@ -48,5 +48,9 @@ Thumbs.db
 # Temporary Test & Development Artifacts
 /screenshots/
 scratch/*.png
+scratch/*-summary.json
+scratch/*-report.json
+scratch/lh-*.json
+scratch/*-deterministic-report.json
 !docs/screenshots/
 !docs/screenshots/*.png
