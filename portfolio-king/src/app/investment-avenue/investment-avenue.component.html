@@ -1,0 +1,107 @@
+<div class="investment-avenue-container">
+
+  <div class="investment-container">
+    <h1>Investment Avenue <span>{{totalMin}}::{{totalTime%60}}</span></h1>
+    <h3>Total Amount: {{totalPortfolioValue}}</h3>
+    <div class="investment-box">
+      <form #f="ngForm" (submit)="onSubmitForm($event,f)" class="investment-form">
+        <div class="investment-options">
+          <div class="item-container">
+            <label>Bank FD<input ngModel type="number" name="bank_FD"></label>
+          </div>
+          <div class="item-container">
+            <label>Govt. Bond<input ngModel type="number" name="govt_bond"></label>
+          </div>
+          <div class="item-container">
+            <label>Corporate Bond<input ngModel type="number" name="corporate_bond"></label>
+          </div>
+          <div class="item-container">
+            <label>Blue Chip<input ngModel type="number" name="blue_chip"></label>
+          </div>
+          <div class="item-container">
+            <label>Mid Cap<input ngModel type="number" name="mid_cap"></label>
+          </div>
+          <div class="item-container">
+            <label>Speculative Stock<input type="number" ngModel name="speculative_stock"></label>
+          </div>
+          <div class="item-container">
+            <label>International Stock<input type="number" ngModel name="international_stock"></label>
+          </div>
+          <div class="item-container">
+            <label>US Dollar<input ngModel type="number" name="US_dollar"></label>
+          </div>
+          <div class="item-container">
+            <label>Gold ETF<input ngModel type="number" name="gold_ETF"></label>
+          </div>
+          <div class="item-container">
+            <div class="fof-investment-box" *ngIf="fof_players?.length === 3">
+              <label>
+                Fund of Funds
+                <select ngModel name="fof_player">
+                  <option disabled>Select a player</option>
+                  <option *ngFor="let player of fof_players" value="{{player.id}}">{{player.name}}</option>
+                </select>
+              </label>
+              <label>
+                Invested value
+                <input type="number" ngModel name="fof_value">
+              </label>
+            </div>
+          </div>
+          <div class="item-container" *ngIf="loanStatus">
+            <div class="loan-investment-box">
+              <label>
+                <input type="checkbox" name="takeLoan" (click)="onEnableLoan()" [disabled]="loanTaken"> Do you want to
+                take loan?
+              </label>
+              <div class="loan-box" *ngIf="enableLoan">
+                <label>
+                  Loan duration
+                  <input type="number" [(ngModel)]="loanDuration" name="loan_duration" [readonly]="loanTaken">
+                </label>
+                <div class="loan_meta">
+                  <button type="button" class="dice-container" [disabled]="loanTaken || !diceEnabled"
+                          (click)="onDiceRoll($event)">
+                    <span class="wrap">
+                      <span id="dice1" class="dice dice_1"></span>
+                    </span>
+                    <span class="wrap">
+                      <span id="dice2" class="dice dice_1"></span>
+                    </span>
+                  </button>
+                  <input type="button" class="loan-btn" (click)="onTakeLoan()" value="Take Loan" [disabled]="loanTaken">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="item-container" *ngIf="prevLoans && prevLoans.length > 0">
+            <div class="loan-repayment-box">
+              <h3>Previous Loans</h3>
+              <div class="loan-box" *ngFor="let loan of prevLoans; let i = index">
+                <div class="loan-box-item"><span>Loan amount:</span> <span>{{loan.amount}}</span></div>
+                <div class="loan-box-item"><span>Loan balance:</span> <span>{{loan.balance}}</span></div>
+                <div class="loan-box-item"><span>Loan repayment charge:</span> <span>{{loan.balance * 0.01}}</span></div>
+                <div class="loan-box-item"><span>Total:</span> <span>{{loan.balance * 0.01 + loan.balance}}</span></div>
+                <input type="button" class="loan-btn" value="Pay Loan" (click)="onPayLoan($event,i)">
+              </div>
+            </div>
+          </div>
+          <div class="item-container">
+            <input type="submit" [disabled]="!f.valid" value="Start game">
+          </div>
+        </div>
+      </form>
+    </div>
+
+  </div>
+  <div class="prev-investments">
+    <h1>Previous Investments</h1>
+    <owl-carousel-o [options]="customOptions">
+      <ng-template carouselSlide *ngFor="let player of players;let i = index">
+        <app-team-details [teamId]="player" [viewStatus]="'status'"></app-team-details>
+      </ng-template>
+    </owl-carousel-o>
+  </div>
+
+</div>

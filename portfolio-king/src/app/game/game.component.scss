@@ -1,0 +1,261 @@
+$d: 160;
+$w: 6;
+$t: 30;
+
+.game-container {
+  display: flex;
+  flex-direction: row;
+  .board-container {
+    height: 100vh;
+    width: 60vw;
+    position: relative;
+    background: #f1f1f1;
+    app-team-area {
+      width: 50%;
+      height: 50vh;
+      display: inline-flex;
+      flex-direction: column;
+      justify-content: center;
+      &.team-1 {
+        background: #fd0227;
+      }
+      &.team-2 {
+        background: #169616;
+      }
+      &.team-3 {
+        background: #0721ff;
+      }
+      &.team-4 {
+        background: #d710da;
+      }
+    }
+
+    .circle {
+      border: none;
+      border-radius: 50%;
+      height: 180px;
+      width: 180px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      background: #80bdff;
+      transform: translate(-50%, -50%);
+      outline: none;
+      cursor: pointer;
+      box-shadow: 1px 1px 6px 4px #1677e0;
+
+      .dice-container {
+        border-radius: 50%;
+        height: 170px;
+        width: 170px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        outline: none;
+        cursor: pointer;
+        background: #80bdff;
+        border: 0;
+        &[disabled] {
+          background: #c2c2c2;
+        }
+        &.admin {
+          background: #80bdff;
+        }
+        .wrap {
+          position: relative;
+          display: inline-block;
+          .dice {
+            width: 50px;
+            height: 50px;
+            margin: 10px;
+            display: block;
+            background: url(../../assets/imgs/dice.png) no-repeat;
+            background-size: 110%;
+            background-position: -3px 0px;
+            &.dice_1 {
+              background-position: -3px 0px;
+              background-size: 110%;
+            }
+            &.dice_2 {
+              background-position: 1px -59px;
+              background-size: 110%;
+            }
+            &.dice_3 {
+              background-position: 1px -115px;
+              background-size: 110%;
+            }
+            &.dice_4 {
+              background-position: 1px -173px;
+              background-size: 110%;
+            }
+            &.dice_5 {
+              background-position: 1px -234px;
+              background-size: 110%;
+            }
+            &.dice_6 {
+              background-position: 1px -294px;
+              background-size: 110%;
+            }
+            &.dice_t {
+              background-position: 1px -357px;
+              background-size: 110%;
+            }
+            &.dice_s {
+              background-position: 1px -419px;
+              background-size: 110%;
+            }
+            &.dice_e {
+              background-position: 1px -482px;
+              background-size: 110%;
+            }
+          }
+          .dice_mask {
+            width: 50px;
+            height: 50px;
+            background: #fff;
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 999;
+            display: none;
+          }
+        }
+
+      }
+
+      .l-half, .r-half {
+        float: left;
+        width: 50%;
+        height: 100%;
+        overflow: hidden;
+
+        .half-inner {
+          display: block;
+          width: 100%;
+          height: 100%;
+          box-sizing: border-box;
+          border: $w+px solid #fff;
+          -webkit-animation-duration: $t+s;
+          -webkit-animation-iteration-count: 1;
+          -webkit-animation-timing-function: linear;
+          -webkit-animation-fill-mode: forwards;
+        }
+
+      }
+
+      .l-half {
+        .half-inner {
+          border-right: none;
+          border-top-left-radius: 999px;
+          border-bottom-left-radius: 999px;
+          -webkit-transform-origin: center right;
+          &.animate-l {
+            -webkit-animation-name: l-rotate;
+          }
+        }
+      }
+
+      .r-half {
+        .half-inner {
+          border-left: none;
+          border-top-right-radius: 999px;
+          border-bottom-right-radius: 999px;
+          -webkit-transform-origin: center left;
+          &.animate-r {
+            -webkit-animation-name: r-rotate;
+          }
+        }
+      }
+
+      .arrow-active {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(0, -50%) rotate(-135deg);
+        width: 60%;
+        height: 10px;
+        background: #fff;
+        transform-origin: 0 0;
+        z-index: -1;
+        display: none;
+        &:after {
+          content: "";
+          position: absolute;
+          right: -8px;
+          font-weight: 900;
+          line-height: 8px;
+          border-bottom: 5px solid transparent;
+          border-top: 5px solid transparent;
+          border-left: 10px solid #fff;
+        }
+        &.t-2 {
+          transform: translate(0, -50%) rotate(-45deg);
+        }
+        &.t-3 {
+          transform: translate(0, -50%) rotate(135deg);
+        }
+        &.t-4 {
+          transform: translate(0, -50%) rotate(45deg);
+        }
+        &.active {
+          display: block;
+        }
+      }
+    }
+
+  }
+
+  .score-side-container {
+    width: 40vw;
+    h2{
+      text-align: center;
+    }
+  }
+}
+
+.wait-msg-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  .wait-msg-overlay {
+    background: rgba(0, 0, 0, 0.3);
+    height: 100%;
+    width: 100%;
+  }
+  .wait-msg {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 30px 20px;
+    background: #fff;
+  }
+}
+
+@-webkit-keyframes l-rotate {
+  0% {
+    -webkit-transform: rotate(0deg);
+  }
+  50% {
+    -webkit-transform: rotate(-180deg);
+  }
+  100% {
+    -webkit-transform: rotate(-180deg);
+  }
+}
+
+@-webkit-keyframes r-rotate {
+  0% {
+    -webkit-transform: rotate(0deg);
+  }
+  50% {
+    -webkit-transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(-180deg);
+  }
+}

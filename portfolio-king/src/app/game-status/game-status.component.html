@@ -1,0 +1,45 @@
+<div class="game-action-btn-container">
+  <button *ngIf="!gameEnd || user.isAdmin" (click)="onBack()">back</button>
+  <button *ngIf="gameEnd && !user.isAdmin" (click)="onGoBack()">Go back</button>
+  <h2 *ngIf="!gameEnd">Year <span>{{year}}</span> - Quarter <span>{{quarter}}</span></h2>
+  <div *ngIf="gameEnd" class="navigation-bar">
+    <button (click)="getRoundValue(roundNumber - 1)" [disabled]="roundNumber <= 1">prev</button>
+    <input [value]="roundNumber" readonly>
+    <button (click)="getRoundValue(roundNumber + 1)" [disabled]="roundNumber >= 8">next</button>
+  </div>
+  <span *ngIf="gameEnd"></span>
+  <button (click)="onRoundContinue()" *ngIf="user.isAdmin && !roundReady && !gameEnd"
+          [disabled]="game?.players?.length!== 4">
+    Continue the game
+  </button>
+  <button (click)="onGameStart()" *ngIf="user.isAdmin && !gameEnd && roundReady" [disabled]="!onPlayerReady">
+    Start the game
+  </button>
+  <button (click)="onGameContinue()" *ngIf="user.isPlayer && !gameEnd" [disabled]="!roundReady">
+    Continue the game
+  </button>
+</div>
+<div class="team-detail-container">
+  <p class="join-error" *ngIf="game?.players.length === 0">No one has joined yet.</p>
+  <owl-carousel-o [options]="customOptions">
+    <ng-template carouselSlide *ngFor="let player of game?.players;let i = index">
+      <app-team-details [teamId]="player._id" [roundNumber]="roundNumber"
+                        [leadStatus]="(player._id === portfolioLeaderId[0] || player._id === portfolioLeaderId[1] || player._id === portfolioLeaderId[2] || player._id === portfolioLeaderId[3])? 'active':''"
+                        [teamIndex]="i+1" [viewStatus]="'status'" class="team-{{i+1}}"></app-team-details>
+    </ng-template>
+  </owl-carousel-o>
+</div>
+<div class="wait-msg-container" *ngIf="false">
+  <div class="wait-msg-overlay"></div>
+  <div class="wait-msg">
+    <div>Game Completed</div>
+    <div>
+      <span *ngIf="leaderName.length === 1">Winner is {{leaderName[0]}}</span>
+      <span *ngIf="leaderName.length > 1">Winners are
+        <span *ngFor="let leader of leaderName">{{leaderName}}  </span>
+      </span>
+    </div>
+    <!--<button (click)="onGoBack()">Go back</button>-->
+  </div>
+</div>
+

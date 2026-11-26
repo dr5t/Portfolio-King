@@ -1,0 +1,39 @@
+<div class="section__login-form">
+
+  <div class="form-container" *ngIf="!userType">
+    <div class="form-item">
+      <h2 class="form-title pb-5">
+        Select Your Role
+      </h2>
+    </div>
+    <div class="form-item">
+      <button class="form-btn form-input" (click)="onSetRole('Admin')">Admin Login</button>
+    </div>
+    <div class="form-item">
+      <button class="form-btn form-input" (click)="onSetRole('Player')">Player Login</button>
+    </div>
+  </div>
+
+  <div class="form-container" *ngIf="userType">
+    <form #f="ngForm" (ngSubmit)="onSubmit(f)">
+      <div class="form-item">
+        <h2 class="form-title">
+          {{userType}} Login
+        </h2>
+      </div>
+      <div class="form-item">
+        <input type="text" class="form-input" name="username" ngModel placeholder="Username"
+               required>
+      </div>
+      <div class="form-item" *ngIf="userType !== 'Player'">
+        <input type="password" class="form-input" name="password" ngModel placeholder="Password" required>
+      </div>
+      <div class="form-item">
+        <button class="form-btn form-input" type="submit" [disabled]="!f.valid">Submit</button>
+      </div>
+      <div class="form-item">
+        <a class="back-btn" (click)="onResetRole()">back</a>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,48 @@
+<div class="team-details team-{{teamIndex}}"
+     [ngClass]="(round && round?.investment && round?.investment?.length > 0 && leadStatus === 'active')?'active':''">
+  <p class="team-name">{{team?.name}} <span *ngIf="leadStatus === 'active'">*</span></p>
+  <div class="team-round-error" *ngIf="!round || !round?.investment || round?.investment?.length === 0">
+    No rounds Yet
+  </div>
+  <div *ngIf="round && round?.investment && round?.investment?.length > 0" class="team-detail-box">
+    <table>
+      <tr>
+        <th>Investment Options</th>
+        <th>Invested Value</th>
+        <th>Return Rate</th>
+        <th>Total Value</th>
+      </tr>
+      <tr *ngFor="let r of round?.investment">
+        <td [ngClass]="{'active': (r?.name === currRound), 'game': (viewStatus === 'game')}">
+          {{r?.name | investmentName}}
+        </td>
+        <td>{{r?.value | number:'0.0-2'}}</td>
+        <td>{{r?.return_rate | number:'0.0-2'}}</td>
+        <td>{{ r?.return_value | number:'0.0-2'}}</td>
+      </tr>
+    </table>
+    <div class="separation" *ngIf="team?.loans && team?.loans?.length > 0 && viewStatus === 'status'"></div>
+    <table *ngIf="team?.loans && team?.loans?.length > 0 && viewStatus === 'status'">
+      <tr>
+        <th>Loan principle</th>
+        <th>Loan Balance</th>
+        <th>Loan Rate</th>
+        <th>Loan EMI</th>
+      </tr>
+      <tr *ngFor="let l of team?.loans">
+          <td>{{l?.amount | number:'0.0-2'}}</td>
+          <td>{{l?.balance | number:'0.0-2'}} </td>
+          <td>{{l?.rate}}</td>
+          <td>{{l?.pmt | number:'0.0-2'}}</td>
+      </tr>
+    </table>
+    <div>
+      <div class="separation"></div>
+      <div class="round-summary">
+        <div class="summary-row"><span>Total Portfolio Value</span><span>{{round.total_portfolio_value | number:'0.0-2'}}</span></div>
+        <div class="summary-row" *ngIf="viewStatus === 'status'">
+          <span>Average Return</span><span>{{round?.returnAvg}}</span></div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,198 @@
+.investment-avenue-container {
+  display: flex;
+  .investment-container {
+    max-height: 80vh;
+    width: 60vw;
+    h1 {
+      margin: 0;
+      text-align: center;
+      padding: 20px;
+      position: relative;
+      span {
+        position: absolute;
+        right: 30px;
+      }
+    }
+    h3 {
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+    }
+    .investment-box {
+
+      .investment-form {
+        overflow-y: scroll;
+        max-height: 80vh;
+        &::-webkit-scrollbar {
+          width: 0;
+        }
+
+        &::-webkit-scrollbar-track {
+          -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background-color: darkgrey;
+          outline: 1px solid slategrey;
+        }
+        .investment-options {
+          max-width: 500px;
+          margin: 0 auto;
+          .item-container {
+            padding: 20px;
+            label {
+              display: flex;
+              flex-direction: row;
+              justify-content: space-between;
+              align-items: center;
+              input {
+                border-radius: 5px;
+                border: 1px solid #0dc8ff;
+                padding: 5px;
+              }
+            }
+            input[type='submit'] {
+              width: 100%;
+              border-radius: 10px;
+              border: 1px solid #0dc8ff;
+              padding: 10px 10px;
+              background: #fff;
+              font-size: 17px;
+            }
+            input[type=number]::-webkit-inner-spin-button,
+            input[type=number]::-webkit-outer-spin-button {
+              -webkit-appearance: none;
+              margin: 0;
+            }
+            .loan-box {
+              label {
+                padding: 15px 0;
+              }
+              .loan_meta {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                .dice-container {
+                  border-radius: 50%;
+                  height: 170px;
+                  width: 170px;
+                  outline: none;
+                  cursor: pointer;
+                  background: #80bdff;
+                  border: 0;
+                  .wrap {
+                    position: relative;
+                    display: inline-block;
+                    .dice {
+                      width: 50px;
+                      height: 50px;
+                      margin: 10px;
+                      display: block;
+                      background: url(../../assets/imgs/dice.png) no-repeat;
+                      background-size: 110%;
+                      background-position: -3px 0px;
+                      &.dice_1 {
+                        background-position: -3px 0px;
+                        background-size: 110%;
+                      }
+                      &.dice_2 {
+                        background-position: 1px -59px;
+                        background-size: 110%;
+                      }
+                      &.dice_3 {
+                        background-position: 1px -115px;
+                        background-size: 110%;
+                      }
+                      &.dice_4 {
+                        background-position: 1px -173px;
+                        background-size: 110%;
+                      }
+                      &.dice_5 {
+                        background-position: 1px -234px;
+                        background-size: 110%;
+                      }
+                      &.dice_6 {
+                        background-position: 1px -294px;
+                        background-size: 110%;
+                      }
+                      &.dice_t {
+                        background-position: 1px -357px;
+                        background-size: 110%;
+                      }
+                      &.dice_s {
+                        background-position: 1px -419px;
+                        background-size: 110%;
+                      }
+                      &.dice_e {
+                        background-position: 1px -482px;
+                        background-size: 110%;
+                      }
+                    }
+                    .dice_mask {
+                      width: 50px;
+                      height: 50px;
+                      background: #fff;
+                      opacity: 0;
+                      position: absolute;
+                      top: 0;
+                      left: 0;
+                      z-index: 999;
+                      display: none;
+                    }
+                  }
+
+                }
+                .loan-btn {
+                  width: 40%;
+                  border-radius: 10px;
+                  border: 1px solid #0dc8ff;
+                  padding: 10px 10px;
+                  background: #fff;
+                  font-size: 17px;
+                }
+              }
+              .loan-box-item {
+                font-size: 14px;
+                display: flex;
+                justify-content: space-between;
+                padding: 5px 0;
+              }
+            }
+            .loan-repayment-box {
+              .loan-btn {
+                width: 40%;
+                border-radius: 10px;
+                border: 1px solid #0dc8ff;
+                padding: 10px 10px;
+                background: #fff;
+                font-size: 17px;
+                display: block;
+                margin: 15px auto 5px;
+              }
+            }
+            .fof-investment-box {
+              label {
+                padding: 10px 0;
+                select {
+                  border-radius: 5px;
+                  border: 1px solid #0dc8ff;
+                  padding: 5px;
+                  width: 168px;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  .prev-investments {
+    width: 40vw;
+    border-left: 1px solid #c2c2c2;
+    h1 {
+      text-align: center;
+    }
+  }
+
+}

@@ -1,0 +1,136 @@
+.team-name {
+  font-size: 30px;
+  text-transform: uppercase;
+  margin: 10px;
+  text-align: center;
+}
+
+.team-details {
+  padding: 10px 15px 0;
+  height: 82vh;
+  display: flex;
+  flex-direction: column;
+  &.team-1 {
+    background: #FD0227;
+    &.active {
+      animation: blinking-red 0.5s infinite;
+    }
+  }
+  &.team-2 {
+    background: #169616;
+    &.active {
+      animation: blinking-green 0.5s infinite;
+    }
+  }
+  &.team-3 {
+    background: #0721ff;
+    &.active {
+      animation: blinking-blue 0.5s infinite;
+    }
+  }
+  &.team-4 {
+    background: #d710da;
+    &.active {
+      animation: blinking-purple 0.5s infinite;
+    }
+  }
+  .team-round-error {
+    padding: 50px;
+    font-size: 18px;
+    text-align: center;
+  }
+  .team-detail-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+    overflow-y: scroll;
+    &::-webkit-scrollbar {
+      width: 0;
+    }
+
+    &::-webkit-scrollbar-track {
+      -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: darkgrey;
+      outline: 1px solid slategrey;
+    }
+    table {
+      th {
+        font-size: 22px;
+        padding: 0 17px 20px;
+      }
+      td {
+        text-align: right;
+        font-size: 18px;
+        padding: 0 17px 5px;
+        position: relative;
+        &.game {
+          padding-left: 25px;
+        }
+        &.active {
+          &:before {
+            content: ' \02C3';
+            position: absolute;
+            left: 0;
+            font-weight: 900;
+          }
+        }
+      }
+      td:first-of-type {
+        text-align: left;
+      }
+    }
+    .separation {
+      height: 2px;
+      margin: 40px 20px 5px;
+      background: #ffffff;
+    }
+    .round-summary {
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 20px;
+        font-size: 18px;
+      }
+    }
+  }
+}
+
+@keyframes blinking-red {
+  0% {
+    background-color: #FD0227;
+  }
+  100% {
+    background-color: rgba(253, 2, 39, 0.60);
+  }
+}
+
+@keyframes blinking-green {
+  0% {
+    background-color: #169616;
+  }
+  100% {
+    background-color: rgba(22, 150, 22, 0.60);
+  }
+}
+
+@keyframes blinking-blue {
+  0% {
+    background-color: #0721ff;
+  }
+  100% {
+    background-color: rgba(7, 33, 255, 0.60);
+  }
+}
+
+@keyframes blinking-purple {
+  0% {
+    background-color: #d710da;
+  }
+  100% {
+    background-color: rgba(215, 16, 218, 0.60);
+  }
+}

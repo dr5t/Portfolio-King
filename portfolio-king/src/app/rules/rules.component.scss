@@ -1,0 +1,24 @@
+.rules-container{
+  text-align: center;
+  padding-top: 50px;
+  color: #fff;
+  background: #535353;
+  min-height: 100vh;
+  h1{
+    font-size: 40px;
+    padding-bottom: 30px;
+  }
+  p{
+    font-size: 20px;
+    a{
+      color: #fff;
+      font-size: 16px;
+      text-decoration: none;
+      cursor: pointer;
+      &:before{
+        content: ' \2190';
+        padding: 0 10px;
+      }
+    }
+  }
+}

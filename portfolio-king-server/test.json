@@ -1,0 +1,39 @@
+[
+  {
+    game_id: '',
+    game_status: '',
+    timestamp: '',
+    players : [
+      {
+        socket_id: ''
+        id: '',
+        status: '',
+        starting_portfolio_value: '',
+        rounds: [
+          {
+            total_invested_value: '',
+            total_portfolio_value: '',
+            round_starting_value: '',
+            investments: {
+              {
+                name: '',
+                value: '',
+                return_rate: '',
+                return_value: ''
+              }
+            }
+          }
+        ]
+        loans: [
+            {
+                rate: '',
+                time: '',
+                amount: '',
+                total_payments: '',
+                status: ''
+            }
+        ]
+      }
+    ]
+  }
+]

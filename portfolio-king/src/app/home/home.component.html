@@ -1,0 +1,31 @@
+<div class="start-page-container">
+  <h1>Welcome to Portfolio King <span><button (click)="onLogout()">logout</button></span></h1>
+
+
+  <div class="game-container">
+    <div class="game-column {{_user?.isPlayer? 'text-center': ''}}">
+      <div class="game-head">Current Games</div>
+      <div class="game-item" *ngFor="let currGame of currGames">
+        <a *ngIf="currGame?.game_status === 'active'" (click)="onGameSelect(currGame, currGame?._id,'active')">
+          Game {{currGame?._index}}</a>
+        <a *ngIf="currGame?.game_status === 'paused'" (click)="onGameSelect(currGame, currGame?._id,'paused')">
+          Game {{currGame?._index}}</a>
+      </div>
+    </div>
+    <div class="game-column" *ngIf="_user?.isAdmin">
+      <div class="game-head">Previous Games</div>
+      <div class="game-item" *ngFor="let prevGame of prevGames"><a routerLink="game-status/{{prevGame?._id}}">
+        Game {{prevGame?._index}}</a></div>
+    </div>
+  </div>
+
+  <div class="game-extras">
+    <button (click)="onCreateGame()" *ngIf="_user?.isAdmin">Create a new game</button>
+    <button routerLink="rules">Help</button>
+    <button (click)="onGetGames()">Refresh Games</button>
+  </div>
+
+  <div class="loader">
+    <img src="../../assets/imgs/loading-icon.svg">
+  </div>
+</div>
