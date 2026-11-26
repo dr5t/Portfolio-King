@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./docs/logo.svg" alt="Portfolio King Logo" width="130" />
+<img src="docs/logo.svg" alt="Portfolio King Logo" width="130" />
 
 # Portfolio King
 
@@ -30,7 +30,7 @@
 ---
 
 <a id="project-overview"></a>
-## <img src="./docs/assets/icons/overview.svg" width="22" height="22" alt="" valign="middle" /> Project Overview
+## <img src="docs/assets/icons/overview.svg" width="22" height="22" alt="" valign="middle" /> Project Overview
 
 **Portfolio King** is a turn-based multiplayer financial simulation engineered for business schools, corporate treasury training, investment clubs, and university competitions.
 
@@ -42,10 +42,10 @@ The platform has been modernized with an institutional-grade user interface, res
 
 <a id="screenshots"></a>
 <a id="application-preview"></a>
-## <img src="./docs/assets/icons/preview.svg" width="22" height="22" alt="" valign="middle" /> Application Preview
+## <img src="docs/assets/icons/preview.svg" width="22" height="22" alt="" valign="middle" /> Application Preview
 
 <div align="center">
-  <img src="./docs/screenshots/admin-overview.png" alt="Executive Overview Dashboard" width="100%" />
+  <img src="docs/screenshots/admin-overview.png" alt="Executive Overview Dashboard" width="100%" />
   <p><sub><em>Executive Overview Dashboard — session telemetry, active cohorts, and tournament controls.</em></sub></p>
 </div>
 
@@ -57,12 +57,12 @@ The platform has been modernized with an institutional-grade user interface, res
   <tr>
     <td width="50%" align="center" valign="top">
       <strong>Team Login Terminal</strong><br/>
-      <img src="./docs/screenshots/login.png" alt="Team Authentication" width="100%" /><br/>
+      <img src="docs/screenshots/login.png" alt="Team Authentication" width="100%" /><br/>
       <sub>Branded split authentication with market illustration</sub>
     </td>
     <td width="50%" align="center" valign="top">
       <strong>Administrator Login Terminal</strong><br/>
-      <img src="./docs/screenshots/login-admin.png" alt="Administrator Authentication" width="100%" /><br/>
+      <img src="docs/screenshots/login-admin.png" alt="Administrator Authentication" width="100%" /><br/>
       <sub>Segmented credential validation with rate limiting</sub>
     </td>
   </tr>
@@ -74,36 +74,36 @@ The platform has been modernized with an institutional-grade user interface, res
   <tr>
     <td width="50%" align="center" valign="top">
       <strong>Game Session Management</strong><br/>
-      <img src="./docs/screenshots/game-management.png" alt="Game Session Management" width="100%" /><br/>
+      <img src="docs/screenshots/game-management.png" alt="Game Session Management" width="100%" /><br/>
       <sub>Session provisioning, inline renaming, and bulk operations</sub>
     </td>
     <td width="50%" align="center" valign="top">
       <strong>Team Roster &amp; Credentials</strong><br/>
-      <img src="./docs/screenshots/team-management.png" alt="Team Roster & Credentials" width="100%" /><br/>
+      <img src="docs/screenshots/team-management.png" alt="Team Roster & Credentials" width="100%" /><br/>
       <sub>Auto-generate 4-team rosters, export credentials, and status toggles</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
       <strong>Live Sessions Monitor</strong><br/>
-      <img src="./docs/screenshots/live-sessions.png" alt="Live Sessions Monitor" width="100%" /><br/>
+      <img src="docs/screenshots/live-sessions.png" alt="Live Sessions Monitor" width="100%" /><br/>
       <sub>Real-time multiplayer session telemetry and socket connectivity</sub>
     </td>
     <td width="50%" align="center" valign="top">
       <strong>Game History &amp; Archives</strong><br/>
-      <img src="./docs/screenshots/admin-history.png" alt="Game History & Archives" width="100%" /><br/>
+      <img src="docs/screenshots/admin-history.png" alt="Game History & Archives" width="100%" /><br/>
       <sub>Searchable audit trail of completed tournaments and historical rosters</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
       <strong>Tournament Results &amp; Analytics</strong><br/>
-      <img src="./docs/screenshots/admin-results.png" alt="Tournament Results & Analytics" width="100%" /><br/>
+      <img src="docs/screenshots/admin-results.png" alt="Tournament Results & Analytics" width="100%" /><br/>
       <sub>Final syndicate standings, net worth rankings, and CSV export</sub>
     </td>
     <td width="50%" align="center" valign="top">
       <strong>System &amp; Simulation Settings</strong><br/>
-      <img src="./docs/screenshots/admin-settings.png" alt="System & Simulation Settings" width="100%" /><br/>
+      <img src="docs/screenshots/admin-settings.png" alt="System & Simulation Settings" width="100%" /><br/>
       <sub>Configurable macroeconomic parameters and environment telemetry</sub>
     </td>
   </tr>
@@ -115,24 +115,24 @@ The platform has been modernized with an institutional-grade user interface, res
   <tr>
     <td width="50%" align="center" valign="top">
       <strong>Pre-Game Waiting Room</strong><br/>
-      <img src="./docs/screenshots/waiting-room.png" alt="Pre-Game Waiting Room" width="100%" /><br/>
+      <img src="docs/screenshots/waiting-room.png" alt="Pre-Game Waiting Room" width="100%" /><br/>
       <sub>Connected cohort verification and session readiness countdown</sub>
     </td>
     <td width="50%" align="center" valign="top">
       <strong>Portfolio Investment Terminal</strong><br/>
-      <img src="./docs/screenshots/investment-workspace.png" alt="Portfolio Investment Terminal" width="100%" /><br/>
+      <img src="docs/screenshots/investment-workspace.png" alt="Portfolio Investment Terminal" width="100%" /><br/>
       <sub>Quarterly capital allocation across asset classes, FOF, and loans</sub>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center" valign="top">
       <strong>Multiplayer Trading Board</strong><br/>
-      <img src="./docs/screenshots/multiplayer-board.png" alt="Multiplayer Trading Board" width="100%" /><br/>
+      <img src="docs/screenshots/multiplayer-board.png" alt="Multiplayer Trading Board" width="100%" /><br/>
       <sub>Synchronized turn progression, dice roll outcomes, and market impact</sub>
     </td>
     <td width="50%" align="center" valign="top">
       <strong>Final Leaderboard &amp; Standings</strong><br/>
-      <img src="./docs/screenshots/game-results.png" alt="Final Leaderboard & Standings" width="100%" /><br/>
+      <img src="docs/screenshots/game-results.png" alt="Final Leaderboard & Standings" width="100%" /><br/>
       <sub>Final valuation metrics, ROI comparisons, and podium results</sub>
     </td>
   </tr>
@@ -144,17 +144,17 @@ The platform has been modernized with an institutional-grade user interface, res
   <tr>
     <td width="33.33%" align="center" valign="top">
       <strong>Mobile Authentication</strong><br/>
-      <img src="./docs/screenshots/mobile-login.png" alt="Mobile Authentication" width="100%" /><br/>
+      <img src="docs/screenshots/mobile-login.png" alt="Mobile Authentication" width="100%" /><br/>
       <sub>Adaptive split authentication view</sub>
     </td>
     <td width="33.33%" align="center" valign="top">
       <strong>Mobile Administration</strong><br/>
-      <img src="./docs/screenshots/mobile-dashboard.png" alt="Mobile Administration" width="100%" /><br/>
+      <img src="docs/screenshots/mobile-dashboard.png" alt="Mobile Administration" width="100%" /><br/>
       <sub>Touch-optimized tournament controls</sub>
     </td>
     <td width="33.33%" align="center" valign="top">
       <strong>Mobile Trading Terminal</strong><br/>
-      <img src="./docs/screenshots/mobile-gameplay.png" alt="Mobile Trading Terminal" width="100%" /><br/>
+      <img src="docs/screenshots/mobile-gameplay.png" alt="Mobile Trading Terminal" width="100%" /><br/>
       <sub>Streamlined portfolio allocations</sub>
     </td>
   </tr>
@@ -163,19 +163,19 @@ The platform has been modernized with an institutional-grade user interface, res
 ---
 
 <a id="features"></a>
-## <img src="./docs/assets/icons/features.svg" width="22" height="22" alt="" valign="middle" /> Key Features
+## <img src="docs/assets/icons/features.svg" width="22" height="22" alt="" valign="middle" /> Key Features
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
-<img src="./docs/assets/icons/gameplay.svg" width="18" height="18" alt="" valign="middle" /> **Real-Time Multiplayer Gameplay**
+<img src="docs/assets/icons/gameplay.svg" width="18" height="18" alt="" valign="middle" /> **Real-Time Multiplayer Gameplay**
 - WebSocket-powered state synchronization across up to 4 concurrent teams.
 - Shared turn-based round progression and dynamic dice rolls.
 - Live market condition changes and portfolio valuation updates.
 - Automatic disconnection detection and seamless session reconnection.
 
-<img src="./docs/assets/icons/preview.svg" width="18" height="18" alt="" valign="middle" /> **Complete Administration Suite**
+<img src="docs/assets/icons/preview.svg" width="18" height="18" alt="" valign="middle" /> **Complete Administration Suite**
 - Create, duplicate, rename, archive, and delete game sessions.
 - Auto-generate secure 4-team credential packages with single-click copy.
 - Real-time session monitoring with active participant counts.
@@ -183,7 +183,7 @@ The platform has been modernized with an institutional-grade user interface, res
 - Team account enable/disable toggles with instant socket revocation.
 - Full tournament results with CSV export capability.
 
-<img src="./docs/assets/icons/security.svg" width="18" height="18" alt="" valign="middle" /> **Hardened Security Architecture**
+<img src="docs/assets/icons/security.svg" width="18" height="18" alt="" valign="middle" /> **Hardened Security Architecture**
 - Asynchronous PBKDF2-HMAC-SHA256 password hashing (600,000 iterations).
 - Cryptographically random per-user salts.
 - Constant-time hash verification to defeat timing attacks.
@@ -194,20 +194,20 @@ The platform has been modernized with an institutional-grade user interface, res
 </td>
 <td width="50%" valign="top">
 
-<img src="./docs/assets/icons/overview.svg" width="18" height="18" alt="" valign="middle" /> **Portfolio Investment Engine**
+<img src="docs/assets/icons/overview.svg" width="18" height="18" alt="" valign="middle" /> **Portfolio Investment Engine**
 - Six core asset classes: Equity (Large/Mid/Small Cap), Corporate Debt, Gold, Real Estate.
 - Fund of Funds (FOF) option with 2% management fee structure.
 - Debt and loan management with Excel-compatible EMI amortization.
 - Baseline 6.2% Bank Fixed Deposit comparison floor.
 - Dynamic dice roll mechanics (1–6) modifying asset yields each round.
 
-<img src="./docs/assets/icons/project-structure.svg" width="18" height="18" alt="" valign="middle" /> **Responsive Institutional UI**
+<img src="docs/assets/icons/project-structure.svg" width="18" height="18" alt="" valign="middle" /> **Responsive Institutional UI**
 - Warm ivory (`#F5F5F3`) and charcoal (`#202123`) institutional color tokens.
 - Zero horizontal overflow across all viewports (320px mobile to 1920px desktop).
 - Modern SVG technology iconography and consistent design tokens.
 - Lottie loading animation with a 3-second hard maximum duration.
 
-<img src="./docs/assets/icons/angular.svg" width="18" height="18" alt="" valign="middle" /> **Modern Angular 22 Toolchain**
+<img src="docs/assets/icons/angular.svg" width="18" height="18" alt="" valign="middle" /> **Modern Angular 22 Toolchain**
 - Direct Angular 22 + TypeScript 6 migration.
 - Ultra-fast esbuild application pipeline (`ng build` in ~5 seconds).
 - Zero vulnerabilities across root, frontend, and backend packages.
@@ -220,34 +220,34 @@ The platform has been modernized with an institutional-grade user interface, res
 ---
 
 <a id="tech-stack"></a>
-## <img src="./docs/assets/icons/tech-stack.svg" width="22" height="22" alt="" valign="middle" /> Technology Stack
+## <img src="docs/assets/icons/tech-stack.svg" width="22" height="22" alt="" valign="middle" /> Technology Stack
 
 <div align="center">
 
 <table>
   <tr>
     <td align="center" width="16%">
-      <img src="./docs/assets/icons/angular.svg" width="40" height="40" alt="Angular" /><br/>
+      <img src="docs/assets/icons/angular.svg" width="40" height="40" alt="Angular" /><br/>
       <sub><b>Angular</b></sub>
     </td>
     <td align="center" width="16%">
-      <img src="./docs/assets/icons/typescript.svg" width="40" height="40" alt="TypeScript" /><br/>
+      <img src="docs/assets/icons/typescript.svg" width="40" height="40" alt="TypeScript" /><br/>
       <sub><b>TypeScript</b></sub>
     </td>
     <td align="center" width="16%">
-      <img src="./docs/assets/icons/nodejs.svg" width="40" height="40" alt="Node.js" /><br/>
+      <img src="docs/assets/icons/nodejs.svg" width="40" height="40" alt="Node.js" /><br/>
       <sub><b>Node.js</b></sub>
     </td>
     <td align="center" width="16%">
-      <img src="./docs/assets/icons/mongodb.svg" width="40" height="40" alt="MongoDB" /><br/>
+      <img src="docs/assets/icons/mongodb.svg" width="40" height="40" alt="MongoDB" /><br/>
       <sub><b>MongoDB</b></sub>
     </td>
     <td align="center" width="16%">
-      <img src="./docs/assets/icons/socketio.svg" width="40" height="40" alt="Socket.IO" /><br/>
+      <img src="docs/assets/icons/socketio.svg" width="40" height="40" alt="Socket.IO" /><br/>
       <sub><b>Socket.IO</b></sub>
     </td>
     <td align="center" width="16%">
-      <img src="./docs/assets/icons/git.svg" width="40" height="40" alt="Git" /><br/>
+      <img src="docs/assets/icons/git.svg" width="40" height="40" alt="Git" /><br/>
       <sub><b>Git</b></sub>
     </td>
   </tr>
@@ -270,11 +270,11 @@ The platform has been modernized with an institutional-grade user interface, res
     <tr>
       <td align="center"><strong>Frontend</strong></td>
       <td>
-        <img src="./docs/assets/icons/angular.svg" width="20" height="20" alt="Angular" valign="middle" /> <strong>Angular</strong><br/>
-        <img src="./docs/assets/icons/typescript.svg" width="20" height="20" alt="TypeScript" valign="middle" /> <strong>TypeScript</strong><br/>
-        <img src="./docs/assets/icons/html5.svg" width="20" height="20" alt="HTML5" valign="middle" /> <strong>HTML5</strong><br/>
-        <img src="./docs/assets/icons/sass.svg" width="20" height="20" alt="SCSS" valign="middle" /> <strong>SCSS</strong><br/>
-        <img src="./docs/assets/icons/lottie.svg" width="20" height="20" alt="Lottie" valign="middle" /> <strong>Lottie</strong>
+        <img src="docs/assets/icons/angular.svg" width="20" height="20" alt="Angular" valign="middle" /> <strong>Angular</strong><br/>
+        <img src="docs/assets/icons/typescript.svg" width="20" height="20" alt="TypeScript" valign="middle" /> <strong>TypeScript</strong><br/>
+        <img src="docs/assets/icons/html5.svg" width="20" height="20" alt="HTML5" valign="middle" /> <strong>HTML5</strong><br/>
+        <img src="docs/assets/icons/sass.svg" width="20" height="20" alt="SCSS" valign="middle" /> <strong>SCSS</strong><br/>
+        <img src="docs/assets/icons/lottie.svg" width="20" height="20" alt="Lottie" valign="middle" /> <strong>Lottie</strong>
       </td>
       <td>
         <code>^22.3.0</code><br/>
@@ -290,9 +290,9 @@ The platform has been modernized with an institutional-grade user interface, res
     <tr>
       <td align="center"><strong>Backend</strong></td>
       <td>
-        <img src="./docs/assets/icons/nodejs.svg" width="20" height="20" alt="Node.js" valign="middle" /> <strong>Node.js</strong><br/>
-        <img src="./docs/assets/icons/express.svg" width="20" height="20" alt="Express" valign="middle" /> <strong>Express.js</strong><br/>
-        <img src="./docs/assets/icons/javascript.svg" width="20" height="20" alt="JavaScript" valign="middle" /> <strong>JavaScript</strong>
+        <img src="docs/assets/icons/nodejs.svg" width="20" height="20" alt="Node.js" valign="middle" /> <strong>Node.js</strong><br/>
+        <img src="docs/assets/icons/express.svg" width="20" height="20" alt="Express" valign="middle" /> <strong>Express.js</strong><br/>
+        <img src="docs/assets/icons/javascript.svg" width="20" height="20" alt="JavaScript" valign="middle" /> <strong>JavaScript</strong>
       </td>
       <td>
         <code>^26.0.0</code> (LTS 26 Lithium)<br/>
@@ -306,7 +306,7 @@ The platform has been modernized with an institutional-grade user interface, res
     <tr>
       <td align="center"><strong>Real-Time</strong></td>
       <td>
-        <img src="./docs/assets/icons/socketio.svg" width="20" height="20" alt="Socket.IO" valign="middle" /> <strong>Socket.IO</strong>
+        <img src="docs/assets/icons/socketio.svg" width="20" height="20" alt="Socket.IO" valign="middle" /> <strong>Socket.IO</strong>
       </td>
       <td><code>^4.8.1</code> (Client &amp; Server)</td>
       <td>Bidirectional WebSocket engine synchronizing multi-client game states, turn broadcasts, and room telemetry.</td>
@@ -314,7 +314,7 @@ The platform has been modernized with an institutional-grade user interface, res
     <tr>
       <td align="center"><strong>Database</strong></td>
       <td>
-        <img src="./docs/assets/icons/mongodb.svg" width="20" height="20" alt="MongoDB" valign="middle" /> <strong>MongoDB</strong>
+        <img src="docs/assets/icons/mongodb.svg" width="20" height="20" alt="MongoDB" valign="middle" /> <strong>MongoDB</strong>
       </td>
       <td><code>^3.7.4</code> (Atlas / Community)</td>
       <td>Document store for game sessions, team credentials, historical rounds, and persistent authentication states.</td>
@@ -322,9 +322,9 @@ The platform has been modernized with an institutional-grade user interface, res
     <tr>
       <td align="center"><strong>Dev &amp; Deploy</strong></td>
       <td>
-        <img src="./docs/assets/icons/npm.svg" width="20" height="20" alt="npm" valign="middle" /> <strong>npm</strong><br/>
-        <img src="./docs/assets/icons/git.svg" width="20" height="20" alt="Git" valign="middle" /> <strong>Git</strong><br/>
-        <img src="./docs/assets/icons/render.svg" width="20" height="20" alt="Render" valign="middle" /> <strong>Render</strong>
+        <img src="docs/assets/icons/npm.svg" width="20" height="20" alt="npm" valign="middle" /> <strong>npm</strong><br/>
+        <img src="docs/assets/icons/git.svg" width="20" height="20" alt="Git" valign="middle" /> <strong>Git</strong><br/>
+        <img src="docs/assets/icons/render.svg" width="20" height="20" alt="Render" valign="middle" /> <strong>Render</strong>
       </td>
       <td>
         <code>&gt;=10.0.0</code><br/>
@@ -339,7 +339,12 @@ The platform has been modernized with an institutional-grade user interface, res
 ---
 
 <a id="architecture"></a>
-## <img src="./docs/assets/icons/architecture.svg" width="22" height="22" alt="" valign="middle" /> System Architecture
+## <img src="docs/assets/icons/architecture.svg" width="22" height="22" alt="" valign="middle" /> System Architecture
+
+<div align="center">
+  <img src="docs/architecture.png" alt="Portfolio King Real-Time Architecture" width="680" />
+  <p><sub><em>Real-time multiplayer synchronization and authoritative financial engine architecture.</em></sub></p>
+</div>
 
 ```mermaid
 graph TD
@@ -393,7 +398,7 @@ graph TD
 
 ---
 
-## <img src="./docs/assets/icons/gameplay.svg" width="22" height="22" alt="" valign="middle" /> How Portfolio King Works
+## <img src="docs/assets/icons/gameplay.svg" width="22" height="22" alt="" valign="middle" /> How Portfolio King Works
 
 The simulation executes through an eight-stage lifecycle across two complete macroeconomic cycles (8 fiscal quarters):
 
@@ -416,7 +421,7 @@ Winner Crowned   ◀── Terminal Settlement    ◀── Multi-Quarter Cycle 
 
 <a id="installation"></a>
 <a id="getting-started"></a>
-## <img src="./docs/assets/icons/getting-started.svg" width="22" height="22" alt="" valign="middle" /> Getting Started
+## <img src="docs/assets/icons/getting-started.svg" width="22" height="22" alt="" valign="middle" /> Getting Started
 
 ### Prerequisites
 
@@ -478,7 +483,7 @@ npm run watch
 
 ---
 
-## <img src="./docs/assets/icons/configuration.svg" width="22" height="22" alt="" valign="middle" /> Environment Configuration
+## <img src="docs/assets/icons/configuration.svg" width="22" height="22" alt="" valign="middle" /> Environment Configuration
 
 The application is configured via environment variables read at startup by `portfolio-king-server/index.js`:
 
@@ -497,7 +502,7 @@ The application is configured via environment variables read at startup by `port
 
 ---
 
-## <img src="./docs/assets/icons/project-structure.svg" width="22" height="22" alt="" valign="middle" /> Project Structure
+## <img src="docs/assets/icons/project-structure.svg" width="22" height="22" alt="" valign="middle" /> Project Structure
 
 ```
 Portfolio-King/
@@ -544,7 +549,7 @@ Portfolio-King/
 
 ---
 
-## <img src="./docs/assets/icons/deployment.svg" width="22" height="22" alt="" valign="middle" /> Production Deployment
+## <img src="docs/assets/icons/deployment.svg" width="22" height="22" alt="" valign="middle" /> Production Deployment
 
 Portfolio King is configured for single-click deployment on **Render** using the included [render.yaml](file:///Users/shauryatiwari/Portfolio%20king/render.yaml) blueprint.
 
@@ -569,7 +574,7 @@ Portfolio King is configured for single-click deployment on **Render** using the
 
 ---
 
-## <img src="./docs/assets/icons/security.svg" width="22" height="22" alt="" valign="middle" /> Security Architecture
+## <img src="docs/assets/icons/security.svg" width="22" height="22" alt="" valign="middle" /> Security Architecture
 
 The application has been audited and hardened against common web application vulnerabilities:
 
@@ -584,7 +589,7 @@ The application has been audited and hardened against common web application vul
 
 ---
 
-## <img src="./docs/assets/icons/testing.svg" width="22" height="22" alt="" valign="middle" /> Testing & Verification
+## <img src="docs/assets/icons/testing.svg" width="22" height="22" alt="" valign="middle" /> Testing & Verification
 
 Comprehensive automated test suites are provided to verify system integrity:
 
@@ -607,7 +612,7 @@ node scratch/run-e2e-auth-multiplayer.js
 
 ---
 
-## <img src="./docs/assets/icons/troubleshooting.svg" width="22" height="22" alt="" valign="middle" /> Troubleshooting
+## <img src="docs/assets/icons/troubleshooting.svg" width="22" height="22" alt="" valign="middle" /> Troubleshooting
 
 ### MongoDB Connection Refused (`ECONNREFUSED 127.0.0.1:27017`)
 - Ensure local MongoDB is running: `brew services start mongodb-community` (macOS) or `sudo systemctl start mongod` (Linux).
@@ -632,7 +637,7 @@ node scratch/run-e2e-auth-multiplayer.js
 
 ---
 
-## <img src="./docs/assets/icons/license.svg" width="22" height="22" alt="" valign="middle" /> License & Attribution
+## <img src="docs/assets/icons/license.svg" width="22" height="22" alt="" valign="middle" /> License & Attribution
 
 ### Original Project Attribution
 - **Creator & Author:** Shaurya ([@dr5t](https://github.com/dr5t))
@@ -650,7 +655,7 @@ This project is licensed under the **ISC License**. See the repository history f
 
 <div align="center">
 
-<img src="./docs/logo.svg" alt="Portfolio King Logo" width="36" />
+<img src="docs/logo.svg" alt="Portfolio King Logo" width="36" />
 
 **Portfolio King**
 

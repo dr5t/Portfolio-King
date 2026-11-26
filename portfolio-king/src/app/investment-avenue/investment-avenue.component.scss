@@ -192,11 +192,14 @@
       background: var(--bg-surface);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
-      overflow: hidden;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      width: 100%;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 
       .reference-table {
         width: 100%;
+        min-width: 540px;
         border-collapse: collapse;
         font-size: 13px;
 
@@ -578,11 +581,116 @@
 }
 
 @media (max-width: 960px) {
+  .investment-terminal-layout {
+    padding: 18px 16px 40px;
+  }
+
   .metrics-strip-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
   .workspace-content-grid {
     grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .investment-terminal-layout {
+    padding: 14px 10px 32px;
+
+    .terminal-top-bar {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 14px;
+
+      .session-identity .session-title {
+        font-size: 18px;
+      }
+    }
+
+    .allocation-footer-strip {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 14px;
+      padding: 12px 14px;
+
+      .footer-totals {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+
+        .total-item {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 2px;
+
+          .total-label {
+            font-size: 11.5px;
+          }
+
+          .total-val {
+            font-size: 14.5px;
+          }
+        }
+      }
+
+      .footer-actions {
+        width: 100%;
+        display: flex;
+        gap: 8px;
+
+        .btn-submit-investment {
+          flex: 1;
+          height: 44px;
+          font-size: 14px;
+        }
+
+        .btn-outline {
+          height: 44px;
+          padding: 0 16px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .investment-terminal-layout {
+    .metrics-strip-grid {
+      gap: 8px;
+      margin-bottom: 16px;
+
+      .metric-card {
+        padding: 10px 12px;
+        gap: 10px;
+
+        .metric-icon-wrap {
+          width: 32px;
+          height: 32px;
+
+          svg {
+            width: 16px;
+            height: 16px;
+          }
+        }
+
+        .metric-body {
+          .metric-label {
+            font-size: 10.5px;
+          }
+
+          .metric-val {
+            font-size: 13.5px;
+          }
+        }
+      }
+    }
+
+    .workspace-tabs-row .workspace-tabs .tab-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
   }
 }

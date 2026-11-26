@@ -446,3 +446,117 @@ $t: 30;
   50% { -webkit-transform: rotate(0deg); }
   100% { -webkit-transform: rotate(-180deg); }
 }
+
+@media (max-width: 900px) {
+  .game-container {
+    flex-direction: column;
+    min-height: auto;
+    width: 100%;
+
+    .board-container {
+      width: 100%;
+      height: min(60vh, 460px);
+      min-height: 330px;
+      border-right: none;
+      border-bottom: 1px solid var(--border-color);
+
+      .circle {
+        height: 144px;
+        width: 144px;
+
+        .dice-container {
+          height: 134px;
+          width: 134px;
+
+          .wrap .dice {
+            width: 44px;
+            height: 44px;
+          }
+
+          .retry-pill, .spectator-tray-badge {
+            font-size: 9px;
+            padding: 2px 6px;
+            bottom: 8px;
+          }
+        }
+      }
+    }
+
+    .score-side-container {
+      width: 100%;
+      height: auto;
+      min-height: auto;
+      overflow-y: visible;
+      padding: 16px 14px 32px;
+      gap: 14px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .game-container {
+    .board-container {
+      height: min(52vh, 370px);
+      min-height: 290px;
+
+      .circle {
+        height: 120px;
+        width: 120px;
+
+        .dice-container {
+          height: 112px;
+          width: 112px;
+
+          .wrap .dice {
+            width: 38px;
+            height: 38px;
+            margin: 3px;
+          }
+
+          .retry-pill, .spectator-tray-badge {
+            font-size: 8px;
+            padding: 1px 4px;
+            bottom: 6px;
+          }
+        }
+      }
+    }
+
+    .score-side-container {
+      padding: 12px 10px 24px;
+      gap: 12px;
+
+      .session-header-card {
+        padding: 10px 12px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .game-container {
+    .board-container {
+      height: 265px;
+      min-height: 265px;
+
+      .circle {
+        height: 104px;
+        width: 104px;
+
+        .dice-container {
+          height: 98px;
+          width: 98px;
+
+          .wrap .dice {
+            width: 32px;
+            height: 32px;
+            margin: 2px;
+          }
+        }
+      }
+    }
+  }
+}

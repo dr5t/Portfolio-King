@@ -123,7 +123,7 @@
               <td class="text-right">
                 <div class="amount-input-wrap">
                   <span class="currency-symbol">₹</span>
-                  <input type="number" class="amount-input tabular-nums" name="bank_FD" ngModel placeholder="0" min="0">
+                  <input type="number" inputmode="numeric" class="amount-input tabular-nums" name="bank_FD" ngModel placeholder="0" min="0">
                 </div>
               </td>
             </tr>
@@ -146,7 +146,7 @@
               <td class="text-right">
                 <div class="amount-input-wrap">
                   <span class="currency-symbol">₹</span>
-                  <input type="number" class="amount-input tabular-nums" name="govt_bond" ngModel placeholder="0" min="0">
+                  <input type="number" inputmode="numeric" class="amount-input tabular-nums" name="govt_bond" ngModel placeholder="0" min="0">
                 </div>
               </td>
             </tr>
@@ -169,7 +169,7 @@
               <td class="text-right">
                 <div class="amount-input-wrap">
                   <span class="currency-symbol">₹</span>
-                  <input type="number" class="amount-input tabular-nums" name="corporate_bond" ngModel placeholder="0" min="0">
+                  <input type="number" inputmode="numeric" class="amount-input tabular-nums" name="corporate_bond" ngModel placeholder="0" min="0">
                 </div>
               </td>
             </tr>
@@ -192,7 +192,7 @@
               <td class="text-right">
                 <div class="amount-input-wrap">
                   <span class="currency-symbol">₹</span>
-                  <input type="number" class="amount-input tabular-nums" name="blue_chip" ngModel placeholder="0" min="0">
+                  <input type="number" inputmode="numeric" class="amount-input tabular-nums" name="blue_chip" ngModel placeholder="0" min="0">
                 </div>
               </td>
             </tr>
@@ -215,7 +215,7 @@
               <td class="text-right">
                 <div class="amount-input-wrap">
                   <span class="currency-symbol">₹</span>
-                  <input type="number" class="amount-input tabular-nums" name="mid_cap" ngModel placeholder="0" min="0">
+                  <input type="number" inputmode="numeric" class="amount-input tabular-nums" name="mid_cap" ngModel placeholder="0" min="0">
                 </div>
               </td>
             </tr>
@@ -238,7 +238,7 @@
               <td class="text-right">
                 <div class="amount-input-wrap">
                   <span class="currency-symbol">₹</span>
-                  <input type="number" class="amount-input tabular-nums" name="speculative_stock" ngModel placeholder="0" min="0">
+                  <input type="number" inputmode="numeric" class="amount-input tabular-nums" name="speculative_stock" ngModel placeholder="0" min="0">
                 </div>
               </td>
             </tr>
@@ -261,7 +261,7 @@
               <td class="text-right">
                 <div class="amount-input-wrap">
                   <span class="currency-symbol">₹</span>
-                  <input type="number" class="amount-input tabular-nums" name="international_stock" ngModel placeholder="0" min="0">
+                  <input type="number" inputmode="numeric" class="amount-input tabular-nums" name="international_stock" ngModel placeholder="0" min="0">
                 </div>
               </td>
             </tr>
@@ -284,7 +284,7 @@
               <td class="text-right">
                 <div class="amount-input-wrap">
                   <span class="currency-symbol">₹</span>
-                  <input type="number" class="amount-input tabular-nums" name="US_dollar" ngModel placeholder="0" min="0">
+                  <input type="number" inputmode="numeric" class="amount-input tabular-nums" name="US_dollar" ngModel placeholder="0" min="0">
                 </div>
               </td>
             </tr>
@@ -307,7 +307,7 @@
               <td class="text-right">
                 <div class="amount-input-wrap">
                   <span class="currency-symbol">₹</span>
-                  <input type="number" class="amount-input tabular-nums" name="gold_ETF" ngModel placeholder="0" min="0">
+                  <input type="number" inputmode="numeric" class="amount-input tabular-nums" name="gold_ETF" ngModel placeholder="0" min="0">
                 </div>
               </td>
             </tr>
@@ -324,7 +324,7 @@
               <label class="fof-label font-semibold">{{p.name}} Strategy</label>
               <div class="amount-input-wrap">
                 <span class="currency-symbol">₹</span>
-                <input type="number" class="amount-input tabular-nums" [name]="'fof_' + p.id" ngModel placeholder="0" min="0">
+                <input type="number" inputmode="numeric" class="amount-input tabular-nums" [name]="'fof_' + p.id" ngModel placeholder="0" min="0">
               </div>
             </div>
             <div class="empty-state" *ngIf="!fof_players || fof_players.length === 0">

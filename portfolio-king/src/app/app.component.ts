@@ -31,7 +31,7 @@ export class AppComponent implements OnInit {
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
         this.currentUrl = event.urlAfterRedirects || event.url;
-        this.mobileNavOpen = false;
+        this.closeMobileNav();
         
         const urlTree = this.router.parseUrl(this.currentUrl);
         const adminPage = this.currentUrl.match(/^\/admin\/([^/?]+)/);
@@ -124,8 +124,24 @@ export class AppComponent implements OnInit {
     this.sidebarCollapsed = !this.sidebarCollapsed;
   }
 
+  closeMobileNav() {
+    this.mobileNavOpen = false;
+    this.updateBodyScrollLock();
+  }
+
   toggleMobileNav() {
     this.mobileNavOpen = !this.mobileNavOpen;
+    this.updateBodyScrollLock();
+  }
+
+  private updateBodyScrollLock() {
+    if (typeof document !== 'undefined' && document.body) {
+      if (this.mobileNavOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    }
   }
 
   toggleNotifications() {
@@ -146,8 +162,11 @@ export class AppComponent implements OnInit {
   }
 
   @HostListener('document:keydown.escape')
-  closeNotificationsOnEscape() {
+  closeOnEscape() {
     this.closeNotifications();
+    if (this.mobileNavOpen) {
+      this.closeMobileNav();
+    }
   }
 
   toggleAudio() {

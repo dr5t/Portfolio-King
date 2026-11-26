@@ -388,3 +388,109 @@
     }
   }
 }
+
+@media (max-width: 600px) {
+  .split-login-container {
+    .login-branding-side {
+      .branding-content {
+        padding: 24px 16px 0;
+
+        .brand-logo-wrap {
+          margin-bottom: 10px;
+
+          .crown-logo {
+            width: 76px;
+            height: 76px;
+          }
+        }
+
+        .brand-title {
+          font-size: 26px;
+        }
+
+        .brand-subtitle {
+          font-size: 13.5px;
+        }
+      }
+
+      .bull-bear-illustration-wrap {
+        max-width: 260px;
+        max-height: 180px;
+        margin-top: 12px;
+      }
+    }
+
+    .login-form-side {
+      padding: 24px 16px 36px;
+
+      .form-wrapper {
+        .form-header {
+          margin-bottom: 18px;
+
+          .welcome-heading {
+            font-size: 20px;
+          }
+
+          .welcome-sub {
+            font-size: 12.5px;
+          }
+        }
+
+        .segmented-auth-tabs {
+          height: 44px;
+          margin-bottom: 18px;
+
+          .tab-btn {
+            font-size: 13px;
+          }
+        }
+
+        .auth-form {
+          .input-icon-wrap {
+            .input-control {
+              font-size: 16px !important;
+              height: 46px;
+            }
+
+            .trailing-toggle-btn {
+              min-width: 44px;
+              min-height: 44px;
+            }
+          }
+
+          .submit-wrap .btn-login-submit {
+            height: 48px;
+            font-size: 15px;
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .split-login-container {
+    .login-branding-side {
+      .branding-content {
+        padding: 18px 12px 14px;
+
+        .brand-logo-wrap .crown-logo {
+          width: 58px;
+          height: 58px;
+        }
+
+        .brand-title {
+          font-size: 22px;
+        }
+      }
+
+      .bull-bear-illustration-wrap {
+        display: none;
+      }
+    }
+
+    .login-form-side {
+      padding: 18px 12px 28px;
+    }
+  }
+}

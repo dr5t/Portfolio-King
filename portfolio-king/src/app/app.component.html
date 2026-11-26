@@ -5,9 +5,15 @@
         <img src="assets/imgs/logo.svg" alt="Portfolio King" class="sidebar-logo">
       </div>
       <span class="brand-wordmark" *ngIf="!sidebarCollapsed">Portfolio King</span>
-      <button type="button" class="sidebar-toggle-btn" (click)="toggleSidebar()" [title]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+      <button type="button" class="sidebar-toggle-btn desktop-toggle-btn" (click)="toggleSidebar()" [title]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline [attr.points]="sidebarCollapsed ? '9 18 15 12 9 6' : '15 18 9 12 15 6'"></polyline>
+        </svg>
+      </button>
+      <button type="button" class="sidebar-close-btn mobile-close-btn" (click)="closeMobileNav()" title="Close menu" aria-label="Close navigation menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
     </div>
@@ -163,13 +169,17 @@
   <div class="app-content-layout">
     <header class="app-top-header" *ngIf="!isLoginPage">
       <div class="header-left">
-        <button type="button" class="mobile-menu-btn" (click)="toggleMobileNav()">
+        <button type="button" class="mobile-menu-btn" (click)="toggleMobileNav()" aria-label="Open navigation menu">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="3" y1="12" x2="21" y2="12"></line>
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="18" x2="21" y2="18"></line>
           </svg>
         </button>
+        <div class="header-mobile-brand">
+          <img src="assets/imgs/logo.svg" alt="Portfolio King" class="header-mobile-logo">
+          <span class="header-mobile-wordmark">Portfolio King</span>
+        </div>
       </div>
 
       <div class="header-right">
