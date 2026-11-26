@@ -1,3 +1,16 @@
-<p>Team {{team.name}}</p>
-<p>Starting Portfolio value: {{team?.rounds[this.team?.rounds?.length-1]?.round_starting_value | number:'0.0-2'}}</p>
-<p>Current Portfolio value: {{team?.rounds[this.team?.rounds?.length-1]?.total_portfolio_value | number:'0.0-2'}}</p>
+<div class="team-area-card">
+  <div class="team-area-header">
+    <h4 class="team-name">Team {{team?.name}}</h4>
+    <span class="active-turn-pill" *ngIf="false">Active Turn</span>
+  </div>
+  <div class="team-area-stats">
+    <div class="stat-row">
+      <span class="stat-label">Starting Portfolio:</span>
+      <span class="stat-val tabular-nums">{{team?.rounds[this.team?.rounds?.length-1]?.round_starting_value | inrCurrency}}</span>
+    </div>
+    <div class="stat-row highlight-row">
+      <span class="stat-label">Current Valuation:</span>
+      <span class="stat-val tabular-nums valuation-val">{{team?.rounds[this.team?.rounds?.length-1]?.total_portfolio_value | inrCurrency}}</span>
+    </div>
+  </div>
+</div>

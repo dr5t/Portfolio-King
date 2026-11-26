@@ -16,6 +16,7 @@ import { GameStatusComponent } from './game-status/game-status.component';
 import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
 import {CarouselComponent, CarouselModule} from "ngx-owl-carousel-o";
 import {InvestmentNamePipe} from "./pipes/investmentName/investment-name.pipe";
+import {InrCurrencyPipe} from "./pipes/inrCurrency/inr-currency.pipe";
 
 @NgModule({
   declarations: [
@@ -28,7 +29,8 @@ import {InvestmentNamePipe} from "./pipes/investmentName/investment-name.pipe";
     InvestmentAvenueComponent,
     RulesComponent,
     GameStatusComponent,
-    InvestmentNamePipe
+    InvestmentNamePipe,
+    InrCurrencyPipe
   ],
   imports: [
     BrowserModule,

@@ -1,13 +1,100 @@
-<div class="rules-container">
-  <h1>Rules & Regulations</h1>
-  <p>A screening for the final teams (in case of a greater number of participants) will be done beforehand and they will be informed accordingly.</p>
-  <p>Proposed number of rounds: Eight (8)</p>
-  <p>Maximum Number of teams playing at the same time: Four (4)</p>
-  <p>Members per team must only be Three (3)</p>
-  <p>Noncompliance of rules will be a disqualification.</p>
-  <p>The decision of the panel of Judges will be final and binding on all concerned.</p>
-  <p>Use of mobile phones is prohibited and will lead to disqualification automatically.</p>
-  <p>Proper discipline and decorum has to be maintained.</p>
-  <p>Time allowed for each team is time taken for throwing of Dice- 30 seconds</p>
-  <p><a routerLink="/">Back to home</a></p>
+<div class="rules-page-container">
+  <header class="rules-header">
+    <div class="rules-brand">
+      <div class="brand-icon">
+        <img src="assets/imgs/logo.svg" alt="Portfolio King Logo" class="brand-logo-img">
+      </div>
+      <div>
+        <h1 class="brand-title">PORTFOLIO KING</h1>
+        <p class="brand-subtitle">Financial Strategy Simulation Guidelines & Operating Rules</p>
+      </div>
+    </div>
+    <a routerLink="/" class="btn-return">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Return to Home
+    </a>
+  </header>
+
+  <main class="rules-body">
+    <!-- Quick Specs Table -->
+    <div class="specs-grid">
+      <div class="spec-card">
+        <span class="spec-label">Simulation Horizon</span>
+        <span class="spec-val tabular-nums">8 Fiscal Quarters</span>
+        <span class="spec-note">2 Full Market Cycles</span>
+      </div>
+      <div class="spec-card">
+        <span class="spec-label">Max Active Cohort</span>
+        <span class="spec-val tabular-nums">4 Syndicates</span>
+        <span class="spec-note">Simultaneous Execution</span>
+      </div>
+      <div class="spec-card">
+        <span class="spec-label">Syndicate Size</span>
+        <span class="spec-val tabular-nums">3 Analysts</span>
+        <span class="spec-note">Per Team Allocation</span>
+      </div>
+      <div class="spec-card">
+        <span class="spec-label">Decision Window</span>
+        <span class="spec-val tabular-nums">30 Seconds</span>
+        <span class="spec-note">Dice & Decision Timer</span>
+      </div>
+    </div>
+
+    <!-- Structured Articles -->
+    <div class="rules-sections">
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-badge">Article I</span>
+          <h3>Cohort Eligibility & Participation Structure</h3>
+        </div>
+        <div class="section-content">
+          <p>Prior to tournament commencement, a formal participant screening process is conducted. Only verified syndicates are provisioned credentials by the Executive Game Administrator.</p>
+          <ul class="rule-list">
+            <li>A maximum of four (4) institutional syndicates compete simultaneously per trading session.</li>
+            <li>Each syndicate must authenticate with their assigned unique Team ID and password.</li>
+            <li>No substitute credentials or unregistered participant additions are permitted once rounds have started.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-badge">Article II</span>
+          <h3>Market Cycles & Execution Protocol</h3>
+        </div>
+        <div class="section-content">
+          <p>The simulation models 8 successive quarterly market periods across 10 asset classes, debt instruments, and Fund-of-Funds allocations.</p>
+          <ul class="rule-list">
+            <li><strong>Decision Latency:</strong> Each syndicate is allocated an exact 30-second window to roll market event dice and commit capital.</li>
+            <li><strong>Asset Allocation:</strong> Capital deployed into Bank FD, Corporate Bonds, Equities, Real Estate, and Gold ETF must adhere to risk limits and available cash.</li>
+            <li><strong>Automatic Execution:</strong> If the decision timer expires before manual commitment, standard market fallback logic executes for the active period.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-badge">Article III</span>
+          <h3>Institutional Governance & Decorum</h3>
+        </div>
+        <div class="section-content">
+          <p>To preserve market integrity, strict competition standards are enforced by presiding simulation judges.</p>
+          <ul class="rule-list">
+            <li><strong>Device Prohibition:</strong> Unauthorized external financial software or mobile devices are strictly prohibited during live trading rounds.</li>
+            <li><strong>Disqualification:</strong> Noncompliance with administrative rulings or unsportsmanlike conduct results in immediate syndicate disqualification.</li>
+            <li><strong>Judicial Finality:</strong> Determinations made by the presiding Executive Panel of Judges are final, conclusive, and binding upon all participants.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="rules-footer">
+      <a routerLink="/" class="back-link">
+        &larr; Back to Home
+      </a>
+    </div>
+  </main>
 </div>

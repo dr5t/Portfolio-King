@@ -1,45 +1,266 @@
-<div class="game-action-btn-container">
-  <button *ngIf="!gameEnd || user.isAdmin" (click)="onBack()">back</button>
-  <button *ngIf="gameEnd && !user.isAdmin" (click)="onGoBack()">Go back</button>
-  <h2 *ngIf="!gameEnd">Year <span>{{year}}</span> - Quarter <span>{{quarter}}</span></h2>
-  <div *ngIf="gameEnd" class="navigation-bar">
-    <button (click)="getRoundValue(roundNumber - 1)" [disabled]="roundNumber <= 1">prev</button>
-    <input [value]="roundNumber" readonly>
-    <button (click)="getRoundValue(roundNumber + 1)" [disabled]="roundNumber >= 8">next</button>
-  </div>
-  <span *ngIf="gameEnd"></span>
-  <button (click)="onRoundContinue()" *ngIf="user.isAdmin && !roundReady && !gameEnd"
-          [disabled]="game?.players?.length!== 4">
-    Continue the game
-  </button>
-  <button (click)="onGameStart()" *ngIf="user.isAdmin && !gameEnd && roundReady" [disabled]="!onPlayerReady">
-    Start the game
-  </button>
-  <button (click)="onGameContinue()" *ngIf="user.isPlayer && !gameEnd" [disabled]="!roundReady">
-    Continue the game
-  </button>
-</div>
-<div class="team-detail-container">
-  <p class="join-error" *ngIf="game?.players.length === 0">No one has joined yet.</p>
-  <owl-carousel-o [options]="customOptions">
-    <ng-template carouselSlide *ngFor="let player of game?.players;let i = index">
-      <app-team-details [teamId]="player._id" [roundNumber]="roundNumber"
-                        [leadStatus]="(player._id === portfolioLeaderId[0] || player._id === portfolioLeaderId[1] || player._id === portfolioLeaderId[2] || player._id === portfolioLeaderId[3])? 'active':''"
-                        [teamIndex]="i+1" [viewStatus]="'status'" class="team-{{i+1}}"></app-team-details>
-    </ng-template>
-  </owl-carousel-o>
-</div>
-<div class="wait-msg-container" *ngIf="false">
-  <div class="wait-msg-overlay"></div>
-  <div class="wait-msg">
-    <div>Game Completed</div>
-    <div>
-      <span *ngIf="leaderName.length === 1">Winner is {{leaderName[0]}}</span>
-      <span *ngIf="leaderName.length > 1">Winners are
-        <span *ngFor="let leader of leaderName">{{leaderName}}  </span>
-      </span>
-    </div>
-    <!--<button (click)="onGoBack()">Go back</button>-->
-  </div>
-</div>
+<div class="results-page-layout">
+  <!-- Top Navigation & Action Controls Strip -->
+  <div class="results-action-strip game-action-btn-container">
+    <div class="strip-left">
+      <button *ngIf="!gameEnd || user.isAdmin" (click)="onBack()" class="btn btn-secondary back-nav-btn">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back
+      </button>
 
+      <button *ngIf="gameEnd && !user.isAdmin" (click)="onGoBack()" class="btn btn-secondary back-nav-btn">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Go back
+      </button>
+
+      <div class="session-status-tag" *ngIf="!gameEnd">
+        <span class="pulse-dot"></span>
+        <span class="session-label">Fiscal Period:</span>
+        <span class="session-val tabular-nums font-semibold">Year {{year}} &middot; Q{{quarter}}</span>
+      </div>
+
+      <div *ngIf="gameEnd" class="round-nav-group">
+        <button (click)="getRoundValue(roundNumber - 1)" [disabled]="roundNumber <= 1" class="btn btn-sm btn-secondary">prev</button>
+        <span class="round-counter">Round <input [value]="roundNumber" readonly class="round-input tabular-nums"> of 8</span>
+        <button (click)="getRoundValue(roundNumber + 1)" [disabled]="roundNumber >= 8" class="btn btn-sm btn-secondary">next</button>
+      </div>
+    </div>
+
+    <div class="strip-right">
+      <div class="action-buttons-group">
+        <button (click)="onRoundContinue()" *ngIf="user.isAdmin && !roundReady && !gameEnd"
+                [disabled]="game?.players?.length !== 4" class="btn btn-primary">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          Continue the game
+        </button>
+
+        <button (click)="onGameStart()" *ngIf="user.isAdmin && !gameEnd && roundReady" 
+                [disabled]="!onPlayerReady" class="btn btn-primary btn-start-game">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Start the game
+        </button>
+
+        <button (click)="onGameContinue()" *ngIf="user.isPlayer && !gameEnd" 
+                [disabled]="!roundReady" class="btn btn-primary">
+          Continue the game
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Results Content Container -->
+  <main class="results-main-content">
+    <!-- Page Header (Matching Panel 4 in Reference Image) -->
+    <div class="results-header-row">
+      <div class="title-group">
+        <h1 class="page-title">Game Results</h1>
+        <p class="page-subtitle">Final standings and performance analytics</p>
+      </div>
+
+      <div class="session-selector-badge">
+        <span class="session-name font-semibold">{{game?.name || 'IT Utsav - Round 1'}}</span>
+        <span class="session-id">({{getGameShortId()}})</span>
+        <svg class="dropdown-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Structured Reference Leaderboard Table -->
+    <div class="table-card">
+      <table class="reference-table leaderboard-table">
+        <thead>
+          <tr>
+            <th style="width: 80px;">Rank</th>
+            <th>Team</th>
+            <th class="text-right">Final Portfolio</th>
+            <th class="text-right">Total Return</th>
+            <th class="text-right">Loans</th>
+            <th class="text-right">Net Worth</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of getLeaderboardList()" [class.winner-row]="item.rank === 1">
+            <!-- Rank with Trophy Icons -->
+            <td class="rank-cell">
+              <span class="trophy-wrap trophy-gold" *ngIf="item.rank === 1" title="1st Place (Winner)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"></path>
+                  <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"></path>
+                  <path d="M4 22h16"></path>
+                  <path d="M10 14.66V17c0 .55-.45 1-1 1H7v2h10v-2h-2c-.55 0-1-.45-1-1v-2.34"></path>
+                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path>
+                </svg>
+              </span>
+              <span class="trophy-wrap trophy-silver" *ngIf="item.rank === 2" title="2nd Place">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"></path>
+                  <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"></path>
+                  <path d="M4 22h16"></path>
+                  <path d="M10 14.66V17c0 .55-.45 1-1 1H7v2h10v-2h-2c-.55 0-1-.45-1-1v-2.34"></path>
+                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path>
+                </svg>
+              </span>
+              <span class="trophy-wrap trophy-bronze" *ngIf="item.rank === 3" title="3rd Place">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"></path>
+                  <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"></path>
+                  <path d="M4 22h16"></path>
+                  <path d="M10 14.66V17c0 .55-.45 1-1 1H7v2h10v-2h-2c-.55 0-1-.45-1-1v-2.34"></path>
+                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path>
+                </svg>
+              </span>
+              <span class="rank-number tabular-nums" *ngIf="item.rank > 3">{{item.rank}}</span>
+            </td>
+
+            <!-- Team Name -->
+            <td class="team-cell font-semibold">
+              <span class="team-name">{{item.name}}</span>
+              <span class="winner-tag" *ngIf="item.rank === 1">Winner</span>
+            </td>
+
+            <!-- Final Portfolio -->
+            <td class="text-right tabular-nums font-semibold">
+              {{item.currentVal | inrCurrency}}
+            </td>
+
+            <!-- Total Return -->
+            <td class="text-right tabular-nums" [class.text-profit]="item.returnPct >= 0" [class.text-loss]="item.returnPct < 0">
+              {{item.returnPct >= 0 ? '+' : ''}}{{item.returnPct | number:'0.2-2'}}%
+            </td>
+
+            <!-- Outstanding Loans -->
+            <td class="text-right tabular-nums text-muted">
+              {{item.debt | inrCurrency}}
+            </td>
+
+            <!-- Net Worth -->
+            <td class="text-right tabular-nums font-semibold">
+              {{item.netWorth | inrCurrency}}
+            </td>
+          </tr>
+
+          <tr *ngIf="!game?.players || game?.players?.length === 0">
+            <td colspan="6" class="empty-cell">Awaiting participating teams to join session.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bottom Two Sections: Game Summary & Export Analysis (Matching Reference Image) -->
+    <div class="bottom-analytics-grid">
+      <!-- Card 1: Game Summary -->
+      <div class="analytics-card">
+        <h3 class="card-title">Game Summary</h3>
+        <div class="summary-metrics-grid">
+          <div class="summary-item">
+            <span class="item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </span>
+            <div class="item-content">
+              <span class="item-label">Duration</span>
+              <span class="item-val tabular-nums">8 Quarters</span>
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <span class="item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+            </span>
+            <div class="item-content">
+              <span class="item-label">Teams</span>
+              <span class="item-val tabular-nums">4</span>
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <span class="item-icon text-profit">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                <polyline points="17 6 23 6 23 12"></polyline>
+              </svg>
+            </span>
+            <div class="item-content">
+              <span class="item-label">Highest Return</span>
+              <span class="item-val tabular-nums text-profit">+{{highestReturn | number:'0.2-2'}}%</span>
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <span class="item-icon text-loss">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+                <polyline points="17 18 23 18 23 12"></polyline>
+              </svg>
+            </span>
+            <div class="item-content">
+              <span class="item-label">Lowest Return</span>
+              <span class="item-val tabular-nums text-loss">{{lowestReturn | number:'0.2-2'}}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Export & Analysis -->
+      <div class="analytics-card">
+        <h3 class="card-title">Export & Analysis</h3>
+        <div class="export-actions-wrap">
+          <a [href]="getGameCsvExportUrl()" target="_blank" download class="btn btn-outline export-action-btn">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Export CSV
+          </a>
+
+          <button type="button" class="btn btn-outline export-action-btn" (click)="activeViewMode = activeViewMode === 'carousel' ? 'leaderboard' : 'carousel'">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            View Analytics
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Details Carousel Area (Maintained for Test & Detailed Asset Breakdown) -->
+    <div class="team-detail-container" *ngIf="game?.players && game?.players?.length > 0">
+      <div class="sub-header-row">
+        <h4 class="sub-heading">Individual Team Asset Breakdown</h4>
+      </div>
+
+      <owl-carousel-o [options]="customOptions">
+        <ng-template carouselSlide *ngFor="let player of game?.players; let i = index">
+          <app-team-details [teamId]="player._id" 
+                            [roundNumber]="roundNumber"
+                            [leadStatus]="(player._id === portfolioLeaderId[0] || player._id === portfolioLeaderId[1] || player._id === portfolioLeaderId[2] || player._id === portfolioLeaderId[3]) ? 'active' : ''"
+                            [teamIndex]="i+1" 
+                            [viewStatus]="'status'" 
+                            class="team-{{i+1}}"></app-team-details>
+        </ng-template>
+      </owl-carousel-o>
+    </div>
+  </main>
+</div>

@@ -1,31 +1,509 @@
-<div class="start-page-container">
-  <h1>Welcome to Portfolio King <span><button (click)="onLogout()">logout</button></span></h1>
+<div class="start-page-container" (click)="closeActionMenu()">
+  <!-- Main Games Dashboard View -->
+  <div class="dashboard-main-content" *ngIf="_user?.isAdmin === 'true'">
+    <!-- Page Header Row -->
+    <div class="page-header-row">
+      <div class="header-titles">
+        <h1 class="page-title">Games</h1>
+        <p class="page-subtitle">Create, manage and monitor game sessions</p>
+      </div>
 
+      <div class="header-action-btns">
+        <button type="button" class="btn btn-primary btn-create-game" (click)="onCreateGame()">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Create Game</span>
+          <span class="sr-only">Create a new game</span>
+        </button>
 
-  <div class="game-container">
-    <div class="game-column {{_user?.isPlayer? 'text-center': ''}}">
-      <div class="game-head">Current Games</div>
-      <div class="game-item" *ngFor="let currGame of currGames">
-        <a *ngIf="currGame?.game_status === 'active'" (click)="onGameSelect(currGame, currGame?._id,'active')">
-          Game {{currGame?._index}}</a>
-        <a *ngIf="currGame?.game_status === 'paused'" (click)="onGameSelect(currGame, currGame?._id,'paused')">
-          Game {{currGame?._index}}</a>
+        <button type="button" class="btn btn-secondary" (click)="toggleManageTeams()">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span>{{showManageTeams ? 'Close Team Manager' : 'Manage Teams'}}</span>
+        </button>
+
+        <button type="button" class="btn btn-secondary" (click)="onGetGames()" title="Refresh game list">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span>Refresh Games</span>
+        </button>
       </div>
     </div>
-    <div class="game-column" *ngIf="_user?.isAdmin">
-      <div class="game-head">Previous Games</div>
-      <div class="game-item" *ngFor="let prevGame of prevGames"><a routerLink="game-status/{{prevGame?._id}}">
-        Game {{prevGame?._index}}</a></div>
+
+    <!-- Team Management Drawer / Modal Section -->
+    <section class="manage-teams-section" *ngIf="showManageTeams" (click)="$event.stopPropagation()">
+      <div class="section-top-bar">
+        <div>
+          <h3 class="section-title">Game Team Administration</h3>
+          <p class="section-sub">Generate credentials, configure active rosters, and manage team authentication.</p>
+        </div>
+
+        <div class="session-selector-wrap">
+          <label class="selector-label" for="session-select">Selected Session:</label>
+          <select id="session-select" class="session-dropdown" [(ngModel)]="selectedGameId" (change)="loadTeamsForSelectedGame()">
+            <option *ngFor="let g of allGames" [value]="g._id">
+              {{g.name || 'Game ' + g._index}} ({{g.game_status || 'waiting'}})
+            </option>
+          </select>
+        </div>
+
+        <div class="team-mgmt-actions">
+          <button type="button" class="btn btn-primary" (click)="onAutoGenerateTeams()">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <polyline points="16 11 18 13 22 9"></polyline>
+            </svg>
+            Auto-Generate 4 Teams
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="showCreateTeamForm = !showCreateTeamForm">
+            + Add Team
+          </button>
+        </div>
+      </div>
+
+      <!-- Newly Generated Credentials Flash Box -->
+      <div class="credentials-box" *ngIf="latestCredentials && latestCredentials.length > 0">
+        <div class="cred-box-header">
+          <div class="cred-box-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            Newly Generated Team Credentials
+          </div>
+          <button type="button" class="btn btn-sm btn-secondary copy-all-btn" (click)="copyAllCredentials()">
+            Copy All Credentials
+          </button>
+        </div>
+        <p class="cred-note">Distribute these credentials to student teams. Plaintext passwords are never displayed again once dismissed.</p>
+        <div class="cred-list">
+          <div class="cred-row" *ngFor="let c of latestCredentials">
+            <span class="cred-name font-semibold">{{c.name}}:</span>
+            <span class="cred-field">Team ID: <code>{{c.teamId}}</code></span>
+            <span class="cred-field">Password: <code class="cred-pwd">{{c.rawPassword}}</code></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Single Team Create Form -->
+      <div class="single-team-form" *ngIf="showCreateTeamForm">
+        <h4 class="form-title">Create Single Team</h4>
+        <div class="form-inputs-row">
+          <input type="text" [(ngModel)]="newTeamName" placeholder="Team Name (e.g. Navigators)" class="input-control">
+          <input type="text" [(ngModel)]="newTeamId" placeholder="Team ID (optional, auto-generated if blank)" class="input-control">
+          <input type="text" [(ngModel)]="newTeamPassword" placeholder="Password (optional, auto-generated if blank)" class="input-control">
+          <button type="button" class="btn btn-primary" (click)="onCreateSingleTeam()">Save Team</button>
+          <button type="button" class="btn btn-secondary" (click)="showCreateTeamForm = false">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Teams Roster Table -->
+      <div class="table-card">
+        <table class="reference-table">
+          <thead>
+            <tr>
+              <th>Team ID</th>
+              <th>Team Name</th>
+              <th>Status</th>
+              <th>Connection</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of teamsList">
+              <td><code>{{t.teamId}}</code></td>
+              <td class="font-semibold">
+                <span *ngIf="editingTeamId !== t._id">{{t.name}}</span>
+                <div *ngIf="editingTeamId === t._id" class="inline-edit-wrap">
+                  <input type="text" [(ngModel)]="editingTeamName" class="inline-input">
+                  <button type="button" class="btn btn-sm btn-primary" (click)="saveEditTeam(t)">Save</button>
+                  <button type="button" class="btn btn-sm btn-secondary" (click)="cancelEditTeam()">Cancel</button>
+                </div>
+              </td>
+              <td>
+                <span class="status-indicator" [class.tag-disabled]="t.status === 'disabled'" [class.status-active]="t.status !== 'disabled'">
+                  ● {{t.status === 'disabled' ? 'Disabled' : 'Active'}}
+                </span>
+              </td>
+              <td>
+                <span class="conn-indicator" [class.conn-online]="t.isConnected">
+                  ● {{t.isConnected ? 'Connected' : 'Offline'}}
+                </span>
+              </td>
+              <td class="text-right actions-cell">
+                <button type="button" class="btn btn-sm btn-outline" (click)="startEditTeam(t)" title="Rename Team">Edit</button>
+                <button type="button" class="btn btn-sm btn-outline" (click)="onToggleTeamStatus(t)">
+                  {{t.status === 'disabled' ? 'Enable' : 'Disable'}}
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" (click)="onResetTeamPassword(t)">Reset Password</button>
+                <button type="button" class="btn btn-sm btn-danger" (click)="promptDeleteTeam(t)">Delete</button>
+              </td>
+            </tr>
+            <tr *ngIf="teamsList.length === 0">
+              <td colspan="5" class="empty-cell">No teams provisioned for this game yet. Click "Auto-Generate 4 Teams" to initialize.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Search & Filter Controls -->
+    <div class="table-controls-strip">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" [(ngModel)]="gameSearchQuery" (input)="applyGameFilters()"
+               placeholder="Search games by name or ID..." class="search-input">
+      </div>
+
+      <div class="filter-box">
+        <label class="filter-label" for="status-filter">Status:</label>
+        <select id="status-filter" class="filter-dropdown" [(ngModel)]="gameStatusFilter" (change)="applyGameFilters()">
+          <option value="all">All Statuses</option>
+          <option value="waiting">Waiting</option>
+          <option value="in_progress">In Progress</option>
+          <option value="paused">Paused</option>
+          <option value="completed">Completed</option>
+          <option value="archived">Archived</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Structured Reference Games Table -->
+    <div class="table-card">
+      <table class="reference-table games-table">
+        <thead>
+          <tr>
+            <th style="width: 48px;">#</th>
+            <th>Game Name</th>
+            <th style="width: 120px;">Game ID</th>
+            <th style="width: 100px;">Teams</th>
+            <th style="width: 80px;">Round</th>
+            <th style="width: 130px;">Status</th>
+            <th style="width: 160px;">Created At</th>
+            <th style="width: 130px;" class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let g of filteredGames; let i = index">
+            <!-- Row Number -->
+            <td class="row-num text-muted">{{i + 1}}</td>
+
+            <!-- Game Name -->
+            <td class="font-semibold game-item">
+              <span *ngIf="editingGameId !== g._id">
+                <a [routerLink]="['/game-status', g._id]" class="game-link">{{g.name || 'Game ' + g._index}}</a>
+              </span>
+              <div *ngIf="editingGameId === g._id" class="inline-edit-wrap" (click)="$event.stopPropagation()">
+                <input type="text" [(ngModel)]="editingGameName" class="inline-input">
+                <button type="button" class="btn btn-sm btn-primary" (click)="saveRenameGame(g)">Save</button>
+                <button type="button" class="btn btn-sm btn-secondary" (click)="cancelRenameGame()">Cancel</button>
+              </div>
+            </td>
+
+            <!-- Game ID (Short PKG-XXXX format) -->
+            <td>
+              <span class="game-short-id tabular-nums">{{getGameShortId(g._id)}}</span>
+            </td>
+
+            <!-- Teams Count (e.g. 4 / 4) -->
+            <td class="tabular-nums">
+              {{g.players ? g.players.length : 0}} / 4
+            </td>
+
+            <!-- Round (e.g. Q1, Q3, -) -->
+            <td class="tabular-nums">
+              {{g.players && g.players[0] && g.players[0].rounds ? 'Q' + (g.players[0].rounds.length || 1) : '-'}}
+            </td>
+
+            <!-- Status Pill with Clean SVG Icon -->
+            <td>
+              <span class="status-pill status-active" *ngIf="g.game_status === 'active' || g.game_status === 'in_progress'">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                In Progress
+              </span>
+              <span class="status-pill status-waiting" *ngIf="g.game_status === 'waiting' || g.game_status === 'ready'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Waiting
+              </span>
+              <span class="status-pill status-completed" *ngIf="g.game_status === 'completed'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Completed
+              </span>
+              <span class="status-pill status-archived" *ngIf="g.game_status === 'archived'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                  <rect x="1" y="3" width="22" height="5"></rect>
+                  <line x1="10" y1="12" x2="14" y2="12"></line>
+                </svg>
+                Archived
+              </span>
+              <span class="status-pill status-waiting" *ngIf="g.game_status === 'paused'">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16"></rect>
+                  <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+                Paused
+              </span>
+            </td>
+
+            <!-- Created At -->
+            <td class="created-at text-muted">
+              26 Nov 2026, 18:30
+            </td>
+
+            <!-- Action Controls (Eye, Play/Pause, 3-dots dropdown) -->
+            <td class="text-right actions-cell">
+              <div class="row-actions-group">
+                <!-- Eye View Icon Link -->
+                <a [routerLink]="['/game-status', g._id]" class="action-icon-btn" title="View Game Room">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </a>
+
+                <!-- Play / Pause Icon Button -->
+                <button type="button" class="action-icon-btn" (click)="onToggleGamePause(g)" 
+                        [title]="g.game_status === 'active' ? 'Pause Game' : 'Resume Game'">
+                  <svg *ngIf="g.game_status === 'active'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                  </svg>
+                  <svg *ngIf="g.game_status !== 'active'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                </button>
+
+                <!-- Three-Dots Dropdown Trigger -->
+                <div class="action-menu-container" (click)="$event.stopPropagation()">
+                  <button type="button" class="action-icon-btn dots-btn" (click)="toggleActionMenu(g._id, $event)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="1"></circle>
+                      <circle cx="12" cy="5" r="1"></circle>
+                      <circle cx="12" cy="19" r="1"></circle>
+                    </svg>
+                  </button>
+
+                  <!-- Popover Dropdown Menu -->
+                  <div class="action-dropdown-menu" *ngIf="activeActionMenuGameId === g._id">
+                    <button type="button" class="dropdown-item" (click)="startRenameGame(g); closeActionMenu()">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                      </svg>
+                      Rename
+                    </button>
+                    <button type="button" class="dropdown-item" (click)="onDuplicateGame(g); closeActionMenu()">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                      Duplicate
+                    </button>
+                    <button type="button" class="dropdown-item" (click)="onExportGameCsv(g); closeActionMenu()">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      Export CSV
+                    </button>
+                    <button type="button" class="dropdown-item" (click)="onArchiveGame(g); closeActionMenu()">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                        <rect x="1" y="3" width="22" height="5"></rect>
+                        <line x1="10" y1="12" x2="14" y2="12"></line>
+                      </svg>
+                      {{g.game_status === 'archived' ? 'Unarchive' : 'Archive'}}
+                    </button>
+                    <button type="button" class="dropdown-item item-danger" (click)="promptDeleteGame(g); closeActionMenu()">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="filteredGames.length === 0">
+            <td colspan="8" class="empty-cell">No games found matching criteria. Click "+ Create Game" to start a new simulation session.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bottom Reference Summary Strip (5 Compact Stat Boxes) -->
+    <div class="bottom-summary-grid">
+      <div class="stat-box">
+        <div class="stat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="6" y1="12" x2="10" y2="12"></line>
+            <line x1="8" y1="10" x2="8" y2="14"></line>
+            <line x1="15" y1="13" x2="15.01" y2="13"></line>
+            <line x1="18" y1="11" x2="18.01" y2="11"></line>
+            <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-val tabular-nums">{{totalGamesCount}}</span>
+          <span class="stat-title">Total Games</span>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-icon text-profit">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-val tabular-nums text-profit">{{runningGamesCount}}</span>
+          <span class="stat-title">Running</span>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-icon text-warning">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-val tabular-nums text-warning">{{waitingGamesCount}}</span>
+          <span class="stat-title">Waiting</span>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-val tabular-nums">{{completedGamesCount}}</span>
+          <span class="stat-title">Completed</span>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-icon text-muted">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-val tabular-nums text-muted">{{archivedGamesCount}}</span>
+          <span class="stat-title">Archived</span>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="game-extras">
-    <button (click)="onCreateGame()" *ngIf="_user?.isAdmin">Create a new game</button>
-    <button routerLink="rules">Help</button>
-    <button (click)="onGetGames()">Refresh Games</button>
+  <!-- Player Landing View (When authenticated as player) -->
+  <div class="dashboard-main-content" *ngIf="_user?.isPlayer">
+    <div class="page-header-row">
+      <div class="header-titles">
+        <h1 class="page-title">Available Trading Sessions</h1>
+        <p class="page-subtitle">Select your assigned portfolio game room to join.</p>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <table class="reference-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Session Name</th>
+            <th>Session ID</th>
+            <th>Connected Teams</th>
+            <th>Status</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let g of allGames; let i = index" class="game-item">
+            <td class="row-num text-muted">{{i + 1}}</td>
+            <td class="font-semibold">{{g.name || 'Game ' + g._index}}</td>
+            <td><code>{{getGameShortId(g._id)}}</code></td>
+            <td class="tabular-nums">{{g.players ? g.players.length : 0}} / 4</td>
+            <td>
+              <span class="status-pill status-active" *ngIf="g.game_status === 'active'">Active</span>
+              <span class="status-pill status-waiting" *ngIf="g.game_status !== 'active'">{{g.game_status || 'Waiting'}}</span>
+            </td>
+            <td class="text-right">
+              <a [routerLink]="['/game-status', g._id]" class="btn btn-sm btn-primary">Enter Room &rarr;</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <div class="loader">
-    <img src="../../assets/imgs/loading-icon.svg">
+  <!-- Create Game Modal -->
+  <div class="modal-backdrop" *ngIf="showCreateGameModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Create Simulation Session</h3>
+        <button type="button" class="modal-close" (click)="cancelCreateGame()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label class="modal-label" for="new-game-input">Session Name</label>
+        <input id="new-game-input" type="text" [(ngModel)]="newGameName" placeholder="e.g. IT Utsav - Round 1" class="input-control">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cancelCreateGame()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="onCreateGame()">Create Session</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal (Requires typing exact game name) -->
+  <div class="modal-backdrop" *ngIf="showDeleteGameModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title text-loss">Confirm Permanent Session Deletion</h3>
+        <button type="button" class="modal-close" (click)="cancelDeleteGame()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-warning">
+          This action will permanently delete <strong>"{{gameToDelete?.name}}"</strong>, revoke all associated team credentials, and invalidate active sessions.
+        </p>
+        <label class="modal-label" for="delete-confirm-input">Type <code>{{gameToDelete?.name}}</code> to confirm:</label>
+        <input id="delete-confirm-input" type="text" [(ngModel)]="deleteConfirmGameName" class="input-control">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cancelDeleteGame()">Cancel</button>
+        <button type="button" class="btn btn-danger" [disabled]="!deleteConfirmGameName || deleteConfirmGameName.trim().toLowerCase() !== (gameToDelete?.name || '').trim().toLowerCase()" (click)="confirmDeleteGame()">
+          Permanently Delete Game
+        </button>
+      </div>
+    </div>
   </div>
 </div>

@@ -9,15 +9,16 @@
       <div class="r-half">
         <div class="half-inner"></div>
       </div>
-      <button class="dice-container {{user.isAdmin==='true'?'admin':''}}" [disabled]="!diceStatus"
+      <button class="dice-container {{user.isAdmin==='true'?'admin':''}}" [disabled]="!diceStatus || isSpectator"
               (click)="onDiceClick($event)">
-    <span class="wrap">
-      <span id="dice1" class="dice dice_1"></span>
-    </span>
         <span class="wrap">
-      <span id="dice2" class="dice dice_1"></span>
-    </span>
-        <div *ngIf="enableRetry && isRetry">Retry</div>
+          <span id="dice1" class="dice dice_1"></span>
+        </span>
+        <span class="wrap">
+          <span id="dice2" class="dice dice_1"></span>
+        </span>
+        <div class="retry-pill" *ngIf="enableRetry && isRetry">Retry Available</div>
+        <div class="spectator-tray-badge" *ngIf="isSpectator">Spectator</div>
       </button>
       <div class="arrow-active t-1 {{game?.players[0]?._id === curr_player_id? 'active':''}}"></div>
       <div class="arrow-active t-2 {{game?.players[1]?._id === curr_player_id? 'active':''}}"></div>
@@ -25,22 +26,59 @@
       <div class="arrow-active t-4 {{game?.players[3]?._id === curr_player_id? 'active':''}}"></div>
     </div>
   </div>
+
   <div class="score-side-container">
-    <h2>Year: {{year}} Quarter: {{quarter}}</h2>
-    <app-team-details [teamId]="curr_player_id" *ngIf="curr_player_id" [currRound]="curr_round" [currState]="curr_state"
-                      [viewStatus]="'game'"></app-team-details>
-    <!--<button (click)="onStateChange('pause-game')" *ngIf="user.isAdmin && game_state">Pause game</button>-->
-    <button (click)="onStateChange('resume-game')" *ngIf="user.isAdmin && !game_state">Resume game</button>
+    <div class="session-header-card">
+      <div class="session-badge" [class.spectator-badge]="isSpectator">
+        <span class="pulse-dot"></span>
+        {{isSpectator ? 'Spectator View (Live)' : 'Active Session'}}
+      </div>
+      <h2 class="fiscal-period-title">
+        <span class="fiscal-label">Fiscal Period:</span>
+        <span class="fiscal-val tabular-nums">Year {{year}} &middot; Q{{quarter}}</span>
+      </h2>
+    </div>
+
+    <div class="active-team-view">
+      <app-team-details [teamId]="curr_player_id" *ngIf="curr_player_id" [currRound]="curr_round" [currState]="curr_state"
+                        [viewStatus]="'game'"></app-team-details>
+    </div>
+
+    <div class="admin-controls-card" *ngIf="user.isAdmin && !game_state">
+      <button class="btn-resume" (click)="onStateChange('resume-game')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        Resume Game
+      </button>
+    </div>
   </div>
 </div>
+
 <div class="wait-msg-container" *ngIf="!allowGame">
   <div class="wait-msg-overlay"></div>
-  <div class="wait-msg">Please Wait for other players to join and admin access.</div>
+  <div class="wait-msg">
+    <div class="wait-icon-container">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#171717" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+    </div>
+    <div class="wait-title">Session Inactive</div>
+    <div class="wait-desc">Please wait for all 4 authorized teams to connect and admin to commence the round.</div>
+  </div>
 </div>
 
 <div class="wait-msg-container" *ngIf="completeMessage">
   <div class="wait-msg-overlay"></div>
-  <div class="wait-msg">
-    <div>Round Completed</div>
+  <div class="wait-msg completion-card">
+    <div class="wait-icon-container success-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#176B45" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+    </div>
+    <div class="wait-title">Round Completed</div>
+    <div class="wait-desc">Fiscal quarter completed. All investment decisions evaluated. Transitioning to Portfolio Leaderboard...</div>
   </div>
 </div>

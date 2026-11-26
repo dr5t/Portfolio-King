@@ -1,107 +1,459 @@
-<div class="investment-avenue-container">
-
-  <div class="investment-container">
-    <h1>Investment Avenue <span>{{totalMin}}::{{totalTime%60}}</span></h1>
-    <h3>Total Amount: {{totalPortfolioValue}}</h3>
-    <div class="investment-box">
-      <form #f="ngForm" (submit)="onSubmitForm($event,f)" class="investment-form">
-        <div class="investment-options">
-          <div class="item-container">
-            <label>Bank FD<input ngModel type="number" name="bank_FD"></label>
-          </div>
-          <div class="item-container">
-            <label>Govt. Bond<input ngModel type="number" name="govt_bond"></label>
-          </div>
-          <div class="item-container">
-            <label>Corporate Bond<input ngModel type="number" name="corporate_bond"></label>
-          </div>
-          <div class="item-container">
-            <label>Blue Chip<input ngModel type="number" name="blue_chip"></label>
-          </div>
-          <div class="item-container">
-            <label>Mid Cap<input ngModel type="number" name="mid_cap"></label>
-          </div>
-          <div class="item-container">
-            <label>Speculative Stock<input type="number" ngModel name="speculative_stock"></label>
-          </div>
-          <div class="item-container">
-            <label>International Stock<input type="number" ngModel name="international_stock"></label>
-          </div>
-          <div class="item-container">
-            <label>US Dollar<input ngModel type="number" name="US_dollar"></label>
-          </div>
-          <div class="item-container">
-            <label>Gold ETF<input ngModel type="number" name="gold_ETF"></label>
-          </div>
-          <div class="item-container">
-            <div class="fof-investment-box" *ngIf="fof_players?.length === 3">
-              <label>
-                Fund of Funds
-                <select ngModel name="fof_player">
-                  <option disabled>Select a player</option>
-                  <option *ngFor="let player of fof_players" value="{{player.id}}">{{player.name}}</option>
-                </select>
-              </label>
-              <label>
-                Invested value
-                <input type="number" ngModel name="fof_value">
-              </label>
-            </div>
-          </div>
-          <div class="item-container" *ngIf="loanStatus">
-            <div class="loan-investment-box">
-              <label>
-                <input type="checkbox" name="takeLoan" (click)="onEnableLoan()" [disabled]="loanTaken"> Do you want to
-                take loan?
-              </label>
-              <div class="loan-box" *ngIf="enableLoan">
-                <label>
-                  Loan duration
-                  <input type="number" [(ngModel)]="loanDuration" name="loan_duration" [readonly]="loanTaken">
-                </label>
-                <div class="loan_meta">
-                  <button type="button" class="dice-container" [disabled]="loanTaken || !diceEnabled"
-                          (click)="onDiceRoll($event)">
-                    <span class="wrap">
-                      <span id="dice1" class="dice dice_1"></span>
-                    </span>
-                    <span class="wrap">
-                      <span id="dice2" class="dice dice_1"></span>
-                    </span>
-                  </button>
-                  <input type="button" class="loan-btn" (click)="onTakeLoan()" value="Take Loan" [disabled]="loanTaken">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="item-container" *ngIf="prevLoans && prevLoans.length > 0">
-            <div class="loan-repayment-box">
-              <h3>Previous Loans</h3>
-              <div class="loan-box" *ngFor="let loan of prevLoans; let i = index">
-                <div class="loan-box-item"><span>Loan amount:</span> <span>{{loan.amount}}</span></div>
-                <div class="loan-box-item"><span>Loan balance:</span> <span>{{loan.balance}}</span></div>
-                <div class="loan-box-item"><span>Loan repayment charge:</span> <span>{{loan.balance * 0.01}}</span></div>
-                <div class="loan-box-item"><span>Total:</span> <span>{{loan.balance * 0.01 + loan.balance}}</span></div>
-                <input type="button" class="loan-btn" value="Pay Loan" (click)="onPayLoan($event,i)">
-              </div>
-            </div>
-          </div>
-          <div class="item-container">
-            <input type="submit" [disabled]="!f.valid" value="Start game">
-          </div>
-        </div>
-      </form>
+<div class="investment-terminal-layout">
+  <!-- Top Session & Team Header Bar -->
+  <div class="terminal-top-bar">
+    <div class="session-identity">
+      <h2 class="session-title">{{game?.name || 'Session In Progress'}}</h2>
+      <span class="session-id-badge">{{getGameShortId()}}</span>
     </div>
 
-  </div>
-  <div class="prev-investments">
-    <h1>Previous Investments</h1>
-    <owl-carousel-o [options]="customOptions">
-      <ng-template carouselSlide *ngFor="let player of players;let i = index">
-        <app-team-details [teamId]="player" [viewStatus]="'status'"></app-team-details>
-      </ng-template>
-    </owl-carousel-o>
+    <div class="team-identity">
+      <svg class="team-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+      </svg>
+      <span class="team-label">Team :</span>
+      <span class="team-name font-semibold">{{user?.userName || user?.name || 'Active Team'}}</span>
+    </div>
   </div>
 
+  <!-- Horizontal Information Strip (4 Compact Metric Cards) -->
+  <div class="metrics-strip-grid">
+    <!-- Quarter -->
+    <div class="metric-card">
+      <div class="metric-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      </div>
+      <div class="metric-body">
+        <span class="metric-label">Quarter</span>
+        <span class="metric-val tabular-nums">Q{{currentQuarter}} / 8</span>
+      </div>
+    </div>
+
+    <!-- Time Left -->
+    <div class="metric-card">
+      <div class="metric-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+      </div>
+      <div class="metric-body">
+        <span class="metric-label">Time Left</span>
+        <span class="metric-val tabular-nums timer-val">{{formattedTimeLeft}}</span>
+      </div>
+    </div>
+
+    <!-- Portfolio Value -->
+    <div class="metric-card">
+      <div class="metric-icon-wrap icon-profit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+          <polyline points="17 6 23 6 23 12"></polyline>
+        </svg>
+      </div>
+      <div class="metric-body">
+        <span class="metric-label">Portfolio Value</span>
+        <div class="metric-val-wrap">
+          <span class="metric-val tabular-nums text-profit">{{totalPortfolioValue | inrCurrency}}</span>
+          <span class="metric-delta tabular-nums" [class.text-profit]="returnPercentage >= 0" [class.text-loss]="returnPercentage < 0">
+            {{returnPercentage >= 0 ? '+' : ''}}{{returnPercentage | number:'0.2-2'}}%
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Available Cash -->
+    <div class="metric-card">
+      <div class="metric-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+          <circle cx="12" cy="12" r="2"></circle>
+          <path d="M6 12h.01M18 12h.01"></path>
+        </svg>
+      </div>
+      <div class="metric-body">
+        <span class="metric-label">Available Cash</span>
+        <span class="metric-val tabular-nums">{{remainingBalance | inrCurrency}}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Segmented Sub-Navigation Tabs (Investments, F.O.F, Loans) -->
+  <div class="workspace-tabs-row">
+    <div class="segmented-tabs-wrap">
+      <button type="button" class="tab-btn" [class.active]="activeSubTab === 'investments'" (click)="activeSubTab = 'investments'">
+        Investments
+      </button>
+      <button type="button" class="tab-btn" [class.active]="activeSubTab === 'fof'" (click)="activeSubTab = 'fof'">
+        F.O.F
+      </button>
+      <button type="button" class="tab-btn" [class.active]="activeSubTab === 'loans'" (click)="activeSubTab = 'loans'">
+        Loans
+      </button>
+    </div>
+  </div>
+
+  <!-- Workspace Main Grid (Investment Table + Market Roll Side Console) -->
+  <form #f="ngForm" (ngSubmit)="onSubmitForm($event, f)" (input)="calculateLiveTotal(f)" class="investment-form" novalidate>
+    <div class="workspace-content-grid">
+      <!-- Main Table Card -->
+      <div class="table-card">
+        <!-- Tab 1: Direct Investments Table -->
+        <table class="reference-table" *ngIf="activeSubTab === 'investments'">
+          <thead>
+            <tr>
+              <th style="width: 48px;">#</th>
+              <th>Investment Avenue</th>
+              <th style="width: 120px;">Risk</th>
+              <th style="width: 140px;">Expected Return</th>
+              <th style="width: 180px;" class="text-right">Allocation (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1: Bank FD -->
+            <tr>
+              <td class="row-num text-muted">1</td>
+              <td>
+                <span class="instrument-title font-semibold">Bank Fixed Deposit</span>
+                <span class="instrument-cat">Fixed Income &middot; Sovereign Backed</span>
+              </td>
+              <td>
+                <span class="risk-bar-indicator risk-low">
+                  <span class="bar bar-1"></span>
+                  <span class="bar"></span>
+                  <span class="bar"></span>
+                  <span class="risk-text">Low</span>
+                </span>
+              </td>
+              <td class="tabular-nums">6.20% Fixed</td>
+              <td class="text-right">
+                <div class="amount-input-wrap">
+                  <span class="currency-symbol">₹</span>
+                  <input type="number" class="amount-input tabular-nums" name="bank_FD" ngModel placeholder="0" min="0">
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 2: Govt Bonds -->
+            <tr>
+              <td class="row-num text-muted">2</td>
+              <td>
+                <span class="instrument-title font-semibold">Government Bonds</span>
+                <span class="instrument-cat">Sovereign Debt</span>
+              </td>
+              <td>
+                <span class="risk-bar-indicator risk-low">
+                  <span class="bar bar-1"></span>
+                  <span class="bar"></span>
+                  <span class="bar"></span>
+                  <span class="risk-text">Low</span>
+                </span>
+              </td>
+              <td class="tabular-nums">4.00% &ndash; 9.00%</td>
+              <td class="text-right">
+                <div class="amount-input-wrap">
+                  <span class="currency-symbol">₹</span>
+                  <input type="number" class="amount-input tabular-nums" name="govt_bond" ngModel placeholder="0" min="0">
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 3: Corporate Bonds -->
+            <tr>
+              <td class="row-num text-muted">3</td>
+              <td>
+                <span class="instrument-title font-semibold">Corporate Bonds</span>
+                <span class="instrument-cat">Credit Debt &middot; Investment Grade</span>
+              </td>
+              <td>
+                <span class="risk-bar-indicator risk-med">
+                  <span class="bar bar-1"></span>
+                  <span class="bar bar-2"></span>
+                  <span class="bar"></span>
+                  <span class="risk-text">Medium</span>
+                </span>
+              </td>
+              <td class="tabular-nums">5.00% &ndash; 12.00%</td>
+              <td class="text-right">
+                <div class="amount-input-wrap">
+                  <span class="currency-symbol">₹</span>
+                  <input type="number" class="amount-input tabular-nums" name="corporate_bond" ngModel placeholder="0" min="0">
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 4: Blue Chip Equities -->
+            <tr>
+              <td class="row-num text-muted">4</td>
+              <td>
+                <span class="instrument-title font-semibold">Equity &ndash; Large Cap</span>
+                <span class="instrument-cat">Blue Chip &middot; Established Leaders</span>
+              </td>
+              <td>
+                <span class="risk-bar-indicator risk-med">
+                  <span class="bar bar-1"></span>
+                  <span class="bar bar-2"></span>
+                  <span class="bar"></span>
+                  <span class="risk-text">Medium</span>
+                </span>
+              </td>
+              <td class="tabular-nums">-10% &ndash; +25%</td>
+              <td class="text-right">
+                <div class="amount-input-wrap">
+                  <span class="currency-symbol">₹</span>
+                  <input type="number" class="amount-input tabular-nums" name="blue_chip" ngModel placeholder="0" min="0">
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 5: Mid Cap Equities -->
+            <tr>
+              <td class="row-num text-muted">5</td>
+              <td>
+                <span class="instrument-title font-semibold">Equity &ndash; Mid Cap</span>
+                <span class="instrument-cat">High-Growth Equities</span>
+              </td>
+              <td>
+                <span class="risk-bar-indicator risk-high">
+                  <span class="bar bar-1"></span>
+                  <span class="bar bar-2"></span>
+                  <span class="bar bar-3"></span>
+                  <span class="risk-text">High</span>
+                </span>
+              </td>
+              <td class="tabular-nums">-20% &ndash; +35%</td>
+              <td class="text-right">
+                <div class="amount-input-wrap">
+                  <span class="currency-symbol">₹</span>
+                  <input type="number" class="amount-input tabular-nums" name="mid_cap" ngModel placeholder="0" min="0">
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 6: Speculative Equities -->
+            <tr>
+              <td class="row-num text-muted">6</td>
+              <td>
+                <span class="instrument-title font-semibold">Equity &ndash; Small Cap</span>
+                <span class="instrument-cat">Speculative &middot; High Beta</span>
+              </td>
+              <td>
+                <span class="risk-bar-indicator risk-very-high">
+                  <span class="bar bar-1"></span>
+                  <span class="bar bar-2"></span>
+                  <span class="bar bar-3"></span>
+                  <span class="risk-text text-loss">Very High</span>
+                </span>
+              </td>
+              <td class="tabular-nums">-40% &ndash; +60%</td>
+              <td class="text-right">
+                <div class="amount-input-wrap">
+                  <span class="currency-symbol">₹</span>
+                  <input type="number" class="amount-input tabular-nums" name="speculative_stock" ngModel placeholder="0" min="0">
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 7: Global Equities -->
+            <tr>
+              <td class="row-num text-muted">7</td>
+              <td>
+                <span class="instrument-title font-semibold">Debt &ndash; Corporate / Global Equities</span>
+                <span class="instrument-cat">International Markets</span>
+              </td>
+              <td>
+                <span class="risk-bar-indicator risk-high">
+                  <span class="bar bar-1"></span>
+                  <span class="bar bar-2"></span>
+                  <span class="bar bar-3"></span>
+                  <span class="risk-text">High</span>
+                </span>
+              </td>
+              <td class="tabular-nums">-15% &ndash; +30%</td>
+              <td class="text-right">
+                <div class="amount-input-wrap">
+                  <span class="currency-symbol">₹</span>
+                  <input type="number" class="amount-input tabular-nums" name="international_stock" ngModel placeholder="0" min="0">
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 8: US Dollar Reserves -->
+            <tr>
+              <td class="row-num text-muted">8</td>
+              <td>
+                <span class="instrument-title font-semibold">Foreign Exchange (USD)</span>
+                <span class="instrument-cat">Hard Currency Hedge</span>
+              </td>
+              <td>
+                <span class="risk-bar-indicator risk-med">
+                  <span class="bar bar-1"></span>
+                  <span class="bar bar-2"></span>
+                  <span class="bar"></span>
+                  <span class="risk-text">Medium</span>
+                </span>
+              </td>
+              <td class="tabular-nums">-8% &ndash; +15%</td>
+              <td class="text-right">
+                <div class="amount-input-wrap">
+                  <span class="currency-symbol">₹</span>
+                  <input type="number" class="amount-input tabular-nums" name="US_dollar" ngModel placeholder="0" min="0">
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 9: Gold ETF -->
+            <tr>
+              <td class="row-num text-muted">9</td>
+              <td>
+                <span class="instrument-title font-semibold">Gold ETF / Real Estate (REIT)</span>
+                <span class="instrument-cat">Commodity & Real Asset Hedge</span>
+              </td>
+              <td>
+                <span class="risk-bar-indicator risk-med">
+                  <span class="bar bar-1"></span>
+                  <span class="bar bar-2"></span>
+                  <span class="bar"></span>
+                  <span class="risk-text">Moderate</span>
+                </span>
+              </td>
+              <td class="tabular-nums">5% &ndash; 20%</td>
+              <td class="text-right">
+                <div class="amount-input-wrap">
+                  <span class="currency-symbol">₹</span>
+                  <input type="number" class="amount-input tabular-nums" name="gold_ETF" ngModel placeholder="0" min="0">
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Tab 2: FOF Allocation Table -->
+        <div class="sub-tab-panel" *ngIf="activeSubTab === 'fof'">
+          <div class="sub-tab-header">
+            <h4>Fund of Funds (FOF) Co-Investment</h4>
+            <p>Allocate capital into syndicated strategies of competing portfolios.</p>
+          </div>
+          <div class="fof-form-wrap">
+            <div class="fof-row" *ngFor="let p of fof_players">
+              <label class="fof-label font-semibold">{{p.name}} Strategy</label>
+              <div class="amount-input-wrap">
+                <span class="currency-symbol">₹</span>
+                <input type="number" class="amount-input tabular-nums" [name]="'fof_' + p.id" ngModel placeholder="0" min="0">
+              </div>
+            </div>
+            <div class="empty-state" *ngIf="!fof_players || fof_players.length === 0">
+              <p>FOF allocation opens after initial quarterly market evaluation.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Loan Obligations -->
+        <div class="sub-tab-panel" *ngIf="activeSubTab === 'loans'">
+          <div class="sub-tab-header">
+            <h4>Credit Facilities & Debt Obligations</h4>
+            <p>Manage active liabilities, quarterly EMI amortizations, and available credit lines.</p>
+          </div>
+          <table class="reference-table" *ngIf="prevLoans && prevLoans.length > 0">
+            <thead>
+              <tr>
+                <th>Principal</th>
+                <th>Balance Outstanding</th>
+                <th>Annual Interest</th>
+                <th>Quarterly EMI</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of prevLoans">
+                <td class="tabular-nums">{{l.amount | inrCurrency}}</td>
+                <td class="tabular-nums">{{l.balance | inrCurrency}}</td>
+                <td class="tabular-nums">{{l.rate}}% p.a.</td>
+                <td class="tabular-nums">{{l.pmt | inrCurrency}}</td>
+                <td><span class="status-pill status-active">{{l.status}}</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="empty-state" *ngIf="!prevLoans || prevLoans.length === 0">
+            <p>No active loan obligations outstanding. Credit facility available up to ₹5,00,000.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Side Console: Market Roll (Matching Reference Image) -->
+      <div class="market-roll-console">
+        <h3 class="console-title">Market Roll</h3>
+
+        <!-- 3D Dice Display Box -->
+        <div class="dice-display-box">
+          <div class="dice-visual-card">
+            <span class="dice-dot dot-1"></span>
+            <span class="dice-dot dot-2"></span>
+          </div>
+          <div class="dice-sum-display">
+            <span class="sum-number tabular-nums">{{lastDiceRoll}}</span>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-roll-dice" disabled>
+          Roll Dice
+        </button>
+
+        <div class="market-impact-card">
+          <span class="impact-label">Market Impact</span>
+          <span class="impact-value tabular-nums" [class.text-profit]="isMarketPositive" [class.text-loss]="!isMarketPositive">
+            {{isMarketPositive ? '&uarr; ' : '&darr; '}}{{marketImpactRate}}
+          </span>
+          <span class="impact-sub">{{marketImpactDescription}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Allocation Summary Footer (Matching Reference Layout) -->
+    <div class="allocation-footer-strip">
+      <div class="footer-totals">
+        <div class="total-item">
+          <span class="total-label">Allocated:</span>
+          <span class="total-val tabular-nums">{{currentAllocated | inrCurrency}}</span>
+        </div>
+        <div class="total-item">
+          <span class="total-label">Remaining:</span>
+          <span class="total-val tabular-nums" [class.text-loss]="remainingBalance < 0" [class.text-profit]="remainingBalance === 0">
+            {{remainingBalance | inrCurrency}}
+          </span>
+        </div>
+      </div>
+
+      <div class="footer-actions">
+        <button type="button" class="btn btn-outline" (click)="promptResetAllocations()">
+          Reset
+        </button>
+
+        <input type="submit" value="Submit Investment" class="btn btn-primary btn-submit-investment"
+               [disabled]="currentAllocated === 0 || remainingBalance < 0">
+      </div>
+    </div>
+  </form>
+
+  <!-- Reset Confirmation Dialog -->
+  <div class="modal-backdrop" *ngIf="showResetModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Reset Allocations</h3>
+        <button type="button" class="modal-close" (click)="cancelResetAllocations()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to clear all entered allocations for this quarter?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cancelResetAllocations()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="confirmResetAllocations(f)">Reset All</button>
+      </div>
+    </div>
+  </div>
 </div>

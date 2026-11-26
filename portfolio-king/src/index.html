@@ -2,18 +2,104 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Portfolio King</title>
+  <title>Portfolio King — Financial Strategy Platform</title>
   <base href="/">
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png">
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+  <script src="assets/js/lottie.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #F5F5F3;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .app-initial-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #F5F5F3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      opacity: 1;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+    .lottie-loader-container {
+      width: 400px;
+      height: 400px;
+      max-width: min(400px, 85vw);
+      max-height: min(400px, 85vw);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      outline: none;
+    }
+    .lottie-loader-container svg {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain;
+      display: block;
+      background: transparent;
+    }
+    @media (max-width: 480px) {
+      .lottie-loader-container {
+        width: 280px;
+        height: 280px;
+        max-width: 80vw;
+        max-height: 80vw;
+      }
+    }
+  </style>
 </head>
 <body>
-  <app-root></app-root>
+  <app-root>
+    <div class="app-initial-loader" id="initial-loader">
+      <div id="initial-lottie-anim" class="lottie-loader-container"></div>
+      <script>
+        (function() {
+          try {
+            if (window.lottie) {
+              window.initialLottie = window.lottie.loadAnimation({
+                container: document.getElementById('initial-lottie-anim'),
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                path: 'assets/loading-animation.json'
+              });
+            }
+            setTimeout(function() {
+              var initLoader = document.getElementById('initial-loader');
+              if (initLoader) {
+                initLoader.style.opacity = '0';
+                setTimeout(function() {
+                  if (initLoader && initLoader.parentNode) {
+                    initLoader.parentNode.removeChild(initLoader);
+                  }
+                }, 250);
+              }
+            }, 3000);
+          } catch(e) {}
+        })();
+      </script>
+    </div>
+  </app-root>
 </body>
 </html>

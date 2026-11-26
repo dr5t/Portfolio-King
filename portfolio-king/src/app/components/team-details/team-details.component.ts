@@ -45,7 +45,6 @@ export class TeamDetailsComponent implements OnInit {
         break;
       }
     }
-    console.log(n);
     if (this.viewStatus === 'status' && n > 0 && n <= 12) {
       this.round = this.team.rounds[n - 1];
     }
@@ -53,7 +52,6 @@ export class TeamDetailsComponent implements OnInit {
 
   ngOnChanges(changes: SimpleChanges) {
     if (this.viewStatus === 'game') {
-      console.log('view changed');
       if (changes.teamId && changes.teamId.currentValue) {
         this.teamId = changes.teamId.currentValue;
       }

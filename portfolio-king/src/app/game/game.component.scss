@@ -2,129 +2,195 @@ $d: 160;
 $w: 6;
 $t: 30;
 
+:host {
+  display: block;
+  min-height: calc(100vh - 48px);
+  background: var(--bg-app);
+  color: var(--text-primary);
+}
+
 .game-container {
   display: flex;
   flex-direction: row;
+  min-height: calc(100vh - 48px);
+  width: 100%;
+  background: var(--bg-app);
+
   .board-container {
-    height: 100vh;
+    height: calc(100vh - 48px);
     width: 60vw;
     position: relative;
-    background: #f1f1f1;
+    background: #EDEAE1;
+    display: flex;
+    flex-wrap: wrap;
+    box-sizing: border-box;
+    border-right: 1px solid var(--border-color);
+
     app-team-area {
       width: 50%;
-      height: 50vh;
+      height: 50%;
       display: inline-flex;
       flex-direction: column;
       justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+      position: relative;
+      transition: background-color 0.2s ease, box-shadow 0.2s ease;
+
+      /* Quadrant 1: North-West (Team 1) */
       &.team-1 {
-        background: #fd0227;
+        background: var(--bg-app);
+        border-right: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+        border-top: 3px solid var(--btn-primary-bg);
+
+        &.active {
+          background: var(--bg-surface);
+          box-shadow: inset 0 0 0 2px var(--btn-primary-bg);
+        }
       }
+
+      /* Quadrant 2: North-East (Team 2) */
       &.team-2 {
-        background: #169616;
+        background: var(--bg-app);
+        border-bottom: 1px solid var(--border-color);
+        border-top: 3px solid var(--color-profit);
+
+        &.active {
+          background: var(--bg-surface);
+          box-shadow: inset 0 0 0 2px var(--color-profit);
+        }
       }
+
+      /* Quadrant 3: South-West (Team 3) */
       &.team-3 {
-        background: #0721ff;
+        background: var(--bg-app);
+        border-right: 1px solid var(--border-color);
+        border-bottom: 3px solid var(--color-warning);
+
+        &.active {
+          background: var(--bg-surface);
+          box-shadow: inset 0 0 0 2px var(--color-warning);
+        }
       }
+
+      /* Quadrant 4: South-East (Team 4) */
       &.team-4 {
-        background: #d710da;
+        background: var(--bg-app);
+        border-bottom: 3px solid var(--text-secondary);
+
+        &.active {
+          background: var(--bg-surface);
+          box-shadow: inset 0 0 0 2px var(--text-secondary);
+        }
       }
     }
 
+    /* Central Dice & Turn Console Hub */
     .circle {
-      border: none;
+      border: 1px solid var(--border-color);
       border-radius: 50%;
       height: 180px;
       width: 180px;
       position: absolute;
       top: 50%;
       left: 50%;
-      background: #80bdff;
+      background: var(--bg-surface);
       transform: translate(-50%, -50%);
       outline: none;
       cursor: pointer;
-      box-shadow: 1px 1px 6px 4px #1677e0;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      z-index: 20;
 
       .dice-container {
         border-radius: 50%;
-        height: 170px;
-        width: 170px;
+        height: 168px;
+        width: 168px;
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
         outline: none;
         cursor: pointer;
-        background: #80bdff;
+        background: var(--bg-surface);
         border: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease, background-color 0.15s ease;
+
         &[disabled] {
-          background: #c2c2c2;
+          background: var(--bg-secondary);
+          cursor: not-allowed;
+          opacity: 0.85;
+
+          .dice {
+            filter: grayscale(40%) opacity(0.75);
+          }
         }
-        &.admin {
-          background: #80bdff;
+
+        &:not([disabled]):hover {
+          background: var(--bg-subtle);
+          transform: translate(-50%, -50%) scale(1.02);
         }
+
         .wrap {
           position: relative;
           display: inline-block;
+
           .dice {
             width: 50px;
             height: 50px;
-            margin: 10px;
+            margin: 6px;
             display: block;
             background: url(../../assets/imgs/dice.png) no-repeat;
             background-size: 110%;
             background-position: -3px 0px;
-            &.dice_1 {
-              background-position: -3px 0px;
-              background-size: 110%;
-            }
-            &.dice_2 {
-              background-position: 1px -59px;
-              background-size: 110%;
-            }
-            &.dice_3 {
-              background-position: 1px -115px;
-              background-size: 110%;
-            }
-            &.dice_4 {
-              background-position: 1px -173px;
-              background-size: 110%;
-            }
-            &.dice_5 {
-              background-position: 1px -234px;
-              background-size: 110%;
-            }
-            &.dice_6 {
-              background-position: 1px -294px;
-              background-size: 110%;
-            }
-            &.dice_t {
-              background-position: 1px -357px;
-              background-size: 110%;
-            }
-            &.dice_s {
-              background-position: 1px -419px;
-              background-size: 110%;
-            }
-            &.dice_e {
-              background-position: 1px -482px;
-              background-size: 110%;
-            }
-          }
-          .dice_mask {
-            width: 50px;
-            height: 50px;
-            background: #fff;
-            opacity: 0;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 999;
-            display: none;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+            &.dice_1 { background-position: -3px 0px; }
+            &.dice_2 { background-position: 1px -59px; }
+            &.dice_3 { background-position: 1px -115px; }
+            &.dice_4 { background-position: 1px -173px; }
+            &.dice_5 { background-position: 1px -234px; }
+            &.dice_6 { background-position: 1px -294px; }
+            &.dice_t { background-position: 1px -357px; }
+            &.dice_s { background-position: 1px -419px; }
+            &.dice_e { background-position: 1px -482px; }
           }
         }
 
+        .retry-pill {
+          position: absolute;
+          bottom: 12px;
+          background: var(--color-warning-bg);
+          color: var(--color-warning);
+          border: 1px solid #F8E2B5;
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 2px 8px;
+          border-radius: 4px;
+          letter-spacing: 0.04em;
+        }
+
+        .spectator-tray-badge {
+          position: absolute;
+          bottom: 12px;
+          background: var(--bg-secondary);
+          color: var(--text-secondary);
+          border: 1px solid var(--border-color);
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 2px 8px;
+          border-radius: 4px;
+          letter-spacing: 0.04em;
+        }
       }
 
+      /* Countdown Timer Arc in Charcoal */
       .l-half, .r-half {
         float: left;
         width: 50%;
@@ -136,13 +202,12 @@ $t: 30;
           width: 100%;
           height: 100%;
           box-sizing: border-box;
-          border: $w+px solid #fff;
+          border: $w+px solid var(--sidebar-bg);
           -webkit-animation-duration: $t+s;
           -webkit-animation-iteration-count: 1;
           -webkit-animation-timing-function: linear;
           -webkit-animation-fill-mode: forwards;
         }
-
       }
 
       .l-half {
@@ -169,93 +234,216 @@ $t: 30;
         }
       }
 
+      /* Directional Turn Pointer */
       .arrow-active {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(0, -50%) rotate(-135deg);
-        width: 60%;
-        height: 10px;
-        background: #fff;
+        width: 62%;
+        height: 4px;
+        background: var(--sidebar-bg);
         transform-origin: 0 0;
         z-index: -1;
         display: none;
+
         &:after {
           content: "";
           position: absolute;
           right: -8px;
-          font-weight: 900;
-          line-height: 8px;
-          border-bottom: 5px solid transparent;
-          border-top: 5px solid transparent;
-          border-left: 10px solid #fff;
+          top: -4px;
+          border-bottom: 6px solid transparent;
+          border-top: 6px solid transparent;
+          border-left: 10px solid var(--sidebar-bg);
         }
-        &.t-2 {
-          transform: translate(0, -50%) rotate(-45deg);
+
+        &.t-1 { transform: translate(0, -50%) rotate(-135deg); }
+        &.t-2 { transform: translate(0, -50%) rotate(-45deg); }
+        &.t-3 { transform: translate(0, -50%) rotate(135deg); }
+        &.t-4 { transform: translate(0, -50%) rotate(45deg); }
+        &.active { display: block; }
+      }
+    }
+  }
+
+  /* Score Side Container */
+  .score-side-container {
+    width: 40vw;
+    height: calc(100vh - 48px);
+    overflow-y: auto;
+    padding: 24px;
+    box-sizing: border-box;
+    background: var(--bg-surface);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    .session-header-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .session-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        background: var(--bg-surface);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        padding: 4px 10px;
+        border-radius: 4px;
+
+        .pulse-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: var(--color-profit);
         }
-        &.t-3 {
-          transform: translate(0, -50%) rotate(135deg);
+
+        &.spectator-badge {
+          background: var(--bg-surface);
+          color: var(--text-secondary);
+
+          .pulse-dot {
+            background: var(--color-warning);
+          }
         }
-        &.t-4 {
-          transform: translate(0, -50%) rotate(45deg);
+      }
+
+      .fiscal-period-title {
+        margin: 0;
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+
+        .fiscal-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
         }
-        &.active {
-          display: block;
+
+        .fiscal-val {
+          font-size: 16px;
+          font-weight: 800;
+          color: var(--text-primary);
         }
       }
     }
 
-  }
+    .active-team-view {
+      flex: 1;
+    }
 
-  .score-side-container {
-    width: 40vw;
-    h2{
-      text-align: center;
+    .admin-controls-card {
+      padding: 14px 0;
+      border-top: 1px solid var(--border-color);
+
+      .btn-resume {
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: var(--btn-primary-bg);
+        color: var(--btn-primary-text);
+        border: 1px solid var(--btn-primary-bg);
+        font-size: 13px;
+        font-weight: 600;
+        padding: 10px 18px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+
+        &:hover {
+          background: var(--btn-primary-hover);
+        }
+      }
     }
   }
 }
 
+/* Modal Overlay & Wait Messages */
 .wait-msg-container {
   position: fixed;
   top: 0;
   left: 0;
-  height: 100%;
-  width: 100%;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   .wait-msg-overlay {
-    background: rgba(0, 0, 0, 0.3);
-    height: 100%;
-    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(25, 25, 25, 0.45);
   }
+
   .wait-msg {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 30px 20px;
-    background: #fff;
+    position: relative;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 32px 36px;
+    max-width: 440px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+
+    .wait-icon-container {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &.success-icon {
+        background: var(--color-profit-bg);
+        border-color: #BBE3CA;
+      }
+    }
+
+    .wait-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .wait-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
   }
 }
 
 @-webkit-keyframes l-rotate {
-  0% {
-    -webkit-transform: rotate(0deg);
-  }
-  50% {
-    -webkit-transform: rotate(-180deg);
-  }
-  100% {
-    -webkit-transform: rotate(-180deg);
-  }
+  0% { -webkit-transform: rotate(0deg); }
+  50% { -webkit-transform: rotate(-180deg); }
+  100% { -webkit-transform: rotate(-180deg); }
 }
 
 @-webkit-keyframes r-rotate {
-  0% {
-    -webkit-transform: rotate(0deg);
-  }
-  50% {
-    -webkit-transform: rotate(0deg);
-  }
-  100% {
-    -webkit-transform: rotate(-180deg);
-  }
+  0% { -webkit-transform: rotate(0deg); }
+  50% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(-180deg); }
 }

@@ -19,6 +19,7 @@ export class PortfolioService {
   private _user: any = false;
   public gameStatus = new Subject<boolean>();
   public game: any;
+  public isMuted: boolean = false;
 
   constructor(private api: ApiService,
               private endpoint: EndPoints,
@@ -54,9 +55,57 @@ export class PortfolioService {
   onLogin(user, userType = 'Player') {
     user.userType = userType;
     let {login} = this.endpoint;
-    user.socketId = this._socket.id;
-    let seq = this.api.get(login, user);
+    user.socketId = this._socket ? this._socket.id : null;
+    let seq = this.api.post(login, user);
     return seq;
+  }
+
+  getTeams(gameId: string) {
+    let reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
+    return this.api.get('api/teams', { gameId }, reqOpts);
+  }
+
+  createTeam(teamData: any) {
+    let reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
+    return this.api.post('api/teams', teamData, reqOpts);
+  }
+
+  generateAllTeams(gameId: string) {
+    let reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
+    return this.api.post('api/teams/generate-all', { gameId }, reqOpts);
+  }
+
+  updateTeam(teamId: string, data: any) {
+    let reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
+    return this.api.put('api/teams/' + teamId, data, reqOpts);
+  }
+
+  resetTeamPassword(teamId: string) {
+    let reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
+    return this.api.post('api/teams/' + teamId + '/reset-password', {}, reqOpts);
+  }
+
+  deleteTeam(teamId: string) {
+    let reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
+    return this.api.delete('api/teams/' + teamId, reqOpts);
   }
 
   getLoginObj() {
@@ -85,10 +134,50 @@ export class PortfolioService {
     return this.game.players.filter(({_id}) => _id === id);
   }
 
-  createGame() {
+  createGame(name?: string) {
+    let reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
     let {createGame} = this.endpoint;
-    let seq = this.api.post(createGame, {});
-    return seq;
+    return this.api.post(createGame, { name }, reqOpts);
+  }
+
+  renameGame(gameId: string, name: string) {
+    let reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
+    return this.api.post('api/games/rename', { gameId, name }, reqOpts);
+  }
+
+  duplicateGame(gameId: string) {
+    let reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
+    return this.api.post('api/games/duplicate', { gameId }, reqOpts);
+  }
+
+  updateGameLifecycleStatus(gameId: string, status: string) {
+    let reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
+    return this.api.post('api/games/status', { gameId, status }, reqOpts);
+  }
+
+  deleteGame(gameId: string, confirmName: string) {
+    let reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
+    return this.api.post('api/games/delete', { gameId, confirmName }, reqOpts);
+  }
+
+  getGameCsvExportUrl(gameId: string): string {
+    const token = this.user ? this.user.token : '';
+    return `${this.url}/api/games/export/${gameId}?token=${token}`;
   }
 
   getAllGames() {
@@ -109,21 +198,25 @@ export class PortfolioService {
     this.onGetGame(gameId);
   }
 
-  onPlayerAddError = () => {
+  onPlayerAddError = (err?: any) => {
     this._socket.off('player-added-to-game');
-    this.gameStatus.next();
+    const errObj = (typeof err === 'object' && err !== null) ? { error: true, ...err } : { error: true, msg: '4 players already added. Please refresh ' };
+    this.gameStatus.next(errObj);
   }
 
   onJoinGame(gameId, socketId, userType, userName, userId = false) {
-    console.log("onJoinGame", gameId, socketId, userType, userName, userId)
-    console.log(userName);
+    console.log("onJoinGame", gameId, socketId, userType, userName, userId);
     this._socket.emit('join-game', {
       gameId: gameId,
       socketId: socketId,
       userType: userType,
       userId: userId,
-      userName: userName
+      userName: userName,
+      token: this.user ? this.user.token : null
     });
+    this._socket.off('player-added-to-game');
+    this._socket.off('player-add-error');
+    this._socket.off('game-updated');
     this._socket.on('player-added-to-game', this.addPlayerToGame);
     this._socket.on('player-add-error', this.onPlayerAddError);
     this._socket.on('game-updated', this.onGameUpdated);

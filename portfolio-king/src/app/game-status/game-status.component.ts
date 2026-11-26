@@ -31,10 +31,63 @@ export class GameStatusComponent implements OnInit {
   public audio1: any;
   public audio2: any;
   public roundNumber: any = 0;
+  public activeViewMode: 'leaderboard' | 'carousel' = 'leaderboard';
 
-  constructor(private portfolioService: PortfolioService,
+  constructor(public portfolioService: PortfolioService,
               private route: Router,
               private activatedRoute: ActivatedRoute) {
+  }
+
+  getGameCsvExportUrl(): string {
+    return this.portfolioService.getGameCsvExportUrl(this.gameId);
+  }
+
+  getGameShortId(): string {
+    if (!this.gameId) return 'PKG-0000';
+    return `PKG-${String(this.gameId).slice(-4).toUpperCase()}`;
+  }
+
+  get highestReturn(): number {
+    const list = this.getLeaderboardList();
+    if (!list || list.length === 0) return 0;
+    return Math.max(...list.map(i => i.returnPct));
+  }
+
+  get lowestReturn(): number {
+    const list = this.getLeaderboardList();
+    if (!list || list.length === 0) return 0;
+    return Math.min(...list.map(i => i.returnPct));
+  }
+
+  getLeaderboardList(): any[] {
+    if (!this.game || !this.game.players) {
+      return [];
+    }
+    const list = this.game.players.map((p, idx) => {
+      const rounds = p.rounds || [];
+      const lastRound = rounds.length > 0 ? rounds[rounds.length - 1] : null;
+      const initialVal = (rounds.length > 0 && rounds[0].round_starting_value) ? rounds[0].round_starting_value : 5000000;
+      const currentVal = lastRound ? lastRound.total_portfolio_value : initialVal;
+      let totalDebt = 0;
+      if (p.loans && p.loans.length > 0) {
+        totalDebt = p.loans.reduce((sum, l) => sum + (l.balance || 0), 0);
+      }
+      const netWorth = currentVal - totalDebt;
+      const returnPct = initialVal > 0 ? ((currentVal - initialVal) / initialVal) * 100 : 0;
+      return {
+        _id: p._id,
+        name: p.name,
+        index: idx + 1,
+        startingVal: initialVal,
+        currentVal: currentVal,
+        debt: totalDebt,
+        netWorth: netWorth,
+        returnPct: returnPct,
+        gameStatus: p.game_status || 'joined'
+      };
+    });
+    list.sort((a, b) => b.currentVal - a.currentVal);
+    return list.map((item, rank) => ({ ...item, rank: rank + 1 }));
   }
 
   ngOnInit() {
@@ -55,9 +108,10 @@ export class GameStatusComponent implements OnInit {
       this.loadCrackers();
       this.portfolioService.onJoinGame(this.gameId, this.user.socketId, userType, this.user.userName, this.user.id);
       this.portfolioService.onGetGame(this.gameId);
-      this.gameStatus = this.portfolioService.gameStatus.subscribe((res) => {
-        if (res === undefined) {
-          UtilityService.showError('4 players already added. Please refresh ');
+      this.gameStatus = this.portfolioService.gameStatus.subscribe((res: any) => {
+        if (res === undefined || (res && res.error) || (res && res.msg)) {
+          let errorMsg = (res && res.msg) ? res.msg : 'Game full. Please refresh.';
+          UtilityService.showError(errorMsg);
           this.route.navigate(['']);
         } else {
           this.game = this.portfolioService.game;

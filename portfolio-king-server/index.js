@@ -5,7 +5,6 @@ const fs = require('fs');
 const app = express();
 const http = require('http').createServer(app);
 const adminRoutes = require('./routes/admin');
-const s = require('searchjs');
 const bodyParser = require('body-parser');
 const mongoClient = require('./db/portfolio_db').mongoConnect;
 const getDb = require('./db/portfolio_db').getDb;
@@ -17,6 +16,14 @@ const investmentReturnSheet = require('./investments/investments').investmentRet
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (process.env.NODE_ENV === 'production') {
+    if (!ADMIN_USERNAME || !ADMIN_PASSWORD || ADMIN_PASSWORD === 'admin' || ADMIN_PASSWORD.length < 8) {
+        console.error('FATAL: In production, ADMIN_USERNAME and a strong ADMIN_PASSWORD (min 8 chars, not "admin") must be configured.');
+        process.exit(1);
+    }
+}
+
 const clientDistPath = path.resolve(__dirname, '../portfolio-king/dist/Client');
 
 var users = [];
@@ -29,12 +36,44 @@ app.use(bodyParser.urlencoded({extended: false}));
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' ws: wss: http: https:;");
+    if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
+        res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    }
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
     next();
 });
+
+function isValidObjectId(id) {
+    return id && typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
+}
+
+function isSocketConnected(socketId) {
+    if (!socketId || !io || !io.sockets) return false;
+    if (io.sockets.sockets && typeof io.sockets.sockets.get === 'function') {
+        const s = io.sockets.sockets.get(socketId);
+        return !!(s && s.connected);
+    }
+    if (io.sockets.connected && io.sockets.connected[socketId]) {
+        return !!io.sockets.connected[socketId].connected;
+    }
+    return false;
+}
+
+function sanitizeCsvValue(val) {
+    if (val === null || val === undefined) return '';
+    let str = String(val);
+    if (/^[=+\-@\t\r]/.test(str)) {
+        str = "'" + str;
+    }
+    return `"${str.replace(/"/g, '""')}"`;
+}
 
 app.get('/login', function (req, res) {
     if (fs.existsSync(clientDistPath)) {
@@ -100,14 +139,29 @@ app.post('/login', async function (req, res) {
             if (team.status === 'disabled') {
                 return res.status(403).json({ message: 'Team account disabled.' });
             }
-            if (!auth.verifyPassword(password, team.passwordHash)) {
+            const verification = await auth.verifyPassword(password, team.passwordHash);
+            if (!verification.valid) {
                 auth.recordFailedAttempt(ip);
                 return res.status(401).json({ message: 'Invalid Team ID or Password.' });
             }
 
+            // Auto-rehash if using legacy or outdated algorithm
+            if (verification.needsRehash) {
+                try {
+                    const upgradedHash = await auth.hashPassword(password);
+                    await db.collection('teams').updateOne(
+                        { _id: team._id },
+                        { $set: { passwordHash: upgradedHash, updatedAt: new Date() } }
+                    );
+                } catch (rehashErr) {
+                    console.error('Error auto-migrating password hash:', rehashErr);
+                }
+            }
+
             const activeSession = auth.findSessionByTeamId(team.teamId);
-            if (activeSession && activeSession.socketId && io.sockets && io.sockets.connected && io.sockets.connected[activeSession.socketId]) {
-                if (activeSession.socketId !== socketId) {
+            if (activeSession) {
+                const isSameSocket = socketId && activeSession.socketId && activeSession.socketId === socketId;
+                if (!isSameSocket) {
                     return res.status(409).json({ message: 'Team already connected.' });
                 }
             }
@@ -155,7 +209,7 @@ app.get('/api/teams', auth.authenticateAdmin, async function (req, res) {
         const teams = await db.collection('teams').find(query).toArray();
         const sanitized = teams.map(t => {
             const session = auth.findSessionByTeamId(t.teamId);
-            const isConnected = !!(session && session.socketId && io.sockets && io.sockets.connected && io.sockets.connected[session.socketId]);
+            const isConnected = !!(session && session.socketId && isSocketConnected(session.socketId));
             return {
                 _id: t._id,
                 teamId: t.teamId,
@@ -192,7 +246,7 @@ app.post('/api/teams', auth.authenticateAdmin, async function (req, res) {
             return res.status(400).json({ message: `Team ID ${teamId} already exists.` });
         }
         const rawPassword = req.body.password && req.body.password.trim() ? req.body.password.trim() : auth.generatePassword();
-        const passwordHash = auth.hashPassword(rawPassword);
+        const passwordHash = await auth.hashPassword(rawPassword);
         const newTeam = {
             teamId,
             name: name.trim(),
@@ -242,7 +296,7 @@ app.post('/api/teams/generate-all', auth.authenticateAdmin, async function (req,
             const teamId = auth.generateTeamId(gameIndex, i);
             const name = `Team ${i}`;
             const rawPassword = auth.generatePassword();
-            const passwordHash = auth.hashPassword(rawPassword);
+            const passwordHash = await auth.hashPassword(rawPassword);
             const teamDoc = {
                 teamId,
                 name,
@@ -269,6 +323,9 @@ app.post('/api/teams/generate-all', auth.authenticateAdmin, async function (req,
 });
 
 app.put('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
+    if (!isValidObjectId(req.params.id)) {
+        return res.status(400).json({ message: 'Invalid Team ID.' });
+    }
     try {
         const db = getDb();
         const updates = { updatedAt: new Date() };
@@ -282,6 +339,13 @@ app.put('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
         if (!result.value) {
             return res.status(404).json({ message: 'Team not found.' });
         }
+        if (updates.status === 'disabled') {
+            const session = auth.findSessionByTeamId(result.value.teamId);
+            if (session) {
+                auth.deleteSession(session.token);
+                auth.disconnectSocket(io, session.socketId);
+            }
+        }
         res.json(result.value);
     } catch (err) {
         res.status(500).json({ message: 'Server unavailable.' });
@@ -289,10 +353,13 @@ app.put('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
 });
 
 app.post('/api/teams/:id/reset-password', auth.authenticateAdmin, async function (req, res) {
+    if (!isValidObjectId(req.params.id)) {
+        return res.status(400).json({ message: 'Invalid Team ID.' });
+    }
     try {
         const db = getDb();
         const rawPassword = req.body.password && req.body.password.trim() ? req.body.password.trim() : auth.generatePassword();
-        const passwordHash = auth.hashPassword(rawPassword);
+        const passwordHash = await auth.hashPassword(rawPassword);
         const team = await db.collection('teams').findOneAndUpdate(
             { _id: new ObjectID(req.params.id) },
             { $set: { passwordHash, updatedAt: new Date() } },
@@ -304,6 +371,7 @@ app.post('/api/teams/:id/reset-password', auth.authenticateAdmin, async function
         const session = auth.findSessionByTeamId(team.value.teamId);
         if (session) {
             auth.deleteSession(session.token);
+            auth.disconnectSocket(io, session.socketId);
         }
         res.json({ teamId: team.value.teamId, rawPassword });
     } catch (err) {
@@ -312,6 +380,9 @@ app.post('/api/teams/:id/reset-password', auth.authenticateAdmin, async function
 });
 
 app.delete('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
+    if (!isValidObjectId(req.params.id)) {
+        return res.status(400).json({ message: 'Invalid Team ID.' });
+    }
     try {
         const db = getDb();
         const team = await db.collection('teams').findOne({ _id: new ObjectID(req.params.id) });
@@ -336,7 +407,10 @@ app.delete('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
         }
         await db.collection('teams').deleteOne({ _id: new ObjectID(req.params.id) });
         const session = auth.findSessionByTeamId(team.teamId);
-        if (session) auth.deleteSession(session.token);
+        if (session) {
+            auth.deleteSession(session.token);
+            auth.disconnectSocket(io, session.socketId);
+        }
         res.json({ message: 'Team deleted successfully.' });
     } catch (err) {
         res.status(500).json({ message: 'Server unavailable.' });
@@ -344,11 +418,18 @@ app.delete('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
 });
 
 app.post('/logout', function (req, res) {
-    users = users.filter(user => user.socketId !== req.body.socketId);
-    users.push({
-        socketId: req.body.socketId,
-        status: 'active'
-    });
+    const token = req.headers.authorization ? req.headers.authorization.replace('Bearer ', '') : (req.body && req.body.token);
+    const session = token ? auth.getSession(token) : null;
+    if (session) {
+        auth.deleteSession(token);
+        if (session.socketId) {
+            auth.disconnectSocket(io, session.socketId);
+        }
+    }
+    if (req.body && req.body.socketId) {
+        auth.disconnectSocket(io, req.body.socketId);
+        users = users.filter(user => user.socketId !== req.body.socketId);
+    }
     res.send({message: 'ok'});
 });
 
@@ -366,15 +447,194 @@ app.get('/clean', function (req, res) {
     res.send(users);
 })
 
-app.post('/create-game', function (req, res) {
-    createNewGame()
+app.post('/create-game', auth.authenticateAdmin, function (req, res) {
+    const customName = req.body && req.body.name;
+    createNewGame(customName)
         .then((result) => {
-            games.push(result.ops[0]);
+            const newGame = result.ops[0];
+            games.push(newGame);
             res.send(result);
         })
         .catch((err) => {
-            res.send(err);
+            res.status(500).send(err);
         });
+});
+
+app.post('/api/games/rename', auth.authenticateAdmin, async function (req, res) {
+    const { gameId, name } = req.body;
+    if (!gameId || !name || !name.trim()) {
+        return res.status(400).json({ message: 'Game ID and valid name are required.' });
+    }
+    if (!isValidObjectId(gameId)) {
+        return res.status(400).json({ message: 'Invalid Game ID.' });
+    }
+    try {
+        const db = getDb();
+        const trimmed = name.trim();
+        await db.collection('games').updateOne(
+            { _id: new ObjectID(gameId) },
+            { $set: { name: trimmed } }
+        );
+        const game = games.find(g => String(g._id) === String(gameId));
+        if (game) game.name = trimmed;
+        io.to(gameId).emit('game-updated', game);
+        res.json({ success: true, name: trimmed, game });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to rename game.' });
+    }
+});
+
+app.post('/api/games/duplicate', auth.authenticateAdmin, async function (req, res) {
+    const { gameId } = req.body;
+    if (!gameId) {
+        return res.status(400).json({ message: 'Game ID is required.' });
+    }
+    if (!isValidObjectId(gameId)) {
+        return res.status(400).json({ message: 'Invalid Game ID.' });
+    }
+    try {
+        const db = getDb();
+        const existing = await db.collection('games').findOne({ _id: new ObjectID(gameId) });
+        if (!existing) {
+            return res.status(404).json({ message: 'Game not found.' });
+        }
+        const newName = (existing.name || 'Game') + ' (Copy)';
+        const result = await db.collection('games').insertOne({
+            name: newName,
+            game_status: 'waiting',
+            roundReady: false,
+            timestamp: new Date(),
+            players: []
+        });
+        const duplicated = result.ops[0];
+        games.push(duplicated);
+        res.json({ success: true, game: duplicated });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to duplicate game.' });
+    }
+});
+
+app.post('/api/games/status', auth.authenticateAdmin, async function (req, res) {
+    const { gameId, status } = req.body;
+    const validStatuses = ['waiting', 'ready', 'active', 'paused', 'completed', 'archived'];
+    if (!gameId || !status || !validStatuses.includes(status)) {
+        return res.status(400).json({ message: 'Valid gameId and status required.' });
+    }
+    if (!isValidObjectId(gameId)) {
+        return res.status(400).json({ message: 'Invalid Game ID.' });
+    }
+    try {
+        const db = getDb();
+        await db.collection('games').updateOne(
+            { _id: new ObjectID(gameId) },
+            { $set: { game_status: status } }
+        );
+        const game = games.find(g => String(g._id) === String(gameId));
+        if (game) {
+            game.game_status = status;
+            io.to(gameId).emit('game-state-changed', { gameId, game_state: status });
+            io.to(gameId).emit('game-updated', game);
+        }
+        res.json({ success: true, status, game });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to update game status.' });
+    }
+});
+
+app.post('/api/games/delete', auth.authenticateAdmin, async function (req, res) {
+    const { gameId, confirmName } = req.body;
+    if (!gameId || !confirmName) {
+        return res.status(400).json({ message: 'Game ID and confirmation name required.' });
+    }
+    if (!isValidObjectId(gameId)) {
+        return res.status(400).json({ message: 'Invalid Game ID.' });
+    }
+    try {
+        const db = getDb();
+        const game = await db.collection('games').findOne({ _id: new ObjectID(gameId) });
+        if (!game) {
+            return res.status(404).json({ message: 'Game not found.' });
+        }
+        const expectedName = (game.name || '').trim();
+        if (confirmName.trim().toLowerCase() !== expectedName.toLowerCase()) {
+            return res.status(400).json({ message: `Confirmation name does not match "${expectedName}".` });
+        }
+        if (game.game_status === 'active' || game.game_status === 'in_progress') {
+            return res.status(400).json({ message: 'Active game cannot be deleted. End or pause the game before deletion.' });
+        }
+
+        // Delete all associated teams
+        await db.collection('teams').deleteMany({ gameId: String(gameId) });
+        // Invalidate all sessions for this game
+        auth.invalidateSessionsForGame(gameId);
+        // Delete the game document
+        await db.collection('games').deleteOne({ _id: new ObjectID(gameId) });
+        // Remove from in-memory array
+        games = games.filter(g => String(g._id) !== String(gameId));
+        // Notify socket clients
+        io.to(gameId).emit('game-deleted', { gameId });
+        res.json({ success: true, message: `Game "${expectedName}" and associated credentials successfully deleted.` });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to delete game.' });
+    }
+});
+
+app.get('/api/games/export/:id', auth.authenticateAdmin, async function (req, res) {
+    if (!isValidObjectId(req.params.id)) {
+        return res.status(400).send('Invalid Game ID.');
+    }
+    try {
+        const db = getDb();
+        const game = await db.collection('games').findOne({ _id: new ObjectID(req.params.id) });
+        if (!game) {
+            return res.status(404).send('Game not found.');
+        }
+        const teams = await db.collection('teams').find({ gameId: String(req.params.id) }).toArray();
+        const teamMap = new Map();
+        teams.forEach(t => teamMap.set(t.name, t.teamId));
+
+        let csv = 'Game Name,Game ID,Status,Team Rank,Team Name,Team ID,Starting Capital,Current Valuation,Net Profit Loss,Total Return %,Outstanding Debt,Rounds Completed,Exported At\n';
+        const gameName = sanitizeCsvValue(game.name || 'Game');
+        const gameId = sanitizeCsvValue(String(game._id));
+        const gameStatus = sanitizeCsvValue(game.game_status || 'waiting');
+        const exportedAt = sanitizeCsvValue(new Date().toISOString());
+
+        if (game.players && game.players.length > 0) {
+            const sorted = [...game.players].sort((a, b) => {
+                const valA = (a.rounds && a.rounds.length > 0) ? a.rounds[a.rounds.length - 1].total_portfolio_value : 1000000;
+                const valB = (b.rounds && b.rounds.length > 0) ? b.rounds[b.rounds.length - 1].total_portfolio_value : 1000000;
+                return valB - valA;
+            });
+
+            sorted.forEach((p, idx) => {
+                const rank = idx + 1;
+                const teamName = sanitizeCsvValue(p.name || '');
+                const teamId = sanitizeCsvValue(teamMap.get(p.name) || p.teamId || 'N/A');
+                const startingVal = p.starting_portfolio_value || 1000000;
+                const lastRound = (p.rounds && p.rounds.length > 0) ? p.rounds[p.rounds.length - 1] : null;
+                const currentVal = lastRound ? lastRound.total_portfolio_value : startingVal;
+                const netProfitLoss = currentVal - startingVal;
+                const totalReturn = (((currentVal - startingVal) / startingVal) * 100).toFixed(2);
+                let outstandingDebt = 0;
+                if (p.loans) {
+                    p.loans.forEach(l => {
+                        if (l.status === 'active') outstandingDebt += (l.balance || l.amount || 0);
+                    });
+                }
+                const roundsCompleted = p.rounds ? p.rounds.length : 0;
+
+                csv += `${gameName},${gameId},${gameStatus},${rank},${teamName},${teamId},${startingVal},${currentVal},${netProfitLoss},${totalReturn}%,${outstandingDebt},${roundsCompleted},${exportedAt}\n`;
+            });
+        } else {
+            csv += `${gameName},${gameId},${gameStatus},N/A,No Teams Joined,N/A,0,0,0,0%,0,0,${exportedAt}\n`;
+        }
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="portfolio-king-${req.params.id}-results.csv"`);
+        res.send(csv);
+    } catch (err) {
+        res.status(500).send('Failed to generate export.');
+    }
 });
 
 app.get('/get-all-games', function (req, res) {
@@ -438,6 +698,9 @@ const ioConnection = () => {
                 }
             }
             socketUser.socketId = socket.id;
+            if (socketUser.token) {
+                auth.updateSessionSocket(socketUser.token, socket.id);
+            }
             io.to(socket.id).emit("update-user", socketUser);
         }
         users.push(connectedUser);
@@ -448,27 +711,89 @@ const ioConnection = () => {
                 }
             });
         });
-        socket.on('join-game', (data) => {
-            console.log(data);
+        socket.on('join-game', async (data) => {
+            let token = data && data.token;
+            if (!token) {
+                const found = users.find(u => u.socketId === socket.id);
+                if (found && found.token) token = found.token;
+            }
+            const session = auth.getSession(token);
+            if (!session) {
+                io.to(socket.id).emit("player-add-error", { error: true, msg: "Session expired" });
+                return;
+            }
+
             users.forEach(user => {
                 if (user.socketId === data.socketId) {
                     user.gameId = data.gameId;
                 }
             });
-            if (data.userType === 'player' && !data.userId) {
-                let checkError = false;
-                games.forEach(game => {
-                    if (JSON.stringify(game._id) === JSON.stringify(data.gameId)
-                        && game.players.length >= 4) {
-                        console.log(game);
-                        io.to(socket.id).emit("player-add-error", {msg: 'game full'});
-                        checkError = true;
-                    }
-                });
-                if (checkError) {
+
+            if (session.role === 'admin' || data.userType === 'spectator') {
+                socket.join(data.gameId);
+                const targetGame = games.find(g => String(g._id) === String(data.gameId));
+                if (targetGame) {
+                    io.to(socket.id).emit("game-updated", targetGame);
+                }
+                return;
+            }
+
+            if (session.role === 'player') {
+                if (String(session.gameId) !== String(data.gameId)) {
+                    io.to(socket.id).emit("player-add-error", { error: true, msg: "Unauthorized: Team not assigned to this game." });
                     return;
                 }
-                addPlayerToGame(data.gameId, data.socketId, data.userName, 'paused')
+
+                try {
+                    const db = getDb();
+                    const teamDoc = await db.collection('teams').findOne({ teamId: session.teamId });
+                    if (teamDoc && teamDoc.status === 'disabled') {
+                        io.to(socket.id).emit("player-add-error", { error: true, msg: "Team account disabled." });
+                        return;
+                    }
+                } catch (err) {
+                    io.to(socket.id).emit("player-add-error", { error: true, msg: "Server unavailable." });
+                    return;
+                }
+
+                const activeSess = auth.findSessionByTeamId(session.teamId);
+                if (activeSess && activeSess.socketId && activeSess.socketId !== socket.id && isSocketConnected(activeSess.socketId)) {
+                    io.to(socket.id).emit("player-add-error", { error: true, msg: "Team already connected." });
+                    return;
+                }
+                auth.updateSessionSocket(session.token, socket.id);
+
+                let targetGame = null;
+                let existingPlayer = null;
+                games.forEach(g => {
+                    if (JSON.stringify(g._id) === JSON.stringify(data.gameId)) {
+                        targetGame = g;
+                        g.players.forEach(p => {
+                            if (p.teamId === session.teamId || p.name === session.teamName || (data.userId && JSON.stringify(p._id) === JSON.stringify(data.userId))) {
+                                existingPlayer = p;
+                            }
+                        });
+                    }
+                });
+
+                if (existingPlayer) {
+                    existingPlayer.socketId = socket.id;
+                    existingPlayer.status = 'active';
+                    socket.join(data.gameId);
+                    updatePlayer(data.gameId, existingPlayer._id, 'active', existingPlayer.game_status, existingPlayer.rounds, existingPlayer.loans)
+                        .then(() => {
+                            socket.broadcast.to(data.gameId).emit("game-updated", targetGame);
+                            io.to(socket.id).emit("game-updated", targetGame);
+                        });
+                    return;
+                }
+
+                if (targetGame && targetGame.players.length >= 4) {
+                    io.to(socket.id).emit("player-add-error", { error: true, msg: "Game full." });
+                    return;
+                }
+
+                addPlayerToGame(data.gameId, socket.id, session.teamName, session.teamId)
                     .then(({value, ok}) => {
                         let player = value.players[value.players.length - 1];
                         if (ok === 1) {
@@ -477,6 +802,7 @@ const ioConnection = () => {
                                     game.players = value.players;
                                 }
                             });
+                            socket.join(data.gameId);
                             socket.broadcast.to(data.gameId).emit("player-added-to-game", {
                                 player: player,
                                 gameId: data.gameId
@@ -485,23 +811,6 @@ const ioConnection = () => {
                         }
                     });
             }
-            else if (data.userType === 'player' && data.userId) {
-                games.forEach(game => {
-                    if (JSON.stringify(game._id) === JSON.stringify(data.gameId)) {
-                        game.players.forEach(player => {
-                            if (JSON.stringify(player._id) === JSON.stringify(data.userId)) {
-                                player.status = 'active';
-                                updatePlayer(data.gameId, player._id, 'active', player.game_status, player.rounds, player.loans)
-                                    .then(() => {
-                                        socket.broadcast.to(JSON.stringify(game._id)).emit("game-updated", game);
-                                        io.to(socket.id).emit("game-updated", game);
-                                    });
-                            }
-                        })
-                    }
-                })
-            }
-            socket.join(data.gameId);
         });
         socket.on('leave-game', (data) => {
             users.forEach(user => {
@@ -527,12 +836,19 @@ const ioConnection = () => {
             });
         });
         socket.on('player-ready', (data) => {
-            if (data.userId) {
+            const user = users.find(u => u.socketId === socket.id);
+            const session = user ? auth.getSession(user.token) : null;
+            if (session && session.role === 'player' && data && String(session.gameId) !== String(data.gameId)) {
+                return;
+            }
+            if (data && data.userId) {
                 games.forEach(game => {
-                    console.log(JSON.stringify(game._id), data.gameId, JSON.stringify(game._id) === JSON.stringify(data.gameId));
                     if (JSON.stringify(game._id) === JSON.stringify(data.gameId)) {
                         game.players.forEach(player => {
                             if (JSON.stringify(player._id) === JSON.stringify(data.userId)) {
+                                if (player.game_status === 'ready') {
+                                    return; // Idempotency check: prevent duplicate submission
+                                }
                                 player.game_status = 'ready';
                                 let round = {};
                                 round.total_invested_value = data.totalInvestment;
@@ -571,6 +887,11 @@ const ioConnection = () => {
             }
         });
         socket.on('game-start', (data) => {
+            const user = users.find(u => u.socketId === socket.id);
+            const session = user ? auth.getSession(user.token) : null;
+            if (!session || session.role !== 'admin') {
+                return;
+            }
             games.forEach(game => {
                 if (JSON.stringify(game._id) === JSON.stringify(data.gameId)) {
                     game.game_status = 'active';
@@ -624,6 +945,11 @@ const ioConnection = () => {
         });
 
         socket.on('round-ready', (data) => {
+            const user = users.find(u => u.socketId === socket.id);
+            const session = user ? auth.getSession(user.token) : null;
+            if (!session || session.role !== 'admin') {
+                return;
+            }
             games.forEach(game => {
                 if (JSON.stringify(game._id) === JSON.stringify(data.gameId)) {
                     game.roundReady = true;
@@ -637,11 +963,56 @@ const ioConnection = () => {
             })
         });
 
+        socket.on('game-state-change', async (data) => {
+            const user = users.find(u => u.socketId === socket.id);
+            const session = user ? auth.getSession(user.token) : null;
+            if (!session || session.role !== 'admin') {
+                return;
+            }
+            const targetGame = games.find(g => String(g._id) === String(data.gameId));
+            if (targetGame) {
+                targetGame.game_status = data.state;
+                try {
+                    const db = getDb();
+                    await db.collection('games').updateOne(
+                        { _id: new ObjectID(data.gameId) },
+                        { $set: { game_status: data.state } }
+                    );
+                } catch (err) {
+                    console.error('Error updating game state in DB:', err);
+                }
+                socket.broadcast.to(data.gameId).emit("game-state-changed", {
+                    gameId: data.gameId,
+                    game_state: data.state
+                });
+                io.to(socket.id).emit("game-state-changed", {
+                    gameId: data.gameId,
+                    game_state: data.state
+                });
+                socket.broadcast.to(data.gameId).emit("game-updated", targetGame);
+                io.to(socket.id).emit("game-updated", targetGame);
+            }
+        });
+
         socket.on('dice-rolled', (data) => {
+            const user = users.find(u => u.socketId === socket.id);
+            const session = user ? auth.getSession(user.token) : null;
+            if (session && session.role === 'player' && data && String(session.gameId) !== String(data.gameId)) {
+                return;
+            }
+            if (data && data.gameId) {
+                const targetGame = games.find(g => String(g._id) === String(data.gameId));
+                if (!targetGame || !targetGame.round_seq || targetGame.round_seq.length === 0) {
+                    return;
+                }
+                if (data.player_id && String(targetGame.round_seq[0].playerId) !== String(data.player_id)) {
+                    return; // Unauthorized roll: not player's turn
+                }
+            }
             clearTimeout(diceTimer);
-             diceTimer = setTimeout(() => {
-                 onDiceRolled(false, data, socket);
-             }, 60000);
+            diceTimer = setTimeout(() => {
+                onDiceRolled(false, data, socket);
+            }, 60000);
             onDiceRolled(true, data, socket);
         })
     });
@@ -834,18 +1205,20 @@ const getGameSequence = (gameId) => {
     return seq;
 };
 
-const createNewGame = () => {
+const createNewGame = (customName) => {
     const db = getDb();
+    const count = games.length + 1;
     return db.collection('games')
         .insertOne({
-            game_status: 'paused',
+            name: customName || `Game ${count}`,
+            game_status: 'waiting',
             roundReady: false,
             timestamp: new Date(),
             players: []
         });
 };
 
-const addPlayerToGame = (gameId, socketId, name) => {
+const addPlayerToGame = (gameId, socketId, name, teamId) => {
     const db = getDb();
     return db.collection('games')
         .findOneAndUpdate(
@@ -856,6 +1229,7 @@ const addPlayerToGame = (gameId, socketId, name) => {
                         _id: new ObjectID(),
                         socketId: socketId,
                         name: name,
+                        teamId: teamId || name,
                         status: 'active',
                         game_status: 'paused',
                         starting_portfolio_value: 1000000,
@@ -931,10 +1305,6 @@ app.get('/update-game', function (req, res) {
         });
 });
 
-app.get('/test-game', function (req, res) {
-    res.send(getGameSequence("5d83359f638941340c294d3e"));
-});
-
 if (fs.existsSync(clientDistPath)) {
     app.use(express.static(clientDistPath));
     app.get('*', function (req, res) {
@@ -945,8 +1315,8 @@ if (fs.existsSync(clientDistPath)) {
 const port = process.env.PORT || 3000;
 const hostname = process.env.HOST || process.env.HOST_TEST || '0.0.0.0';
 
-http.listen(port, hostname, function () {
-    console.log("PORT", port, "hostname", hostname)
+const server = http.listen(port, hostname, function () {
+    console.log("PORT", port, "hostname", hostname);
     console.log('server listening on ', port);
     mongoClient(() => {
         console.log('connected to database server');
@@ -958,3 +1328,18 @@ http.listen(port, hostname, function () {
             });
     });
 });
+
+const gracefulShutdown = (signal) => {
+    console.log(`Received ${signal}, shutting down gracefully...`);
+    server.close(() => {
+        console.log('HTTP server closed.');
+        process.exit(0);
+    });
+    setTimeout(() => {
+        console.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+    }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

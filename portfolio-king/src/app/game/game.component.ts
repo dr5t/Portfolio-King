@@ -33,6 +33,10 @@ export class GameComponent implements OnInit {
   public diceAnimationTimer: any;
   public waitingTimer: any;
 
+  get isSpectator(): boolean {
+    return this.user && (this.user.isSpectator || this.user.userType === 'spectator');
+  }
+
   constructor(private portfolioService: PortfolioService,
               private activatedRoute: ActivatedRoute,
               private route: Router) {

@@ -1,47 +1,87 @@
 <div class="team-details team-{{teamIndex}}"
      [ngClass]="(round && round?.investment && round?.investment?.length > 0 && leadStatus === 'active')?'active':''">
-  <p class="team-name">{{team?.name}} <span *ngIf="leadStatus === 'active'">*</span></p>
-  <div class="team-round-error" *ngIf="!round || !round?.investment || round?.investment?.length === 0">
-    No rounds Yet
+  <div class="team-header-bar">
+    <div class="team-title-wrap">
+      <span class="team-badge">Team {{teamIndex}}</span>
+      <h3 class="team-name">{{team?.name}}</h3>
+    </div>
+    <span class="lead-badge" *ngIf="round && round?.investment && round?.investment?.length > 0 && leadStatus === 'active'">
+      ★ Portfolio Leader
+    </span>
   </div>
+
+  <div class="team-round-error" *ngIf="!round || !round?.investment || round?.investment?.length === 0">
+    <div class="empty-state-wrap">
+      <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      <p class="empty-state-text">No completed rounds yet</p>
+      <span class="empty-state-sub">Awaiting quarterly allocation and dice roll progression</span>
+    </div>
+  </div>
+
   <div *ngIf="round && round?.investment && round?.investment?.length > 0" class="team-detail-box">
-    <table>
-      <tr>
-        <th>Investment Options</th>
-        <th>Invested Value</th>
-        <th>Return Rate</th>
-        <th>Total Value</th>
-      </tr>
-      <tr *ngFor="let r of round?.investment">
-        <td [ngClass]="{'active': (r?.name === currRound), 'game': (viewStatus === 'game')}">
-          {{r?.name | investmentName}}
-        </td>
-        <td>{{r?.value | number:'0.0-2'}}</td>
-        <td>{{r?.return_rate | number:'0.0-2'}}</td>
-        <td>{{ r?.return_value | number:'0.0-2'}}</td>
-      </tr>
-    </table>
-    <div class="separation" *ngIf="team?.loans && team?.loans?.length > 0 && viewStatus === 'status'"></div>
-    <table *ngIf="team?.loans && team?.loans?.length > 0 && viewStatus === 'status'">
-      <tr>
-        <th>Loan principle</th>
-        <th>Loan Balance</th>
-        <th>Loan Rate</th>
-        <th>Loan EMI</th>
-      </tr>
-      <tr *ngFor="let l of team?.loans">
-          <td>{{l?.amount | number:'0.0-2'}}</td>
-          <td>{{l?.balance | number:'0.0-2'}} </td>
-          <td>{{l?.rate}}</td>
-          <td>{{l?.pmt | number:'0.0-2'}}</td>
-      </tr>
-    </table>
-    <div>
-      <div class="separation"></div>
-      <div class="round-summary">
-        <div class="summary-row"><span>Total Portfolio Value</span><span>{{round.total_portfolio_value | number:'0.0-2'}}</span></div>
-        <div class="summary-row" *ngIf="viewStatus === 'status'">
-          <span>Average Return</span><span>{{round?.returnAvg}}</span></div>
+    <div class="table-scroll-container">
+      <table class="fintech-table">
+        <thead>
+          <tr>
+            <th>Investment Option</th>
+            <th class="text-right">Invested Value</th>
+            <th class="text-right">Return Rate</th>
+            <th class="text-right">Total Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of round?.investment">
+            <td [ngClass]="{'active': (r?.name === currRound), 'game': (viewStatus === 'game')}" class="instrument-cell">
+              <span class="active-indicator" *ngIf="r?.name === currRound">▶</span>
+              {{r?.name | investmentName}}
+            </td>
+            <td class="text-right tabular-nums">{{r?.value | inrCurrency}}</td>
+            <td class="text-right tabular-nums" [class.text-profit]="r?.return_rate > 0" [class.text-loss]="r?.return_rate < 0">
+              {{r?.return_rate > 0 ? '+' : ''}}{{r?.return_rate | number:'0.2-2'}}%
+            </td>
+            <td class="text-right tabular-nums font-semibold">{{r?.return_value | inrCurrency}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="loan-breakdown-section" *ngIf="team?.loans && team?.loans?.length > 0 && viewStatus === 'status'">
+      <h4 class="sub-table-title">Active Loan Obligations</h4>
+      <div class="table-scroll-container">
+        <table class="fintech-table loan-table">
+          <thead>
+            <tr>
+              <th>Principal</th>
+              <th>Balance</th>
+              <th>Interest Rate</th>
+              <th>Quarterly EMI</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let l of team?.loans">
+              <td class="tabular-nums">{{l?.amount | inrCurrency}}</td>
+              <td class="tabular-nums">{{l?.balance | inrCurrency}}</td>
+              <td class="tabular-nums">{{l?.rate}}% p.a.</td>
+              <td class="tabular-nums">{{l?.pmt | inrCurrency}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="round-summary-card">
+      <div class="summary-row">
+        <span class="summary-label">Total Portfolio Value</span>
+        <span class="summary-val tabular-nums">{{round.total_portfolio_value | inrCurrency}}</span>
+      </div>
+      <div class="summary-row" *ngIf="viewStatus === 'status'">
+        <span class="summary-label">Quarterly Return Average</span>
+        <span class="summary-val tabular-nums" [class.text-profit]="round?.returnAvg > 0" [class.text-loss]="round?.returnAvg < 0">
+          {{round?.returnAvg > 0 ? '+' : ''}}{{round?.returnAvg | number:'0.2-2'}}%
+        </span>
       </div>
     </div>
   </div>
