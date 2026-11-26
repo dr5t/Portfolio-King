@@ -17,6 +17,7 @@
     "node": "^26.0.0 || ^24.15.0",
     "npm": ">=11.0.0"
   },
+  "private": true,
   "author": "",
-  "license": "ISC"
+  "license": "SEE LICENSE IN LICENSE"
 }

@@ -12,6 +12,7 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-3.7-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-010101?style=flat-square&logo=socketdotio&logoColor=white)](https://socket.io)
 [![Render](https://img.shields.io/badge/Deployed%20on-Render-46E3B7?style=flat-square&logo=render&logoColor=white)](https://render.com)
+[![License: Source Available](https://img.shields.io/badge/License-Source%20Available%20%2F%20All%20Rights%20Reserved-171717?style=flat-square)](LICENSE)
 
 <p align="center">
   <strong>Build portfolios. Manage risk. Compete in dynamic financial markets.</strong>
@@ -560,8 +561,8 @@ Portfolio King is configured for single-click deployment on **Render** using the
 1. **Connect Repository:** Link your GitHub repository `https://github.com/dr5t/Portfolio-King` on the Render Dashboard.
 2. **Select Blueprint:** Render will automatically detect `render.yaml`.
 3. **Configure Environment Variables:**
-   - `NODE_VERSION`: `22.14.0`
-   - `MONGODB_URI`: Your MongoDB Atlas connection string (e.g., `mongodb+srv://user:pass@cluster.mongodb.net/portfolio?retryWrites=true&w=majority`).
+   - `NODE_VERSION`: `26.13.1`
+   - `MONGODB_URI`: Your MongoDB Atlas connection string (e.g., `mongodb+srv://<username>:<password>@cluster.mongodb.net/portfolio?retryWrites=true&w=majority`).
    - `ADMIN_USERNAME`: Master administrator username.
    - `ADMIN_PASSWORD`: High-entropy master administrator password.
 4. **Deploy:** Render will trigger the build pipeline:
@@ -640,13 +641,20 @@ node scratch/run-e2e-auth-multiplayer.js
 ## <img src="docs/assets/icons/license.svg" width="22" height="22" alt="" valign="middle" /> License & Attribution
 
 ### Original Project Attribution
-- **Creator & Author:** Shaurya ([@dr5t](https://github.com/dr5t))
+- **Creator & Author:** Shaurya Tiwari ([@dr5t](https://github.com/dr5t))
 - **Repository:** [dr5t/Portfolio-King](https://github.com/dr5t/Portfolio-King)
 
-### License
-This project is licensed under the **ISC License**. See the repository history for detailed rights and permissions.
+### Source-Available Proprietary License
+Portfolio King is publicly available for technical inspection, educational evaluation, and demonstration purposes. Public accessibility does **not** grant unrestricted permission to reuse, copy, redistribute, adapt, or commercially exploit this software.
 
-### Third-Party Assets
+- **Protected Materials:** All original contributions, modern architectures, responsive interfaces, custom UI/UX design, administrative tools, security mechanisms, visual branding, and documentation authored by Shaurya Tiwari (@dr5t) are protected under the **Portfolio King — Source-Available Proprietary License** (all rights reserved). Prior written authorization is required for copying, redistribution, adaptation, or commercial use beyond permitted evaluation activities.
+- **Unauthorized Use:** Unauthorized reproduction, redistribution, adaptation, commercial exploitation, or misrepresentation of copyrighted materials covered by this license may constitute copyright infringement. The copyright holder reserves the right to pursue available legal remedies, including applicable copyright takedown procedures, where infringement is established.
+- **Third-Party & Predecessor Code:** Open-source third-party dependencies (e.g., Angular, Express, Socket.IO, MongoDB Node.js driver, Lottie-web, jQuery) and code portions originally released under the ISC license remain governed by their respective licenses.
+
+For full legal terms and conditions, refer to the root [LICENSE](LICENSE) file. For permissions and inquiries, visit [https://github.com/dr5t](https://github.com/dr5t).
+
+### Third-Party Assets & Libraries
+- **Frameworks & Libraries:** Angular (MIT), Express (MIT), Socket.IO (MIT), MongoDB Node.js Driver (Apache 2.0), RxJS (Apache 2.0), jQuery (MIT).
 - **Technology Logos:** Simple Icons, Devicon, and respective trademark owners.
 - **Vector Icons:** Lucide Icons.
 - **Loader Animation:** LottieFiles.

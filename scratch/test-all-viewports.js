@@ -237,6 +237,45 @@ async function run() {
       }
     }
 
+    console.log('\n--- PHASE 8: Testing Player Workflow (Waiting Room, Investment Terminal, Trading Board) ---');
+    // Create a game via admin /create-game endpoint
+    const createGameRes = await page.evaluate(async (port) => {
+      const res = await fetch(`http://127.0.0.1:${port}/create-game`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Viewport Simulation Cohort' })
+      });
+      return await res.json();
+    }, PORT);
+
+    const testGame = (createGameRes.ops && createGameRes.ops[0]) || createGameRes;
+    const testGameId = testGame._id;
+    console.log(`✓ Created test simulation game ID: ${testGameId}`);
+
+    // Generate teams for this game
+    const genTeamsRes = await page.evaluate(async (port, gId) => {
+      const res = await fetch(`http://127.0.0.1:${port}/api/teams/generate-all`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameId: gId })
+      });
+      return await res.json();
+    }, PORT, testGameId);
+
+    const teams = genTeamsRes.teams || [];
+    console.log(`✓ Generated ${teams.length} teams for test simulation`);
+
+    const playerTestViewports = [VIEWPORTS[0], VIEWPORTS[2], VIEWPORTS[7], VIEWPORTS[10], VIEWPORTS[15]];
+    for (const vp of playerTestViewports) {
+      await checkPageResponsiveness('Waiting Room', `http://127.0.0.1:${PORT}/game-status/${testGameId}`, vp);
+    }
+    for (const vp of playerTestViewports) {
+      await checkPageResponsiveness('Investment Avenue', `http://127.0.0.1:${PORT}/investment-avenue/${testGameId}`, vp);
+    }
+    for (const vp of playerTestViewports) {
+      await checkPageResponsiveness('Trading Board', `http://127.0.0.1:${PORT}/game/${testGameId}`, vp);
+    }
+
     console.log('\n========================================================================');
     console.log(`TOTAL AUDIT CHECKS: ${report.length}`);
     console.log(`PASSED: ${report.filter(r => r.pass).length}`);

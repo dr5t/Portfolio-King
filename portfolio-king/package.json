@@ -9,6 +9,7 @@
     "test": "ng test"
   },
   "private": true,
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@angular/animations": "^22.3.0",
     "@angular/common": "^22.3.0",

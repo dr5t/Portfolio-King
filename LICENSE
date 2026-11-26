@@ -1,0 +1,65 @@
+# Portfolio King — Source-Available Proprietary License
+
+Copyright © 2026 Shaurya Tiwari (@dr5t).  
+All rights reserved for materials owned by the copyright holder.
+
+---
+
+## 1. Scope & Ownership
+
+This license governs the source code, user interface designs, visual assets, documentation, architectural implementations, and original creative and technical contributions authored and legally owned by **Shaurya Tiwari (@dr5t)** ("Copyright Holder") in the **Portfolio King** repository.
+
+Third-party dependencies, open-source libraries, and code portions created prior to the Copyright Holder's original contributions remain subject to their respective original licenses (including MIT, Apache 2.0, and ISC). This license applies to all original contributions, modern architectures, security systems, interface designs, administrative suites, simulation extensions, and proprietary materials created by the Copyright Holder.
+
+---
+
+## 2. Permitted Activities
+
+Subject to the terms of this license, any individual or entity is permitted to:
+
+1. **View and Inspect:** View, read, and inspect the publicly available source code and documentation.
+2. **Technical & Educational Review:** Review, study, and examine the application for personal educational, academic, portfolio review, and technical evaluation purposes.
+3. **GitHub Platform Features:** Utilize GitHub's native viewing, starring, and forking functionality strictly in accordance with GitHub's Terms of Service, solely for personal evaluation or private technical review.
+4. **Demonstration & Verification:** Run the application locally for evaluation, demonstration, or testing purposes.
+
+Any use, reproduction, distribution, or adaptation of protected project materials beyond these explicitly enumerated permissions requires prior written authorization from the Copyright Holder.
+
+---
+
+## 3. Restricted Activities (Without Prior Written Authorization)
+
+Except as explicitly permitted in Section 2, the following activities are strictly prohibited without prior written permission from the Copyright Holder:
+
+- **Copying & Reproduction:** Copying, cloning, reproducing, or duplicating protected source code or assets outside permitted personal evaluation.
+- **Redistribution & Republishing:** Republishing, mirroring, distributing, broadcasting, or transmitting protected project materials in whole or in part through any public, private, or commercial distribution channel.
+- **Reuse in Other Projects:** Extracting, adapting, or incorporating protected application components, algorithms, architectures, styles, or logic into another project or codebase.
+- **Derivative Works:** Modifying, translating, adapting, and distributing derivative works based upon protected materials.
+- **Commercial Exploitation:** Utilizing, deploying, hosting, offering, or monetizing protected project materials, whether as software-as-a-service (SaaS), hosted service, consulting deliverable, commercial training simulation, or commercial product.
+- **Sale & Sublicensing:** Selling, licensing, sublicensing, leasing, renting, or assigning protected project materials.
+- **Rebranding & Attribution Removal:** Removing, altering, or obscuring copyright notices, author attribution, watermarks, or license headers; or rebranding the application and presenting it as another party's original creation.
+- **Cosmetic Evasion:** Reproducing protected portions of the implementation through superficial modifications, variable renaming, file restructuring, translation to other programming languages, or cosmetic styling changes.
+- **Asset Exploitation:** Copying, adapting, or distributing original UI artwork, graphics, logos, branding, or documentation.
+
+Attribution alone does not constitute permission to copy, reuse, or redistribute protected materials.
+
+---
+
+## 4. Unauthorized Use and Enforcement
+
+Unauthorized reproduction, redistribution, adaptation, commercial exploitation, or misrepresentation of copyrighted materials covered by this license may constitute copyright infringement. The copyright holder reserves the right to pursue available legal remedies, including applicable copyright takedown procedures (such as DMCA takedown requests on hosting platforms), where infringement is established.
+
+This license does not restrict anyone from independently developing similar functionality from scratch without copying or referencing protected materials, nor does it affect rights granted to the public under applicable statutory copyright exceptions and limitations (such as fair use or fair dealing).
+
+---
+
+## 5. Third-Party Licenses & Prior Grants
+
+This license does not retroactively revoke or modify any permissions previously granted under applicable open-source licenses (such as ISC, MIT, or Apache 2.0) for third-party libraries or predecessor code portions that were originally released under such terms. All third-party dependencies incorporated into Portfolio King remain governed by their respective licenses.
+
+---
+
+## 6. Permission Requests & Inquiries
+
+For inquiries regarding commercial licensing, permission to use protected materials, educational licensing, or reuse requests, contact the Copyright Holder via:
+
+**GitHub Profile:** [https://github.com/dr5t](https://github.com/dr5t)

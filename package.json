@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Portfolio King - Multiplayer Financial Strategy Game",
+  "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "build": "npm --prefix portfolio-king-server install && npm --prefix portfolio-king install && npm --prefix portfolio-king run build",
     "start": "node portfolio-king-server/index.js",
