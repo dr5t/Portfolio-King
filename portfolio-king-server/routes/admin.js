@@ -1,28 +1,37 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
+const auth = require('../auth');
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin@1234';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-router.get('/login', function (req, res) {
-    let response = {
+router.post('/login', function (req, res) {
+    const { username, password, userType } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ message: 'Missing required fields.' });
     }
-    if(req.query.userType === 'Admin'){
-        if(req.query.username === ADMIN_USERNAME && req.query.password === ADMIN_PASSWORD){
-            response.isAdmin = 'true';
-            response.userName= ADMIN_USERNAME;
+    if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+        return res.status(500).json({ message: 'Admin credentials not configured on server.' });
+    }
+    if (userType === 'Admin') {
+        if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+            const token = auth.createSession({
+                role: 'admin',
+                userName: ADMIN_USERNAME
+            });
+            return res.json({
+                isAdmin: 'true',
+                userName: ADMIN_USERNAME,
+                token
+            });
         } else {
-            response.message = 'authentication failed';
+            return res.status(401).json({ message: 'Invalid Admin ID or Password.' });
         }
-    } else if(req.query.userType === 'Player'){
-        response.isPlayer = 'true';
-        response.userName= req.query.username;
     }
-    response.id = req.query.socket_id;
-    res.send(response);
-})
+    return res.status(400).json({ message: 'Invalid user type.' });
+});
 
-router.get('/', function(req, res){
+router.get('/', function (req, res) {
     res.send('Welcome to server');
 });
 

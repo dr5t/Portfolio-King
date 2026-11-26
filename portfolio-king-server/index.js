@@ -11,11 +11,12 @@ const mongoClient = require('./db/portfolio_db').mongoConnect;
 const getDb = require('./db/portfolio_db').getDb;
 const ObjectID = require('./db/portfolio_db').ObjectID;
 const io = require('./socket').init(http);
+const auth = require('./auth');
 const formula = require('./formulas/formulas').formulas;
 const investmentReturnSheet = require('./investments/investments').investmentReturnSheet;
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin@1234';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const clientDistPath = path.resolve(__dirname, '../portfolio-king/dist/Client');
 
 var users = [];
@@ -35,40 +36,311 @@ app.use(function (req, res, next) {
     next();
 });
 
-app.get('/login', function (req, res, next) {
-    if (!req.query.userType) {
-        if (fs.existsSync(clientDistPath)) {
-            return res.sendFile(path.join(clientDistPath, 'index.html'));
-        }
-        return next();
+app.get('/login', function (req, res) {
+    if (fs.existsSync(clientDistPath)) {
+        return res.sendFile(path.join(clientDistPath, 'index.html'));
     }
-    let response = {};
-    console.log(req.query.userType);
-    if (req.query.userType === 'Admin') {
-        if (req.query.username === ADMIN_USERNAME && req.query.password === ADMIN_PASSWORD) {
-            response.isAdmin = 'true';
-            response.userName = ADMIN_USERNAME;
+    res.status(404).send('Not Found');
+});
+
+app.post('/login', async function (req, res) {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+    const rateCheck = auth.checkRateLimit(ip);
+    if (!rateCheck.allowed) {
+        return res.status(429).json({ message: 'Too many login attempts. Please try again later.' });
+    }
+
+    const { userType, username, password, socketId } = req.body;
+    if (userType === 'Admin') {
+        if (!username || !password) {
+            return res.status(400).json({ message: 'Missing required fields.' });
+        }
+        if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+            return res.status(500).json({ message: 'Admin credentials not configured on server.' });
+        }
+        if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+            auth.resetRateLimit(ip);
+            const token = auth.createSession({
+                role: 'admin',
+                userName: ADMIN_USERNAME,
+                socketId
+            });
             users.forEach(user => {
-                if (user.socketId === req.query.socketId) {
+                if (user.socketId === socketId) {
                     user.type = 'admin';
-                    user.name = req.query.username;
+                    user.name = ADMIN_USERNAME;
+                    user.token = token;
                 }
             });
+            return res.json({
+                isAdmin: 'true',
+                userName: ADMIN_USERNAME,
+                token,
+                socketId
+            });
         } else {
-            response.message = 'authentication failed';
+            auth.recordFailedAttempt(ip);
+            return res.status(401).json({ message: 'Invalid Admin ID or Password.' });
         }
-    } else if (req.query.userType === 'Player') {
-        response.isPlayer = 'true';
-        response.userName = req.query.username;
-        users.forEach(user => {
-            if (user.socketId === req.query.socketId) {
-                user.type = 'player';
-                user.name = req.query.username;
+    } else if (userType === 'Player') {
+        const teamId = (req.body.teamId || username || '').trim();
+        if (!teamId || !password) {
+            return res.status(400).json({ message: 'Missing required fields.' });
+        }
+        try {
+            const db = getDb();
+            const escapedTeamId = teamId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const team = await db.collection('teams').findOne({
+                teamId: { $regex: new RegExp('^' + escapedTeamId + '$', 'i') }
+            });
+            if (!team) {
+                auth.recordFailedAttempt(ip);
+                return res.status(401).json({ message: 'Invalid Team ID or Password.' });
             }
-        });
+            if (team.status === 'disabled') {
+                return res.status(403).json({ message: 'Team account disabled.' });
+            }
+            if (!auth.verifyPassword(password, team.passwordHash)) {
+                auth.recordFailedAttempt(ip);
+                return res.status(401).json({ message: 'Invalid Team ID or Password.' });
+            }
+
+            const activeSession = auth.findSessionByTeamId(team.teamId);
+            if (activeSession && activeSession.socketId && io.sockets && io.sockets.connected && io.sockets.connected[activeSession.socketId]) {
+                if (activeSession.socketId !== socketId) {
+                    return res.status(409).json({ message: 'Team already connected.' });
+                }
+            }
+
+            auth.resetRateLimit(ip);
+            const token = auth.createSession({
+                role: 'player',
+                teamId: team.teamId,
+                teamName: team.name,
+                gameId: team.gameId,
+                socketId
+            });
+            users.forEach(user => {
+                if (user.socketId === socketId) {
+                    user.type = 'player';
+                    user.name = team.name;
+                    user.teamId = team.teamId;
+                    user.gameId = team.gameId;
+                    user.token = token;
+                }
+            });
+            return res.json({
+                isPlayer: 'true',
+                userName: team.name,
+                teamId: team.teamId,
+                gameId: team.gameId,
+                token,
+                socketId
+            });
+        } catch (err) {
+            return res.status(500).json({ message: 'Server unavailable.' });
+        }
+    } else {
+        return res.status(400).json({ message: 'Missing required fields.' });
     }
-    response.socketId = req.query.socketId;
-    res.send(response);
+});
+
+app.get('/api/teams', auth.authenticateAdmin, async function (req, res) {
+    try {
+        const db = getDb();
+        const query = {};
+        if (req.query.gameId) {
+            query.gameId = String(req.query.gameId);
+        }
+        const teams = await db.collection('teams').find(query).toArray();
+        const sanitized = teams.map(t => {
+            const session = auth.findSessionByTeamId(t.teamId);
+            const isConnected = !!(session && session.socketId && io.sockets && io.sockets.connected && io.sockets.connected[session.socketId]);
+            return {
+                _id: t._id,
+                teamId: t.teamId,
+                name: t.name,
+                gameId: t.gameId,
+                status: t.status || 'active',
+                isConnected,
+                createdAt: t.createdAt
+            };
+        });
+        res.json(sanitized);
+    } catch (err) {
+        res.status(500).json({ message: 'Server unavailable.' });
+    }
+});
+
+app.post('/api/teams', auth.authenticateAdmin, async function (req, res) {
+    try {
+        const { gameId, name } = req.body;
+        if (!gameId || !name) {
+            return res.status(400).json({ message: 'Missing required fields.' });
+        }
+        const db = getDb();
+        const existingCount = await db.collection('teams').countDocuments({ gameId: String(gameId) });
+        if (existingCount >= 4) {
+            return res.status(400).json({ message: 'Game already has maximum 4 teams.' });
+        }
+        let teamId = req.body.teamId ? req.body.teamId.trim().toUpperCase() : null;
+        if (!teamId) {
+            teamId = auth.generateTeamId(1, existingCount + 1);
+        }
+        const dup = await db.collection('teams').findOne({ teamId });
+        if (dup) {
+            return res.status(400).json({ message: `Team ID ${teamId} already exists.` });
+        }
+        const rawPassword = req.body.password && req.body.password.trim() ? req.body.password.trim() : auth.generatePassword();
+        const passwordHash = auth.hashPassword(rawPassword);
+        const newTeam = {
+            teamId,
+            name: name.trim(),
+            passwordHash,
+            gameId: String(gameId),
+            status: 'active',
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+        const insertResult = await db.collection('teams').insertOne(newTeam);
+        res.json({
+            team: {
+                _id: insertResult.insertedId,
+                teamId: newTeam.teamId,
+                name: newTeam.name,
+                gameId: newTeam.gameId,
+                status: newTeam.status
+            },
+            rawPassword
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Server unavailable.' });
+    }
+});
+
+app.post('/api/teams/generate-all', auth.authenticateAdmin, async function (req, res) {
+    try {
+        const { gameId } = req.body;
+        if (!gameId) {
+            return res.status(400).json({ message: 'Missing required fields.' });
+        }
+        const db = getDb();
+        const allGames = await getAllGames();
+        let gameIndex = 1;
+        allGames.forEach((g, idx) => {
+            if (String(g._id) === String(gameId)) gameIndex = idx + 1;
+        });
+
+        const existingTeams = await db.collection('teams').find({ gameId: String(gameId) }).toArray();
+        const currentCount = existingTeams.length;
+        if (currentCount >= 4) {
+            return res.status(400).json({ message: 'Game already has 4 teams.' });
+        }
+
+        const generated = [];
+        for (let i = currentCount + 1; i <= 4; i++) {
+            const teamId = auth.generateTeamId(gameIndex, i);
+            const name = `Team ${i}`;
+            const rawPassword = auth.generatePassword();
+            const passwordHash = auth.hashPassword(rawPassword);
+            const teamDoc = {
+                teamId,
+                name,
+                passwordHash,
+                gameId: String(gameId),
+                status: 'active',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            const result = await db.collection('teams').insertOne(teamDoc);
+            generated.push({
+                _id: result.insertedId,
+                teamId,
+                name,
+                gameId: String(gameId),
+                status: 'active',
+                rawPassword
+            });
+        }
+        res.json({ teams: generated });
+    } catch (err) {
+        res.status(500).json({ message: 'Server unavailable.' });
+    }
+});
+
+app.put('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
+    try {
+        const db = getDb();
+        const updates = { updatedAt: new Date() };
+        if (req.body.name) updates.name = req.body.name.trim();
+        if (req.body.status) updates.status = req.body.status;
+        const result = await db.collection('teams').findOneAndUpdate(
+            { _id: new ObjectID(req.params.id) },
+            { $set: updates },
+            { returnOriginal: false }
+        );
+        if (!result.value) {
+            return res.status(404).json({ message: 'Team not found.' });
+        }
+        res.json(result.value);
+    } catch (err) {
+        res.status(500).json({ message: 'Server unavailable.' });
+    }
+});
+
+app.post('/api/teams/:id/reset-password', auth.authenticateAdmin, async function (req, res) {
+    try {
+        const db = getDb();
+        const rawPassword = req.body.password && req.body.password.trim() ? req.body.password.trim() : auth.generatePassword();
+        const passwordHash = auth.hashPassword(rawPassword);
+        const team = await db.collection('teams').findOneAndUpdate(
+            { _id: new ObjectID(req.params.id) },
+            { $set: { passwordHash, updatedAt: new Date() } },
+            { returnOriginal: false }
+        );
+        if (!team.value) {
+            return res.status(404).json({ message: 'Team not found.' });
+        }
+        const session = auth.findSessionByTeamId(team.value.teamId);
+        if (session) {
+            auth.deleteSession(session.token);
+        }
+        res.json({ teamId: team.value.teamId, rawPassword });
+    } catch (err) {
+        res.status(500).json({ message: 'Server unavailable.' });
+    }
+});
+
+app.delete('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
+    try {
+        const db = getDb();
+        const team = await db.collection('teams').findOne({ _id: new ObjectID(req.params.id) });
+        if (!team) {
+            return res.status(404).json({ message: 'Team not found.' });
+        }
+        const game = await db.collection('games').findOne({ _id: new ObjectID(team.gameId) });
+        if (game && game.players) {
+            const player = game.players.find(p => p.teamId === team.teamId || p.name === team.name);
+            if (player && player.rounds && player.rounds.length > 0) {
+                return res.status(400).json({ message: 'Cannot delete team with existing game history.' });
+            }
+            await db.collection('games').updateOne(
+                { _id: new ObjectID(team.gameId) },
+                { $pull: { players: { $or: [{ teamId: team.teamId }, { name: team.name }] } } }
+            );
+            games.forEach(g => {
+                if (String(g._id) === String(team.gameId)) {
+                    g.players = g.players.filter(p => p.teamId !== team.teamId && p.name !== team.name);
+                }
+            });
+        }
+        await db.collection('teams').deleteOne({ _id: new ObjectID(req.params.id) });
+        const session = auth.findSessionByTeamId(team.teamId);
+        if (session) auth.deleteSession(session.token);
+        res.json({ message: 'Team deleted successfully.' });
+    } catch (err) {
+        res.status(500).json({ message: 'Server unavailable.' });
+    }
 });
 
 app.post('/logout', function (req, res) {
