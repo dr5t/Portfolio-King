@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, ElementRef, HostListener, OnInit, ViewChild} from '@angular/core';
 import {PortfolioService} from "./services/portfolio/portfolio.service";
 import {UtilityService} from "./shared/utils/utility-service";
 import {Router, NavigationEnd, ActivatedRoute} from "@angular/router";
@@ -15,11 +15,18 @@ export class AppComponent implements OnInit {
   public isFullscreen: boolean = false;
   public sidebarCollapsed: boolean = false;
   public mobileNavOpen: boolean = false;
+  public notificationsOpen: boolean = false;
+  @ViewChild('notificationControl', { static: false }) notificationControl: ElementRef;
 
   constructor(public portfolioService: PortfolioService,
               private router: Router,
               private activatedRoute: ActivatedRoute) {
     this.init();
+    this.portfolioService.sessionExpired.subscribe(message => {
+      UtilityService.showError(message);
+      this.notificationsOpen = false;
+      this.router.navigate(['/login']);
+    });
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
         this.currentUrl = event.urlAfterRedirects || event.url;
@@ -116,6 +123,28 @@ export class AppComponent implements OnInit {
     this.mobileNavOpen = !this.mobileNavOpen;
   }
 
+  toggleNotifications() {
+    this.notificationsOpen = !this.notificationsOpen;
+  }
+
+  closeNotifications() {
+    this.notificationsOpen = false;
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeNotificationsOutside(event: MouseEvent) {
+    const target = event.target as Node;
+    if (this.notificationControl &&
+        !this.notificationControl.nativeElement.contains(target)) {
+      this.closeNotifications();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  closeNotificationsOnEscape() {
+    this.closeNotifications();
+  }
+
   toggleAudio() {
     this.isMuted = !this.isMuted;
     this.portfolioService.isMuted = this.isMuted;
@@ -136,9 +165,16 @@ export class AppComponent implements OnInit {
   }
 
   onLogout() {
-    this.portfolioService.onLogout().subscribe(() => {
-      this.router.navigate(['/login']);
-    });
+    this.portfolioService.onLogout().subscribe(
+      () => this.router.navigate(['/login']),
+      error => {
+        if (error.status === 401) {
+          this.portfolioService.clearExpiredSession('Your session has expired. Please sign in again.');
+        } else {
+          UtilityService.showError('Unable to log out. Please try again.');
+        }
+      }
+    );
   }
 
   onCloseError() {

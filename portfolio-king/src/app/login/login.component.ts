@@ -68,10 +68,12 @@ export class LoginComponent implements OnInit {
         if (res.isAdmin === "true" && this.userType === 'Admin') {
           this.portfolioService.user = res;
           this.portfolioService.setLoginObj(res);
+          this.portfolioService.authenticateSocket();
           await this.router.navigate(['/']);
         } else if (res.isPlayer === 'true' && this.userType === 'Player') {
           this.portfolioService.user = res;
           this.portfolioService.setLoginObj(res);
+          this.portfolioService.authenticateSocket();
           await this.router.navigate(['/']);
         } else {
           this.portfolioService.user = false;

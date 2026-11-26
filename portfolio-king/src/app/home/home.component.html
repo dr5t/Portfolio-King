@@ -7,9 +7,21 @@
         <h1 class="page-title">Games</h1>
         <p class="page-subtitle">Create, manage and monitor game sessions</p>
       </div>
+      <div class="bulk-action-menu game-bulk-action-menu" (click)="$event.stopPropagation()">
+        <span>{{selectedGamesCount}} selected</span>
+        <button type="button" class="btn btn-secondary" (click)="toggleBulkActions('games', $event)">Actions
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="bulk-action-dropdown" *ngIf="bulkActionsOpen === 'games'">
+          <button type="button" [disabled]="selectedGamesCount === 0" (click)="openBulkDelete('games', false)">Delete Selected Games</button>
+          <button type="button" class="item-danger" [disabled]="allGames.length === 0" (click)="openBulkDelete('games', true)">Delete All Games</button>
+        </div>
+      </div>
 
       <div class="header-action-btns">
-        <button type="button" class="btn btn-primary btn-create-game" (click)="onCreateGame()">
+        <button type="button" class="btn btn-primary btn-create-game" (click)="openCreateGameModal()">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -28,7 +40,7 @@
           <span>{{showManageTeams ? 'Close Team Manager' : 'Manage Teams'}}</span>
         </button>
 
-        <button type="button" class="btn btn-secondary" (click)="onGetGames()" title="Refresh game list">
+        <button type="button" class="btn btn-secondary" (click)="onGetGames()" [disabled]="refreshPending" title="Refresh game list">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="23 4 23 10 17 10"></polyline>
             <polyline points="1 20 1 14 7 14"></polyline>
@@ -49,7 +61,7 @@
 
         <div class="session-selector-wrap">
           <label class="selector-label" for="session-select">Selected Session:</label>
-          <select id="session-select" class="session-dropdown" [(ngModel)]="selectedGameId" (change)="loadTeamsForSelectedGame()">
+          <select id="session-select" class="session-dropdown" [(ngModel)]="selectedGameId" (change)="onSelectManageGame(selectedGameId)">
             <option *ngFor="let g of allGames" [value]="g._id">
               {{g.name || 'Game ' + g._index}} ({{g.game_status || 'waiting'}})
             </option>
@@ -108,10 +120,31 @@
       </div>
 
       <!-- Teams Roster Table -->
+      <div class="bulk-action-toolbar">
+        <span>{{selectedTeamsCount}} selected</span>
+        <div class="bulk-action-menu" (click)="$event.stopPropagation()">
+          <button type="button" class="btn btn-secondary" (click)="toggleBulkActions('teams', $event)">
+            Actions
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="bulk-action-dropdown" *ngIf="bulkActionsOpen === 'teams'">
+            <button type="button" [disabled]="selectedTeamsCount === 0" (click)="openBulkDelete('teams', false)">Delete Selected Teams</button>
+            <button type="button" class="item-danger" [disabled]="teamsList.length === 0" (click)="openBulkDelete('teams', true)">Delete All Teams</button>
+          </div>
+        </div>
+      </div>
       <div class="table-card">
         <table class="reference-table">
           <thead>
             <tr>
+              <th class="selection-column">
+                <input type="checkbox" aria-label="Select all teams"
+                       [checked]="allTeamsSelected"
+                       [indeterminate]="selectedTeamsCount > 0 && !allTeamsSelected"
+                       (change)="toggleAllTeamsSelection($event.target.checked)">
+              </th>
               <th>Team ID</th>
               <th>Team Name</th>
               <th>Status</th>
@@ -121,6 +154,11 @@
           </thead>
           <tbody>
             <tr *ngFor="let t of teamsList">
+              <td class="selection-column">
+                <input type="checkbox" [attr.aria-label]="'Select ' + t.name"
+                       [checked]="isTeamSelected(t._id)"
+                       (change)="toggleTeamSelection(t._id, $event.target.checked)">
+              </td>
               <td><code>{{t.teamId}}</code></td>
               <td class="font-semibold">
                 <span *ngIf="editingTeamId !== t._id">{{t.name}}</span>
@@ -146,11 +184,11 @@
                   {{t.status === 'disabled' ? 'Enable' : 'Disable'}}
                 </button>
                 <button type="button" class="btn btn-sm btn-outline" (click)="onResetTeamPassword(t)">Reset Password</button>
-                <button type="button" class="btn btn-sm btn-danger" (click)="promptDeleteTeam(t)">Delete</button>
+                <button type="button" class="btn btn-sm btn-danger" [disabled]="deleteTeamPending" (click)="promptDeleteTeam(t)">Delete</button>
               </td>
             </tr>
             <tr *ngIf="teamsList.length === 0">
-              <td colspan="5" class="empty-cell">No teams provisioned for this game yet. Click "Auto-Generate 4 Teams" to initialize.</td>
+              <td colspan="6" class="empty-cell">No teams provisioned for this game yet. Click "Auto-Generate 4 Teams" to initialize.</td>
             </tr>
           </tbody>
         </table>
@@ -186,6 +224,12 @@
       <table class="reference-table games-table">
         <thead>
           <tr>
+            <th class="selection-column">
+              <input type="checkbox" aria-label="Select all filtered games"
+                     [checked]="allFilteredGamesSelected"
+                     [indeterminate]="selectedGamesCount > 0 && !allFilteredGamesSelected"
+                     (change)="toggleAllGamesSelection($event.target.checked)">
+            </th>
             <th style="width: 48px;">#</th>
             <th>Game Name</th>
             <th style="width: 120px;">Game ID</th>
@@ -198,6 +242,11 @@
         </thead>
         <tbody>
           <tr *ngFor="let g of filteredGames; let i = index">
+            <td class="selection-column">
+              <input type="checkbox" [attr.aria-label]="'Select ' + (g.name || 'Game ' + g._index)"
+                     [checked]="isGameSelected(g._id)"
+                     (change)="toggleGameSelection(g._id, $event.target.checked)">
+            </td>
             <!-- Row Number -->
             <td class="row-num text-muted">{{i + 1}}</td>
 
@@ -268,7 +317,7 @@
 
             <!-- Created At -->
             <td class="created-at text-muted">
-              26 Nov 2026, 18:30
+              {{g.timestamp | date:'dd MMM yyyy, HH:mm'}}
             </td>
 
             <!-- Action Controls (Eye, Play/Pause, 3-dots dropdown) -->
@@ -283,8 +332,9 @@
                 </a>
 
                 <!-- Play / Pause Icon Button -->
-                <button type="button" class="action-icon-btn" (click)="onToggleGamePause(g)" 
-                        [title]="g.game_status === 'active' ? 'Pause Game' : 'Resume Game'">
+                <button type="button" class="action-icon-btn" (click)="onToggleGamePause(g)"
+                        *ngIf="g.game_status === 'active' || g.game_status === 'in_progress' || g.game_status === 'paused'"
+                        [title]="g.game_status === 'active' || g.game_status === 'in_progress' ? 'Pause Game' : 'Resume Game'">
                   <svg *ngIf="g.game_status === 'active'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="6" y="4" width="4" height="16"></rect>
                     <rect x="14" y="4" width="4" height="16"></rect>
@@ -312,12 +362,12 @@
                       </svg>
                       Rename
                     </button>
-                    <button type="button" class="dropdown-item" (click)="onDuplicateGame(g); closeActionMenu()">
+                    <button type="button" class="dropdown-item" [disabled]="isDuplicatePending(g._id)" (click)="onDuplicateGame(g); closeActionMenu()">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                       </svg>
-                      Duplicate
+                      {{isDuplicatePending(g._id) ? 'Duplicating…' : 'Duplicate'}}
                     </button>
                     <button type="button" class="dropdown-item" (click)="onExportGameCsv(g); closeActionMenu()">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -349,7 +399,7 @@
           </tr>
 
           <tr *ngIf="filteredGames.length === 0">
-            <td colspan="8" class="empty-cell">No games found matching criteria. Click "+ Create Game" to start a new simulation session.</td>
+            <td colspan="9" class="empty-cell">No games found matching criteria. Click "+ Create Game" to start a new simulation session.</td>
           </tr>
         </tbody>
       </table>
@@ -479,7 +529,9 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="cancelCreateGame()">Cancel</button>
-        <button type="button" class="btn btn-primary" (click)="onCreateGame()">Create Session</button>
+        <button type="button" class="btn btn-primary" [disabled]="createGamePending" (click)="onCreateGame()">
+          {{createGamePending ? 'Creating…' : 'Create Session'}}
+        </button>
       </div>
     </div>
   </div>
@@ -493,15 +545,70 @@
       </div>
       <div class="modal-body">
         <p class="modal-warning">
-          This action will permanently delete <strong>"{{gameToDelete?.name}}"</strong>, revoke all associated team credentials, and invalidate active sessions.
+          This permanently deletes <strong>"{{gameToDelete?.name}}"</strong>. Connected players will be removed from the session; registered team accounts and credentials will be preserved.
         </p>
         <label class="modal-label" for="delete-confirm-input">Type <code>{{gameToDelete?.name}}</code> to confirm:</label>
         <input id="delete-confirm-input" type="text" [(ngModel)]="deleteConfirmGameName" class="input-control">
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="cancelDeleteGame()">Cancel</button>
-        <button type="button" class="btn btn-danger" [disabled]="!deleteConfirmGameName || deleteConfirmGameName.trim().toLowerCase() !== (gameToDelete?.name || '').trim().toLowerCase()" (click)="confirmDeleteGame()">
-          Permanently Delete Game
+        <button type="button" class="btn btn-secondary" [disabled]="deleteGamePending" (click)="cancelDeleteGame()">Cancel</button>
+        <button type="button" class="btn btn-danger"
+                [disabled]="deleteGamePending || !deleteConfirmGameName || deleteConfirmGameName.trim().toLowerCase() !== (gameToDelete?.name || '').trim().toLowerCase()"
+                (click)="confirmDeleteGame()">
+          {{deleteGamePending ? 'Deleting…' : 'Permanently Delete Game'}}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="showBulkDeleteModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title text-loss">
+          {{bulkDeleteAll ? 'Confirm Delete All ' : 'Confirm Delete Selected '}}{{bulkDeleteType === 'games' ? 'Games' : 'Teams'}}
+        </h3>
+        <button type="button" class="modal-close" [disabled]="bulkDeletePending" (click)="cancelBulkDelete()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-warning" *ngIf="bulkDeleteType === 'games'">
+          This permanently deletes {{bulkDeleteAll ? allGames.length : selectedGamesCount}} game(s). Any connected players will be notified and disconnected. Registered team accounts and credentials will be preserved.
+        </p>
+        <p class="modal-warning" *ngIf="bulkDeleteType === 'teams'">
+          This permanently deletes {{bulkDeleteAll ? teamsList.length : selectedTeamsCount}} team account(s). Teams in active games or with historical results cannot be removed.
+        </p>
+        <div *ngIf="bulkDeleteAll">
+          <label class="modal-label" for="bulk-delete-confirm-input">
+            Type <code>{{bulkDeleteType === 'games' ? 'DELETE ALL GAMES' : 'DELETE ALL TEAMS'}}</code> to confirm:
+          </label>
+          <input id="bulk-delete-confirm-input" type="text" [(ngModel)]="bulkConfirmText" class="input-control" autocomplete="off">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" [disabled]="bulkDeletePending" (click)="cancelBulkDelete()">Cancel</button>
+        <button type="button" class="btn btn-danger"
+                [disabled]="bulkDeletePending || (bulkDeleteAll && bulkConfirmText !== (bulkDeleteType === 'games' ? 'DELETE ALL GAMES' : 'DELETE ALL TEAMS'))"
+                (click)="confirmBulkDelete()">
+          {{bulkDeletePending ? 'Deleting…' : (bulkDeleteAll ? 'Delete All ' : 'Delete Selected ') + (bulkDeleteType === 'games' ? 'Games' : 'Teams')}}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="showDeleteConfirm">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title text-loss">Confirm Team Deletion</h3>
+        <button type="button" class="modal-close" [disabled]="deleteTeamPending" (click)="cancelDeleteTeam()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-warning">
+          Permanently delete <strong>{{teamToDelete?.name}}</strong>? Teams in active games or with historical results are protected.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" [disabled]="deleteTeamPending" (click)="cancelDeleteTeam()">Cancel</button>
+        <button type="button" class="btn btn-danger" [disabled]="deleteTeamPending" (click)="confirmDeleteTeam()">
+          {{deleteTeamPending ? 'Deleting…' : 'Delete Team'}}
         </button>
       </div>
     </div>

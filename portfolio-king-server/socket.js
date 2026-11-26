@@ -3,6 +3,7 @@ let io;
 module.exports = {
     init: httpServer => {
         io = require('socket.io')(httpServer, {
+            allowEIO3: true,
             cors: {
                 origin: "*",
                 methods: ["GET", "POST"]

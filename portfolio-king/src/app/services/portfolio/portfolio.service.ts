@@ -9,6 +9,14 @@ import {environment} from "../../../environments/environment";
 
 const STORAGE_KEY = 'login_obj';
 
+export interface AppNotification {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: Date;
+  read: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -18,6 +26,8 @@ export class PortfolioService {
   private _socket;
   private _user: any = false;
   public gameStatus = new Subject<boolean>();
+  public sessionExpired = new Subject<string>();
+  public notifications: AppNotification[] = [];
   public game: any;
   public isMuted: boolean = false;
 
@@ -49,6 +59,101 @@ export class PortfolioService {
     this._socket.on('update-user', (user) => {
       this.user = user;
     });
+    this._socket.on('connect', () => {
+      if (this.user && this.user.token) {
+        this._socket.emit('authenticate', { token: this.user.token });
+      }
+    });
+    this._socket.on('admin-notification', notification => {
+      if (this.user && this.user.isAdmin === 'true') {
+        this.addNotification(notification);
+      }
+    });
+    this._socket.on('connect_error', () => {
+      if (this.user && this.user.isAdmin === 'true') {
+        this.addNotification({
+          title: 'Connection issue',
+          description: 'The live connection could not be established.'
+        });
+      }
+    });
+    this._socket.on('session-expired', event => {
+      this.clearExpiredSession(event && event.message
+        ? event.message
+        : 'Your session has expired. Please sign in again.');
+    });
+    this._socket.on('game-deleted', event => {
+      if (this.user && this.user.isPlayer && this.user.gameId === String(event.gameId)) {
+        this.clearExpiredSession('This game session was ended by an administrator. Please sign in again.');
+      }
+    });
+    this._socket.on('team-session-revoked', event => {
+      if (this.user && this.user.isPlayer) {
+        const message = event && event.reason === 'disabled'
+          ? 'Your team account was disabled by an administrator.'
+          : event && event.reason === 'password-reset'
+            ? 'Your password was reset. Please sign in again.'
+            : 'Your team account was removed by an administrator.';
+        this.clearExpiredSession(message);
+      }
+    });
+  }
+
+  authenticateSocket() {
+    if (!this._socket) {
+      this.initSocket();
+      return;
+    }
+    if (this._socket.connected && this.user && this.user.token) {
+      this._socket.emit('authenticate', { token: this.user.token });
+    }
+  }
+
+  addNotification(notification: any) {
+    if (!notification || typeof notification.title !== 'string' ||
+        typeof notification.description !== 'string') return;
+
+    const timestamp = notification.timestamp ? new Date(notification.timestamp) : new Date();
+    const validTimestamp = isNaN(timestamp.getTime()) ? new Date() : timestamp;
+    const duplicate = this.notifications.find(item =>
+      item.title === notification.title &&
+      item.description === notification.description &&
+      Math.abs(validTimestamp.getTime() - item.timestamp.getTime()) < 30000
+    );
+    if (duplicate) return;
+
+    this.notifications.unshift({
+      id: `${validTimestamp.getTime()}-${this.notifications.length}`,
+      title: notification.title,
+      description: notification.description,
+      timestamp: validTimestamp,
+      read: false
+    });
+    this.notifications = this.notifications.slice(0, 60);
+  }
+
+  get unreadNotificationCount(): number {
+    return this.notifications.filter(notification => !notification.read).length;
+  }
+
+  markNotificationRead(id: string) {
+    const notification = this.notifications.find(item => item.id === id);
+    if (notification) notification.read = true;
+  }
+
+  markAllNotificationsRead() {
+    this.notifications.forEach(notification => notification.read = true);
+  }
+
+  clearNotifications() {
+    this.notifications = [];
+  }
+
+  clearExpiredSession(message: string) {
+    this.storage.remove(STORAGE_KEY);
+    this._user = false;
+    this.game = false;
+    this.sessionExpired.next(message);
   }
 
 
@@ -169,10 +274,38 @@ export class PortfolioService {
 
   deleteGame(gameId: string, confirmName: string) {
     let reqOpts: any = {};
-    if (this.user && this.user.token) {
-      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    const user = this.user || this.getLoginObj();
+    if (user && user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + user.token };
     }
     return this.api.post('api/games/delete', { gameId, confirmName }, reqOpts);
+  }
+
+  bulkDeleteGames(gameIds: string[], deleteAll: boolean, confirmationText?: string) {
+    let reqOpts: any = {};
+    const user = this.user || this.getLoginObj();
+    if (user && user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + user.token };
+    }
+    return this.api.post('api/games/bulk-delete', {
+      gameIds,
+      deleteAll,
+      confirmationText
+    }, reqOpts);
+  }
+
+  bulkDeleteTeams(gameId: string, teamIds: string[], deleteAll: boolean, confirmationText?: string) {
+    let reqOpts: any = {};
+    const user = this.user || this.getLoginObj();
+    if (user && user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + user.token };
+    }
+    return this.api.post('api/teams/bulk-delete', {
+      gameId,
+      teamIds,
+      deleteAll,
+      confirmationText
+    }, reqOpts);
   }
 
   getGameCsvExportUrl(gameId: string): string {
@@ -290,21 +423,38 @@ export class PortfolioService {
 
   onLogout() {
     let {logout} = this.endpoint;
-    let seq = this.api.post(logout, {userId: this.user.id, socketId: this.socket.id}, {
+    const currentUser = this.user || this.getLoginObj();
+    const socketId = this.socket ? this.socket.id : null;
+    let seq = this.api.post(logout, {
+      userId: currentUser && currentUser.id,
+      socketId,
+      token: currentUser && currentUser.token
+    }, {
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...(currentUser && currentUser.token ? { Authorization: 'Bearer ' + currentUser.token } : {})
       }
     })
       .pipe(
         share()
       );
     seq.subscribe(() => {
-      this.socket.removeAllListeners();
-      this.storage.remove(STORAGE_KEY);
-      this._user = false;
-      this.game = false;
+      this.clearLocalSession();
+    }, error => {
+      if (error.status === 401) this.clearLocalSession();
     });
     return seq;
+  }
+
+  private clearLocalSession() {
+    if (this._socket) {
+      this._socket.removeAllListeners();
+      this._socket.disconnect();
+      this._socket = null;
+    }
+    this.storage.remove(STORAGE_KEY);
+    this._user = false;
+    this.game = false;
   }
 
   getNavValue(playerId) {

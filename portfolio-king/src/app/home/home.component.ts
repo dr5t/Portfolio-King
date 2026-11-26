@@ -30,6 +30,17 @@ export class HomeComponent implements OnInit {
   public deleteConfirmGameName: string = '';
   public showDeleteGameModal: boolean = false;
   public activeActionMenuGameId: string = null;
+  public selectedGameIds: string[] = [];
+  public bulkActionsOpen: string = '';
+  public showBulkDeleteModal: boolean = false;
+  public bulkDeleteType: string = '';
+  public bulkDeleteAll: boolean = false;
+  public bulkConfirmText: string = '';
+  public bulkDeletePending: boolean = false;
+  public deleteGamePending: boolean = false;
+  public createGamePending: boolean = false;
+  public refreshPending: boolean = false;
+  public duplicatePendingGameIds: string[] = [];
 
   toggleActionMenu(gameId: string, event?: Event) {
     if (event) event.stopPropagation();
@@ -38,6 +49,186 @@ export class HomeComponent implements OnInit {
 
   closeActionMenu() {
     this.activeActionMenuGameId = null;
+    this.bulkActionsOpen = '';
+  }
+
+  toggleBulkActions(type: string, event: Event) {
+    event.stopPropagation();
+    this.bulkActionsOpen = this.bulkActionsOpen === type ? '' : type;
+  }
+
+  toggleGameSelection(gameId: string, selected: boolean) {
+    const id = String(gameId);
+    this.selectedGameIds = selected
+      ? Array.from(new Set(this.selectedGameIds.concat(id)))
+      : this.selectedGameIds.filter(item => item !== id);
+  }
+
+  isGameSelected(gameId: string): boolean {
+    return this.selectedGameIds.indexOf(String(gameId)) >= 0;
+  }
+
+  toggleAllGamesSelection(selected: boolean) {
+    const visibleIds = this.filteredGames.map(game => String(game._id));
+    this.selectedGameIds = selected
+      ? Array.from(new Set(this.selectedGameIds.concat(visibleIds)))
+      : this.selectedGameIds.filter(id => visibleIds.indexOf(id) < 0);
+  }
+
+  toggleTeamSelection(teamId: string, selected: boolean) {
+    const id = String(teamId);
+    this.selectedTeamIds = selected
+      ? Array.from(new Set(this.selectedTeamIds.concat(id)))
+      : this.selectedTeamIds.filter(item => item !== id);
+  }
+
+  isTeamSelected(teamId: string): boolean {
+    return this.selectedTeamIds.indexOf(String(teamId)) >= 0;
+  }
+
+  toggleAllTeamsSelection(selected: boolean) {
+    this.selectedTeamIds = selected
+      ? this.teamsList.map(team => String(team._id))
+      : [];
+  }
+
+  openBulkDelete(type: string, deleteAll: boolean) {
+    const count = type === 'games'
+      ? (deleteAll ? this.allGames.length : this.selectedGameIds.length)
+      : (deleteAll ? this.teamsList.length : this.selectedTeamIds.length);
+    if (count === 0) {
+      UtilityService.showError(`There are no ${type} to delete.`);
+      return;
+    }
+    this.bulkDeleteType = type;
+    this.bulkDeleteAll = deleteAll;
+    this.bulkConfirmText = '';
+    this.bulkActionsOpen = '';
+    this.showBulkDeleteModal = true;
+  }
+
+  cancelBulkDelete() {
+    if (this.bulkDeletePending) return;
+    this.showBulkDeleteModal = false;
+    this.bulkDeleteType = '';
+    this.bulkDeleteAll = false;
+    this.bulkConfirmText = '';
+  }
+
+  confirmBulkDelete() {
+    if (this.bulkDeletePending) return;
+    const expected = this.bulkDeleteType === 'games' ? 'DELETE ALL GAMES' : 'DELETE ALL TEAMS';
+    if (this.bulkDeleteAll && this.bulkConfirmText !== expected) {
+      UtilityService.showError(`Type ${expected} exactly to confirm.`);
+      return;
+    }
+
+    this.bulkDeletePending = true;
+    if (this.bulkDeleteType === 'games') {
+      const ids = this.selectedGameIds.slice();
+      this.portfolioService.bulkDeleteGames(ids, this.bulkDeleteAll, this.bulkConfirmText).subscribe(
+        (res: any) => {
+          this.bulkDeletePending = false;
+          const deletedIds = (res.results || [])
+            .filter(result => result.success)
+            .map(result => String(result.gameId));
+          this.removeGamesById(deletedIds);
+          this.showBulkDeleteModal = false;
+          if (res.failedCount > 0) {
+            UtilityService.showError(`${res.deletedCount} game(s) deleted; ${res.failedCount} could not be deleted.`);
+          } else {
+            UtilityService.showMessage(`${res.deletedCount} game(s) deleted. Team accounts were preserved.`, false, 2500);
+          }
+        },
+        (err: any) => {
+          this.bulkDeletePending = false;
+          this.showAdminRequestError(err, 'Failed to delete games.');
+        }
+      );
+      return;
+    }
+
+    const teamIds = this.bulkDeleteAll ? [] : this.selectedTeamIds.slice();
+    this.portfolioService.bulkDeleteTeams(
+      this.selectedGameId,
+      teamIds,
+      this.bulkDeleteAll,
+      this.bulkConfirmText
+    ).subscribe(
+      (res: any) => {
+        this.bulkDeletePending = false;
+        const deletedIds = res.deletedTeamIds || [];
+        this.teamsList = this.teamsList.filter(team => deletedIds.indexOf(String(team._id)) < 0);
+        this.selectedTeamIds = this.selectedTeamIds.filter(id => deletedIds.indexOf(id) < 0);
+        this.showBulkDeleteModal = false;
+        if (res.partial) {
+          UtilityService.showError(`${res.deletedCount} team(s) deleted; some could not be deleted.`);
+        } else {
+          UtilityService.showMessage(`${res.deletedCount} team(s) deleted.`, false, 2500);
+        }
+      },
+      (err: any) => {
+        this.bulkDeletePending = false;
+        this.showAdminRequestError(err, 'Failed to delete teams.');
+      }
+    );
+  }
+
+  private removeGamesById(ids: string[]) {
+    const removed = new Set(ids);
+    this.allGames = this.allGames.filter(game => !removed.has(String(game._id)));
+    this.selectedGameIds = this.selectedGameIds.filter(id => !removed.has(id));
+    this.currGames = [];
+    this.prevGames = [];
+    this.allGames.forEach((game, index) => {
+      game._index = index + 1;
+      if (game.game_status === 'active' || game.game_status === 'paused' ||
+          game.game_status === 'waiting' || game.game_status === 'ready') {
+        this.currGames.push(game);
+      } else {
+        this.prevGames.push(game);
+      }
+    });
+    if (removed.has(String(this.selectedGameId))) {
+      this.selectedGameId = this.allGames.length ? String(this.allGames[0]._id) : '';
+      this.teamsList = [];
+      this.selectedTeamIds = [];
+      if (this.showManageTeams && this.selectedGameId) this.loadTeamsForSelectedGame();
+    }
+    this.applyGameFilters();
+  }
+
+  private showAdminRequestError(error: any, fallback: string) {
+    if (error && error.status === 401) {
+      this.portfolioService.clearExpiredSession('Your admin session has expired. Please sign in again.');
+      return;
+    }
+    const message = error && error.error && error.error.message
+      ? error.error.message
+      : fallback;
+    UtilityService.showError(message);
+  }
+
+  get allFilteredGamesSelected(): boolean {
+    return this.filteredGames.length > 0 &&
+      this.filteredGames.every(game => this.selectedGameIds.indexOf(String(game._id)) >= 0);
+  }
+
+  get selectedGamesCount(): number {
+    return this.selectedGameIds.length;
+  }
+
+  get allTeamsSelected(): boolean {
+    return this.teamsList.length > 0 &&
+      this.teamsList.every(team => this.selectedTeamIds.indexOf(String(team._id)) >= 0);
+  }
+
+  get selectedTeamsCount(): number {
+    return this.selectedTeamIds.length;
+  }
+
+  isDuplicatePending(gameId: string): boolean {
+    return this.duplicatePendingGameIds.indexOf(String(gameId)) >= 0;
   }
 
   get totalGamesCount(): number {
@@ -82,6 +273,8 @@ export class HomeComponent implements OnInit {
   public editingTeamName: string = '';
   public teamToDelete: any = null;
   public showDeleteConfirm: boolean = false;
+  public selectedTeamIds: string[] = [];
+  public deleteTeamPending: boolean = false;
 
   // Active view tab
   public activeTab: string = 'overview';
@@ -105,14 +298,17 @@ export class HomeComponent implements OnInit {
 
   init() {
     this._user = this.portfolioService.user;
-    UtilityService.showLoader();
-    this.onGetGames();
+    this.onGetGames(true);
   }
 
-  onGetGames() {
+  onGetGames(showPageLoader: boolean = false) {
+    if (showPageLoader) UtilityService.showLoader();
+    else this.refreshPending = true;
     this.portfolioService.getAllGames().subscribe(
       (games: any) => {
         this.allGames = games || [];
+        const validGameIds = this.allGames.map(game => String(game._id));
+        this.selectedGameIds = this.selectedGameIds.filter(id => validGameIds.indexOf(id) >= 0);
         this.currGames = [];
         this.prevGames = [];
         this.allGames.forEach((game, i) => {
@@ -132,11 +328,13 @@ export class HomeComponent implements OnInit {
           this.selectedGameId = this.allGames[0]._id;
         }
         this.applyGameFilters();
-        UtilityService.hideLoader();
+        if (showPageLoader) UtilityService.hideLoader();
+        this.refreshPending = false;
       },
       (err: any) => {
-        UtilityService.hideLoader();
-        UtilityService.showError('Failed to load games.');
+        if (showPageLoader) UtilityService.hideLoader();
+        this.refreshPending = false;
+        this.showAdminRequestError(err, 'Failed to load games.');
       }
     );
   }
@@ -172,15 +370,18 @@ export class HomeComponent implements OnInit {
   }
 
   cancelCreateGame() {
+    if (this.createGamePending) return;
     this.showCreateGameModal = false;
     this.newGameName = '';
   }
 
   onCreateGame() {
-    UtilityService.showLoader();
+    if (this.createGamePending) return;
+    this.createGamePending = true;
     const name = this.newGameName.trim() || undefined;
     this.portfolioService.createGame(name).subscribe(
       (res: any) => {
+        this.createGamePending = false;
         const newGame = res.ops[0];
         newGame._index = this.allGames.length + 1;
         if (!newGame.name) newGame.name = `Game ${newGame._index}`;
@@ -190,12 +391,11 @@ export class HomeComponent implements OnInit {
         this.showCreateGameModal = false;
         this.newGameName = '';
         this.applyGameFilters();
-        UtilityService.hideLoader();
         UtilityService.showMessage(`Created ${newGame.name} successfully.`, false, 2500);
       },
       (err: any) => {
-        UtilityService.hideLoader();
-        UtilityService.showError('Failed to create game.');
+        this.createGamePending = false;
+        this.showAdminRequestError(err, 'Failed to create game.');
       }
     );
   }
@@ -209,14 +409,17 @@ export class HomeComponent implements OnInit {
     if (!this.editingGameName || !this.editingGameName.trim()) return;
     const trimmed = this.editingGameName.trim();
     this.portfolioService.renameGame(game._id, trimmed).subscribe(
-      () => {
+      (res: any) => {
+        if (!res || !res.success) {
+          UtilityService.showError('The game was not renamed.');
+          return;
+        }
         game.name = trimmed;
         this.editingGameId = null;
         UtilityService.showMessage('Game renamed successfully.', false, 2000);
       },
       (err: any) => {
-        const msg = (err.error && err.error.message) ? err.error.message : 'Failed to rename game.';
-        UtilityService.showError(msg);
+        this.showAdminRequestError(err, 'Failed to rename game.');
       }
     );
   }
@@ -227,10 +430,12 @@ export class HomeComponent implements OnInit {
   }
 
   onDuplicateGame(game: any) {
-    UtilityService.showLoader();
+    const gameId = String(game._id);
+    if (this.isDuplicatePending(gameId)) return;
+    this.duplicatePendingGameIds.push(gameId);
     this.portfolioService.duplicateGame(game._id).subscribe(
       (res: any) => {
-        UtilityService.hideLoader();
+        this.duplicatePendingGameIds = this.duplicatePendingGameIds.filter(id => id !== gameId);
         if (res.game) {
           res.game._index = this.allGames.length + 1;
           this.allGames.push(res.game);
@@ -238,17 +443,19 @@ export class HomeComponent implements OnInit {
           this.selectedGameId = res.game._id;
           this.applyGameFilters();
           UtilityService.showMessage(`Duplicated as "${res.game.name}".`, false, 2500);
+        } else {
+          UtilityService.showError('The game was not duplicated.');
         }
       },
       (err: any) => {
-        UtilityService.hideLoader();
-        UtilityService.showError('Failed to duplicate game.');
+        this.duplicatePendingGameIds = this.duplicatePendingGameIds.filter(id => id !== gameId);
+        this.showAdminRequestError(err, 'Failed to duplicate game.');
       }
     );
   }
 
   onToggleGamePause(game: any) {
-    const newStatus = game.game_status === 'active' ? 'paused' : 'active';
+    const newStatus = game.game_status === 'active' || game.game_status === 'in_progress' ? 'paused' : 'active';
     this.portfolioService.updateGameLifecycleStatus(game._id, newStatus).subscribe(
       () => {
         game.game_status = newStatus;
@@ -256,8 +463,7 @@ export class HomeComponent implements OnInit {
         UtilityService.showMessage(`Game is now ${newStatus}.`, false, 2000);
       },
       (err: any) => {
-        const msg = (err.error && err.error.message) ? err.error.message : 'Failed to update game status.';
-        UtilityService.showError(msg);
+        this.showAdminRequestError(err, 'Failed to update game status.');
       }
     );
   }
@@ -271,51 +477,47 @@ export class HomeComponent implements OnInit {
         UtilityService.showMessage(`Game ${newStatus === 'archived' ? 'archived' : 'unarchived'} successfully.`, false, 2000);
       },
       (err: any) => {
-        const msg = (err.error && err.error.message) ? err.error.message : 'Failed to archive game.';
-        UtilityService.showError(msg);
+        this.showAdminRequestError(err, 'Failed to archive game.');
       }
     );
   }
 
   promptDeleteGame(game: any) {
-    if (game.game_status === 'active') {
-      UtilityService.showError('Active game cannot be deleted. End or pause the game before deletion.');
-      return;
-    }
     this.gameToDelete = game;
     this.deleteConfirmGameName = '';
     this.showDeleteGameModal = true;
   }
 
   cancelDeleteGame() {
+    if (this.deleteGamePending) return;
     this.gameToDelete = null;
     this.deleteConfirmGameName = '';
     this.showDeleteGameModal = false;
   }
 
   confirmDeleteGame() {
-    if (!this.gameToDelete) return;
+    if (!this.gameToDelete || this.deleteGamePending) return;
     const expected = (this.gameToDelete.name || '').trim();
     if (this.deleteConfirmGameName.trim().toLowerCase() !== expected.toLowerCase()) {
       UtilityService.showError(`Confirmation name does not match "${expected}".`);
       return;
     }
-    UtilityService.showLoader();
-    this.portfolioService.deleteGame(this.gameToDelete._id, this.deleteConfirmGameName.trim()).subscribe(
-      () => {
-        UtilityService.hideLoader();
-        const deletedId = this.gameToDelete._id;
-        this.allGames = this.allGames.filter(g => g._id !== deletedId);
-        this.currGames = this.currGames.filter(g => g._id !== deletedId);
-        this.prevGames = this.prevGames.filter(g => g._id !== deletedId);
+    const deletedId = String(this.gameToDelete._id);
+    this.deleteGamePending = true;
+    this.portfolioService.deleteGame(deletedId, this.deleteConfirmGameName.trim()).subscribe(
+      (res: any) => {
+        this.deleteGamePending = false;
+        if (!res || !res.success || String(res.gameId) !== deletedId) {
+          UtilityService.showError(res && res.message ? res.message : 'The game was not deleted.');
+          return;
+        }
+        this.removeGamesById([deletedId]);
         this.cancelDeleteGame();
-        this.applyGameFilters();
-        UtilityService.showMessage('Game and associated credentials deleted.', false, 2500);
+        UtilityService.showMessage('Game deleted. Registered team accounts were preserved.', false, 2500);
       },
       (err: any) => {
-        UtilityService.hideLoader();
-        const msg = (err.error && err.error.message) ? err.error.message : 'Failed to delete game.';
-        UtilityService.showError(msg);
+        this.deleteGamePending = false;
+        this.showAdminRequestError(err, 'Failed to delete game.');
       }
     );
   }
@@ -339,6 +541,7 @@ export class HomeComponent implements OnInit {
 
   onSelectManageGame(gameId: string) {
     this.selectedGameId = gameId;
+    this.selectedTeamIds = [];
     this.loadTeamsForSelectedGame();
   }
 
@@ -347,10 +550,11 @@ export class HomeComponent implements OnInit {
     this.portfolioService.getTeams(this.selectedGameId).subscribe(
       (teams: any) => {
         this.teamsList = teams || [];
+        const validTeamIds = this.teamsList.map(team => String(team._id));
+        this.selectedTeamIds = this.selectedTeamIds.filter(id => validTeamIds.indexOf(id) >= 0);
       },
       (err: any) => {
-        const msg = (err.error && err.error.message) ? err.error.message : 'Failed to load teams.';
-        UtilityService.showError(msg);
+        this.showAdminRequestError(err, 'Failed to load teams.');
       }
     );
   }
@@ -370,8 +574,7 @@ export class HomeComponent implements OnInit {
       },
       (err: any) => {
         UtilityService.hideLoader();
-        const msg = (err.error && err.error.message) ? err.error.message : 'Failed to auto-generate teams.';
-        UtilityService.showError(msg);
+        this.showAdminRequestError(err, 'Failed to auto-generate teams.');
       }
     );
   }
@@ -405,8 +608,7 @@ export class HomeComponent implements OnInit {
       },
       (err: any) => {
         UtilityService.hideLoader();
-        const msg = (err.error && err.error.message) ? err.error.message : 'Failed to create team.';
-        UtilityService.showError(msg);
+        this.showAdminRequestError(err, 'Failed to create team.');
       }
     );
   }
@@ -425,8 +627,7 @@ export class HomeComponent implements OnInit {
         UtilityService.showMessage('Team name updated.', false, 2000);
       },
       (err: any) => {
-        const msg = (err.error && err.error.message) ? err.error.message : 'Failed to update team.';
-        UtilityService.showError(msg);
+        this.showAdminRequestError(err, 'Failed to update team.');
       }
     );
   }
@@ -444,8 +645,7 @@ export class HomeComponent implements OnInit {
         UtilityService.showMessage(`Team is now ${newStatus}.`, false, 2000);
       },
       (err: any) => {
-        const msg = (err.error && err.error.message) ? err.error.message : 'Failed to update team status.';
-        UtilityService.showError(msg);
+        this.showAdminRequestError(err, 'Failed to update team status.');
       }
     );
   }
@@ -461,8 +661,7 @@ export class HomeComponent implements OnInit {
         UtilityService.showMessage('Password reset successfully. Copy new credentials above.', false, 3000);
       },
       (err: any) => {
-        const msg = (err.error && err.error.message) ? err.error.message : 'Failed to reset password.';
-        UtilityService.showError(msg);
+        this.showAdminRequestError(err, 'Failed to reset password.');
       }
     );
   }
@@ -473,24 +672,30 @@ export class HomeComponent implements OnInit {
   }
 
   cancelDeleteTeam() {
+    if (this.deleteTeamPending) return;
     this.teamToDelete = null;
     this.showDeleteConfirm = false;
   }
 
   confirmDeleteTeam() {
-    if (!this.teamToDelete) return;
-    UtilityService.showLoader();
-    this.portfolioService.deleteTeam(this.teamToDelete._id).subscribe(
-      () => {
-        UtilityService.hideLoader();
-        this.teamsList = this.teamsList.filter(t => t._id !== this.teamToDelete._id);
+    if (!this.teamToDelete || this.deleteTeamPending) return;
+    const deletedId = String(this.teamToDelete._id);
+    this.deleteTeamPending = true;
+    this.portfolioService.deleteTeam(deletedId).subscribe(
+      (res: any) => {
+        this.deleteTeamPending = false;
+        if (!res || !res.success) {
+          UtilityService.showError(res && res.message ? res.message : 'The team was not deleted.');
+          return;
+        }
+        this.teamsList = this.teamsList.filter(t => String(t._id) !== deletedId);
+        this.selectedTeamIds = this.selectedTeamIds.filter(id => id !== deletedId);
         this.cancelDeleteTeam();
         UtilityService.showMessage('Team deleted successfully.', false, 2000);
       },
       (err: any) => {
-        UtilityService.hideLoader();
-        const msg = (err.error && err.error.message) ? err.error.message : 'Failed to delete team.';
-        UtilityService.showError(msg);
+        this.deleteTeamPending = false;
+        this.showAdminRequestError(err, 'Failed to delete team.');
       }
     );
   }

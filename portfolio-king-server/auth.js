@@ -183,19 +183,57 @@ function resetRateLimit(ip) {
 
 function invalidateSessionsForGame(gameId) {
     if (!gameId) return;
+    let invalidated = 0;
     for (const [token, session] of sessions.entries()) {
         if (session.gameId && String(session.gameId) === String(gameId)) {
             sessions.delete(token);
+            invalidated++;
         }
     }
+    return invalidated;
+}
+
+function revokeSessionsForGame(ioInstance, gameId) {
+    if (!gameId) return 0;
+    let revoked = 0;
+    for (const [token, session] of sessions.entries()) {
+        if (session.gameId && String(session.gameId) === String(gameId)) {
+            sessions.delete(token);
+            if (session.socketId && ioInstance) {
+                ioInstance.to(session.socketId).emit('game-deleted', { gameId: String(gameId) });
+                disconnectSocket(ioInstance, session.socketId);
+            }
+            revoked++;
+        }
+    }
+    return revoked;
+}
+
+function revokeSessionsForTeam(ioInstance, teamId, reason = 'deleted') {
+    if (!teamId) return 0;
+    let revoked = 0;
+    for (const [token, session] of sessions.entries()) {
+        if (session.teamId === teamId) {
+            sessions.delete(token);
+            if (session.socketId && ioInstance) {
+                ioInstance.to(session.socketId).emit('team-session-revoked', { teamId, reason });
+                disconnectSocket(ioInstance, session.socketId);
+            }
+            revoked++;
+        }
+    }
+    return revoked;
 }
 
 function authenticateAdmin(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : req.query.token;
     const session = getSession(token);
-    if (!session || session.role !== 'admin') {
-        return res.status(401).json({ message: 'Unauthorized. Admin session required.' });
+    if (!session) {
+        return res.status(401).json({ code: 'SESSION_EXPIRED', message: 'Admin session expired. Please sign in again.' });
+    }
+    if (session.role !== 'admin') {
+        return res.status(403).json({ code: 'ADMIN_REQUIRED', message: 'Administrator access is required.' });
     }
     req.session = session;
     next();
@@ -226,6 +264,8 @@ module.exports = {
     recordFailedAttempt,
     resetRateLimit,
     invalidateSessionsForGame,
+    revokeSessionsForGame,
+    revokeSessionsForTeam,
     disconnectSocket,
     authenticateAdmin,
     authenticateSession
