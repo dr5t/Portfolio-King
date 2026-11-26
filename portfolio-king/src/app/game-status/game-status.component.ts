@@ -2,9 +2,11 @@ import {Component, OnInit} from '@angular/core';
 import {PortfolioService} from "../services/portfolio/portfolio.service";
 import {ActivatedRoute, NavigationExtras, Router} from "@angular/router";
 import {UtilityService} from "../shared/utils/utility-service";
+import {getGameLeaderboard} from "../shared/utils/game-results";
 import {OwlOptions} from 'ngx-owl-carousel-o';
 
 @Component({
+  standalone: false,
   selector: 'app-game-status',
   templateUrl: './game-status.component.html',
   styleUrls: ['./game-status.component.scss']
@@ -38,8 +40,25 @@ export class GameStatusComponent implements OnInit {
               private activatedRoute: ActivatedRoute) {
   }
 
-  getGameCsvExportUrl(): string {
-    return this.portfolioService.getGameCsvExportUrl(this.gameId);
+  exportGameCsv() {
+    this.portfolioService.downloadGameCsv(this.gameId).subscribe(
+      (file: Blob) => {
+        const url = window.URL.createObjectURL(file);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `portfolio-king-${this.getGameShortId()}.csv`;
+        link.click();
+        setTimeout(() => window.URL.revokeObjectURL(url), 0);
+      },
+      error => {
+        const message = error && error.error && typeof error.error === 'string'
+          ? error.error
+          : error && error.error && error.error.message
+            ? error.error.message
+            : 'Could not export game results.';
+        UtilityService.showError(message);
+      }
+    );
   }
 
   getGameShortId(): string {
@@ -60,34 +79,7 @@ export class GameStatusComponent implements OnInit {
   }
 
   getLeaderboardList(): any[] {
-    if (!this.game || !this.game.players) {
-      return [];
-    }
-    const list = this.game.players.map((p, idx) => {
-      const rounds = p.rounds || [];
-      const lastRound = rounds.length > 0 ? rounds[rounds.length - 1] : null;
-      const initialVal = (rounds.length > 0 && rounds[0].round_starting_value) ? rounds[0].round_starting_value : 5000000;
-      const currentVal = lastRound ? lastRound.total_portfolio_value : initialVal;
-      let totalDebt = 0;
-      if (p.loans && p.loans.length > 0) {
-        totalDebt = p.loans.reduce((sum, l) => sum + (l.balance || 0), 0);
-      }
-      const netWorth = currentVal - totalDebt;
-      const returnPct = initialVal > 0 ? ((currentVal - initialVal) / initialVal) * 100 : 0;
-      return {
-        _id: p._id,
-        name: p.name,
-        index: idx + 1,
-        startingVal: initialVal,
-        currentVal: currentVal,
-        debt: totalDebt,
-        netWorth: netWorth,
-        returnPct: returnPct,
-        gameStatus: p.game_status || 'joined'
-      };
-    });
-    list.sort((a, b) => b.currentVal - a.currentVal);
-    return list.map((item, rank) => ({ ...item, rank: rank + 1 }));
+    return getGameLeaderboard(this.game);
   }
 
   ngOnInit() {
@@ -135,7 +127,6 @@ export class GameStatusComponent implements OnInit {
               this.roundReady = true;
             }
             this.game.players.forEach(player => {
-              //change here for decreasing rounds
               this.gameEnd = (player.rounds.length === 8 && this.game.game_status === 'completed');
               for (let i = player.rounds.length - 1; i >= 0; i--) {
                 if (player.rounds[i] && player.rounds[i].status === 'complete') {

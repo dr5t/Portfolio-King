@@ -8,7 +8,7 @@
   display: flex;
   flex-direction: column;
 
-  /* Action Navigation Strip */
+  
   .results-action-strip {
     background-color: var(--bg-surface);
     border-bottom: 1px solid var(--border-color);
@@ -75,7 +75,7 @@
     }
   }
 
-  /* Main Results Content */
+  
   .results-main-content {
     max-width: 1400px;
     width: 100%;
@@ -83,7 +83,7 @@
     padding: 28px 32px 48px;
     box-sizing: border-box;
 
-    /* Header Row (Matching Panel 4 Reference Image) */
+    
     .results-header-row {
       display: flex;
       justify-content: space-between;
@@ -140,7 +140,7 @@
       }
     }
 
-    /* Structured Reference Leaderboard Table */
+    
     .table-card {
       background: var(--bg-surface);
       border: 1px solid var(--border-color);
@@ -182,7 +182,7 @@
             text-align: right;
           }
 
-          /* Rank Cell with Trophies */
+          
           &.rank-cell {
             .trophy-wrap {
               width: 22px;
@@ -209,7 +209,7 @@
             }
           }
 
-          /* Team Cell */
+          
           &.team-cell {
             .team-name {
               color: var(--text-primary);
@@ -244,7 +244,7 @@
             background-color: var(--bg-subtle);
           }
 
-          /* Champagne-Gold Highlighted Winner Row */
+          
           &.winner-row {
             background-color: var(--color-gold-bg);
             border-left: 3px solid var(--color-gold);
@@ -261,7 +261,7 @@
       }
     }
 
-    /* Bottom Analytics Grid (Two Cards Matching Reference Image) */
+    
     .bottom-analytics-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -282,7 +282,7 @@
           margin: 0 0 16px;
         }
 
-        /* Game Summary 4-Metrics Grid */
+        
         .summary-metrics-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -330,7 +330,7 @@
           }
         }
 
-        /* Export & Analysis Actions */
+        
         .export-actions-wrap {
           display: flex;
           flex-direction: column;
@@ -358,7 +358,7 @@
       }
     }
 
-    /* Team Detail & Carousel Area */
+    
     .team-detail-container {
       margin-top: 12px;
 

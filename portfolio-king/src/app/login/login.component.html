@@ -1,5 +1,4 @@
 <div class="split-login-container">
-  <!-- Left Branding & Illustration Section (~47%) -->
   <div class="login-branding-side">
     <div class="branding-content">
       <div class="brand-logo-wrap">
@@ -9,13 +8,11 @@
       <p class="brand-subtitle">Financial Strategy Simulation</p>
     </div>
 
-    <!-- Low-Poly Golden Bull & Bear Hero Illustration -->
     <div class="bull-bear-illustration-wrap">
       <img src="assets/imgs/bull_bear_illustration.png" alt="Market Bull and Bear Illustration" class="bull-bear-img">
     </div>
   </div>
 
-  <!-- Right Authentication Form Section (~53%) -->
   <div class="login-form-side">
     <div class="form-wrapper">
       <div class="form-header">
@@ -23,7 +20,6 @@
         <p class="welcome-sub">Access your game dashboard</p>
       </div>
 
-      <!-- Segmented Tab Switcher (Team Login vs Admin Login) -->
       <div class="segmented-auth-tabs">
         <button type="button" class="tab-btn" [class.active]="userType === 'Player'" (click)="onSetRole('Player')">
           <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -44,9 +40,7 @@
         </button>
       </div>
 
-      <!-- Authentication Form -->
       <form #f="ngForm" (ngSubmit)="onSubmit(f)" class="auth-form" novalidate>
-        <!-- Username / Team ID Field -->
         <div class="form-group">
           <label class="field-label" for="username-field">
             {{userType === 'Player' ? 'Team ID' : 'Admin Username'}}
@@ -64,7 +58,6 @@
           </div>
         </div>
 
-        <!-- Password Field with Visibility Toggle -->
         <div class="form-group">
           <label class="field-label" for="password-field">Password</label>
           <div class="input-icon-wrap">
@@ -90,7 +83,6 @@
           </div>
         </div>
 
-        <!-- Remember Me Checkbox -->
         <div class="remember-row">
           <label class="checkbox-label">
             <input type="checkbox" name="rememberMe" ngModel class="checkbox-control">
@@ -98,7 +90,6 @@
           </label>
         </div>
 
-        <!-- Submit Button -->
         <div class="submit-wrap">
           <button type="submit" class="btn-login-submit" [disabled]="isLoading">
             <span *ngIf="!isLoading">Login &rarr;</span>
@@ -112,7 +103,6 @@
           </button>
         </div>
 
-        <!-- Inline Validation Error Alert Directly Below Form -->
         <div class="auth-error-alert inline-auth-alert" *ngIf="errorMessage">
           <svg class="alert-icon-svg" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="2">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>

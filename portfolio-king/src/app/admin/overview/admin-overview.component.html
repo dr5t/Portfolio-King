@@ -1,0 +1,95 @@
+<div class="admin-page-shell">
+  <header class="admin-page-header">
+    <div>
+      <h1>Overview</h1>
+      <p>Portfolio King activity and administration at a glance.</p>
+    </div>
+    <div class="admin-page-actions">
+      <button type="button" class="btn btn-secondary" (click)="refresh()" [disabled]="loadingGames || loadingTeams">Refresh</button>
+      <button type="button" class="btn btn-primary" (click)="openCreateGame()">Create Game</button>
+    </div>
+  </header>
+
+  <div class="admin-error" *ngIf="gamesError || teamsError">{{gamesError || teamsError}}</div>
+  <div class="admin-loading" *ngIf="loadingGames || loadingTeams">Loading overview…</div>
+
+  <ng-container *ngIf="!loadingGames && !loadingTeams">
+    <section class="admin-stat-grid" aria-label="Portfolio King summary">
+      <article class="admin-stat-card">
+        <span class="admin-stat-label">Total Games</span>
+        <strong class="admin-stat-value">{{games.length}}</strong>
+      </article>
+      <article class="admin-stat-card">
+        <span class="admin-stat-label">Active Sessions</span>
+        <strong class="admin-stat-value">{{activeGamesCount}}</strong>
+      </article>
+      <article class="admin-stat-card">
+        <span class="admin-stat-label">Registered Teams</span>
+        <strong class="admin-stat-value">{{teams.length}}</strong>
+      </article>
+      <article class="admin-stat-card">
+        <span class="admin-stat-label">Completed Games</span>
+        <strong class="admin-stat-value">{{completedGamesCount}}</strong>
+      </article>
+    </section>
+
+    <section class="admin-card">
+      <div class="admin-card-header">
+        <div>
+          <h2>Game Activity</h2>
+          <p>Games created by month, based on stored game timestamps.</p>
+        </div>
+        <a routerLink="/admin/history" class="admin-link">View history</a>
+      </div>
+      <div class="admin-chart-list" *ngIf="games.length > 0">
+        <div class="admin-chart-row" *ngFor="let month of monthlyActivity">
+          <span>{{month.label}}</span>
+          <div class="admin-chart-track" role="img" [attr.aria-label]="month.count + ' games in ' + month.label">
+            <div class="admin-chart-bar" [style.width.%]="month.count / maxMonthlyCount * 100"></div>
+          </div>
+          <strong>{{month.count}}</strong>
+        </div>
+      </div>
+      <div class="admin-empty" *ngIf="games.length === 0">No game activity is available yet.</div>
+    </section>
+
+    <section class="admin-stat-grid">
+      <article class="admin-stat-card" *ngFor="let status of statuses">
+        <span class="admin-stat-label">{{status === 'active' ? 'In Progress' : (status | titlecase)}}</span>
+        <strong class="admin-stat-value">{{countByStatus(status)}}</strong>
+      </article>
+    </section>
+
+    <section class="admin-card">
+      <div class="admin-card-header">
+        <div>
+          <h2>Recent Games</h2>
+          <p>Most recently created simulation sessions.</p>
+        </div>
+        <a routerLink="/admin/games" class="admin-link">Manage games</a>
+      </div>
+      <div class="admin-table-wrap" *ngIf="recentGames.length > 0">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Game</th><th>Status</th><th>Teams</th><th>Created</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let game of recentGames">
+              <td><a [routerLink]="['/game-status', game._id]" class="admin-link">{{game.name || 'Game'}}</a></td>
+              <td><span class="admin-status" [ngClass]="statusClass(game.game_status)">{{game.game_status || 'waiting'}}</span></td>
+              <td>{{game.players ? game.players.length : 0}} / 4</td>
+              <td>{{(game.timestamp || game.createdAt) | date:'mediumDate'}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="admin-empty" *ngIf="recentGames.length === 0">No games have been created.</div>
+    </section>
+
+    <section class="admin-page-actions">
+      <a routerLink="/admin/teams" class="btn btn-secondary">Manage Teams</a>
+      <a routerLink="/admin/sessions" class="btn btn-secondary">Live Sessions</a>
+      <a routerLink="/admin/results" class="btn btn-secondary">View Results</a>
+    </section>
+  </ng-container>
+</div>

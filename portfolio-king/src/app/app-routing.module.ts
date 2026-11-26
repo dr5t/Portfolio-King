@@ -7,6 +7,13 @@ import {InvestmentAvenueComponent} from "./investment-avenue/investment-avenue.c
 import {RulesComponent} from "./rules/rules.component";
 import {GameComponent} from "./game/game.component";
 import {GameStatusComponent} from "./game-status/game-status.component";
+import {AdminGuard} from "./services/guard/admin.guard";
+import {AdminOverviewComponent} from "./admin/overview/admin-overview.component";
+import {TeamsPageComponent} from "./admin/teams/teams-page.component";
+import {AdminSessionsComponent} from "./admin/sessions/admin-sessions.component";
+import {AdminHistoryComponent} from "./admin/history/admin-history.component";
+import {AdminResultsComponent} from "./admin/results/admin-results.component";
+import {AdminSettingsComponent} from "./admin/settings/admin-settings.component";
 
 
 const routes: Routes = [
@@ -33,6 +40,21 @@ const routes: Routes = [
   {
     path: 'rules',
     component: RulesComponent
+  },
+  {
+    path: 'admin',
+    canActivate: [AuthGuard],
+    canActivateChild: [AdminGuard],
+    children: [
+      { path: '', redirectTo: 'overview', pathMatch: 'full' },
+      { path: 'overview', component: AdminOverviewComponent },
+      { path: 'games', component: HomeComponent },
+      { path: 'teams', component: TeamsPageComponent },
+      { path: 'sessions', component: AdminSessionsComponent },
+      { path: 'history', component: AdminHistoryComponent },
+      { path: 'results', component: AdminResultsComponent },
+      { path: 'settings', component: AdminSettingsComponent }
+    ]
   },
   {
     path: '',

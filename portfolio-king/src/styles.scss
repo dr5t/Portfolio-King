@@ -1,28 +1,17 @@
-/* ==========================================================================
-   Portfolio King — Reference-Accurate Premium Financial Simulation UI
-   Palette, typography, and layout matching the official reference image:
-   - Background: #F5F5F3
-   - Surface: #FFFFFF
-   - Text: #171717
-   - Muted: #666666
-   - Borders: #DDDDDA
-   - Profit: #176B45
-   - Loss: #B42318
-   - Winner: #A18440
-   ========================================================================== */
 
-@import '~ngx-owl-carousel-o/lib/styles/scss/owl.carousel';
-@import '~ngx-owl-carousel-o/lib/styles/scss/owl.theme.default';
+
+@import 'ngx-owl-carousel-o/lib/styles/scss/owl.carousel';
+@import 'ngx-owl-carousel-o/lib/styles/scss/owl.theme.default';
 
 :root {
-  /* Warm-neutral color system — Reference-accurate tokens */
+  
   --bg-app: #F5F5F3;
   --bg-surface: #FFFFFF;
   --bg-secondary: #EFEFEA;
   --bg-subtle: #F9F9F8;
   --table-header: #EAEAE6;
   
-  /* Charcoal sidebar */
+  
   --sidebar-bg: #202123;
   --sidebar-hover: #2C2D2F;
   --sidebar-border: #2A2B2D;
@@ -31,22 +20,22 @@
   --nav-active-bg: #E8D3A0;
   --nav-active-text: #171717;
   
-  /* Text */
+  
   --text-primary: #171717;
   --text-secondary: #666666;
   --text-muted: #666666;
   
-  /* Borders */
+  
   --border-color: #DDDDDA;
   --border-subtle: #E8E8E4;
   --border-dark: #242424;
   
-  /* Action controls */
+  
   --btn-primary-bg: #202123;
   --btn-primary-hover: #2E2F32;
   --btn-primary-text: #FFFFFF;
   
-  /* Financial indicators */
+  
   --color-gold: #A18440;
   --color-gold-bg: #FAF5EA;
   --color-profit: #176B45;
@@ -56,7 +45,7 @@
   --color-warning: #A16B16;
   --color-warning-bg: #FEF8EC;
   
-  /* Geometric constraints */
+  
   --radius-xs: 3px;
   --radius-sm: 4px;
   --radius-md: 5px;
@@ -80,13 +69,11 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Tabular figures for financial numbers */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
-/* Typography Hierarchy */
 h1, .page-title {
   font-size: 26px;
   font-weight: 700;
@@ -121,7 +108,6 @@ p, .body-text {
   color: var(--text-secondary);
 }
 
-/* Compact rectangular controls */
 button, input[type="submit"], input[type="button"], .btn {
   font-family: inherit;
   font-size: 13px;
@@ -195,7 +181,6 @@ button, input[type="submit"], input[type="button"], .btn {
   }
 }
 
-/* Rectangular Form Inputs */
 input[type="text"],
 input[type="password"],
 input[type="number"],
@@ -223,7 +208,6 @@ textarea {
   }
 }
 
-/* Minimal Flat Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -239,7 +223,6 @@ textarea {
   background: #C4C0B6;
 }
 
-/* Screen-reader only utility */
 .sr-only {
   position: absolute !important;
   width: 1px !important;
@@ -252,13 +235,11 @@ textarea {
   border: 0 !important;
 }
 
-/* Utility Status Colors */
 .text-profit { color: var(--color-profit) !important; }
 .text-loss { color: var(--color-loss) !important; }
 .text-warning { color: var(--color-warning) !important; }
 .text-gold { color: var(--color-gold) !important; }
 
-/* SVG button icon constraints */
 .btn-icon {
   width: 15px;
   height: 15px;
@@ -272,7 +253,6 @@ textarea {
   flex-shrink: 0;
 }
 
-/* Status Badges */
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -308,12 +288,6 @@ textarea {
   }
 }
 
-/* ==========================================================================
-   Loading Screen & Dynamic Loader — Minimal Transparent Lottie Animation
-   - Clean, borderless, transparent, 400x400px centered vector animation
-   - Smooth 0.25s exit transition
-   - 3-second hard maximum duration safety timeout
-   ========================================================================== */
 .loader,
 .app-initial-loader {
   position: fixed;

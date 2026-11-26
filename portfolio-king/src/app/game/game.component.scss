@@ -37,7 +37,7 @@ $t: 30;
       position: relative;
       transition: background-color 0.2s ease, box-shadow 0.2s ease;
 
-      /* Quadrant 1: North-West (Team 1) */
+      
       &.team-1 {
         background: var(--bg-app);
         border-right: 1px solid var(--border-color);
@@ -50,7 +50,7 @@ $t: 30;
         }
       }
 
-      /* Quadrant 2: North-East (Team 2) */
+      
       &.team-2 {
         background: var(--bg-app);
         border-bottom: 1px solid var(--border-color);
@@ -62,7 +62,7 @@ $t: 30;
         }
       }
 
-      /* Quadrant 3: South-West (Team 3) */
+      
       &.team-3 {
         background: var(--bg-app);
         border-right: 1px solid var(--border-color);
@@ -74,7 +74,7 @@ $t: 30;
         }
       }
 
-      /* Quadrant 4: South-East (Team 4) */
+      
       &.team-4 {
         background: var(--bg-app);
         border-bottom: 3px solid var(--text-secondary);
@@ -86,7 +86,7 @@ $t: 30;
       }
     }
 
-    /* Central Dice & Turn Console Hub */
+    
     .circle {
       border: 1px solid var(--border-color);
       border-radius: 50%;
@@ -190,7 +190,7 @@ $t: 30;
         }
       }
 
-      /* Countdown Timer Arc in Charcoal */
+      
       .l-half, .r-half {
         float: left;
         width: 50%;
@@ -234,7 +234,7 @@ $t: 30;
         }
       }
 
-      /* Directional Turn Pointer */
+      
       .arrow-active {
         position: absolute;
         top: 50%;
@@ -266,7 +266,7 @@ $t: 30;
     }
   }
 
-  /* Score Side Container */
+  
   .score-side-container {
     width: 40vw;
     height: calc(100vh - 48px);
@@ -372,7 +372,6 @@ $t: 30;
   }
 }
 
-/* Modal Overlay & Wait Messages */
 .wait-msg-container {
   position: fixed;
   top: 0;

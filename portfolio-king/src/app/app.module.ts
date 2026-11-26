@@ -17,6 +17,12 @@ import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
 import {CarouselComponent, CarouselModule} from "ngx-owl-carousel-o";
 import {InvestmentNamePipe} from "./pipes/investmentName/investment-name.pipe";
 import {InrCurrencyPipe} from "./pipes/inrCurrency/inr-currency.pipe";
+import {AdminOverviewComponent} from './admin/overview/admin-overview.component';
+import {TeamsPageComponent} from './admin/teams/teams-page.component';
+import {AdminSessionsComponent} from './admin/sessions/admin-sessions.component';
+import {AdminHistoryComponent} from './admin/history/admin-history.component';
+import {AdminResultsComponent} from './admin/results/admin-results.component';
+import {AdminSettingsComponent} from './admin/settings/admin-settings.component';
 
 @NgModule({
   declarations: [
@@ -30,7 +36,13 @@ import {InrCurrencyPipe} from "./pipes/inrCurrency/inr-currency.pipe";
     RulesComponent,
     GameStatusComponent,
     InvestmentNamePipe,
-    InrCurrencyPipe
+    InrCurrencyPipe,
+    AdminOverviewComponent,
+    TeamsPageComponent,
+    AdminSessionsComponent,
+    AdminHistoryComponent,
+    AdminResultsComponent,
+    AdminSettingsComponent
   ],
   imports: [
     BrowserModule,

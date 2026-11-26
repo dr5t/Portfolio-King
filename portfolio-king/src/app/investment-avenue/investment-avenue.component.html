@@ -1,5 +1,4 @@
 <div class="investment-terminal-layout">
-  <!-- Top Session & Team Header Bar -->
   <div class="terminal-top-bar">
     <div class="session-identity">
       <h2 class="session-title">{{game?.name || 'Session In Progress'}}</h2>
@@ -16,9 +15,7 @@
     </div>
   </div>
 
-  <!-- Horizontal Information Strip (4 Compact Metric Cards) -->
   <div class="metrics-strip-grid">
-    <!-- Quarter -->
     <div class="metric-card">
       <div class="metric-icon-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -34,7 +31,6 @@
       </div>
     </div>
 
-    <!-- Time Left -->
     <div class="metric-card">
       <div class="metric-icon-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -48,7 +44,6 @@
       </div>
     </div>
 
-    <!-- Portfolio Value -->
     <div class="metric-card">
       <div class="metric-icon-wrap icon-profit">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -67,7 +62,6 @@
       </div>
     </div>
 
-    <!-- Available Cash -->
     <div class="metric-card">
       <div class="metric-icon-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -83,7 +77,6 @@
     </div>
   </div>
 
-  <!-- Segmented Sub-Navigation Tabs (Investments, F.O.F, Loans) -->
   <div class="workspace-tabs-row">
     <div class="segmented-tabs-wrap">
       <button type="button" class="tab-btn" [class.active]="activeSubTab === 'investments'" (click)="activeSubTab = 'investments'">
@@ -98,12 +91,9 @@
     </div>
   </div>
 
-  <!-- Workspace Main Grid (Investment Table + Market Roll Side Console) -->
   <form #f="ngForm" (ngSubmit)="onSubmitForm($event, f)" (input)="calculateLiveTotal(f)" class="investment-form" novalidate>
     <div class="workspace-content-grid">
-      <!-- Main Table Card -->
       <div class="table-card">
-        <!-- Tab 1: Direct Investments Table -->
         <table class="reference-table" *ngIf="activeSubTab === 'investments'">
           <thead>
             <tr>
@@ -115,7 +105,6 @@
             </tr>
           </thead>
           <tbody>
-            <!-- Row 1: Bank FD -->
             <tr>
               <td class="row-num text-muted">1</td>
               <td>
@@ -139,7 +128,6 @@
               </td>
             </tr>
 
-            <!-- Row 2: Govt Bonds -->
             <tr>
               <td class="row-num text-muted">2</td>
               <td>
@@ -163,7 +151,6 @@
               </td>
             </tr>
 
-            <!-- Row 3: Corporate Bonds -->
             <tr>
               <td class="row-num text-muted">3</td>
               <td>
@@ -187,7 +174,6 @@
               </td>
             </tr>
 
-            <!-- Row 4: Blue Chip Equities -->
             <tr>
               <td class="row-num text-muted">4</td>
               <td>
@@ -211,7 +197,6 @@
               </td>
             </tr>
 
-            <!-- Row 5: Mid Cap Equities -->
             <tr>
               <td class="row-num text-muted">5</td>
               <td>
@@ -235,7 +220,6 @@
               </td>
             </tr>
 
-            <!-- Row 6: Speculative Equities -->
             <tr>
               <td class="row-num text-muted">6</td>
               <td>
@@ -259,7 +243,6 @@
               </td>
             </tr>
 
-            <!-- Row 7: Global Equities -->
             <tr>
               <td class="row-num text-muted">7</td>
               <td>
@@ -283,7 +266,6 @@
               </td>
             </tr>
 
-            <!-- Row 8: US Dollar Reserves -->
             <tr>
               <td class="row-num text-muted">8</td>
               <td>
@@ -307,7 +289,6 @@
               </td>
             </tr>
 
-            <!-- Row 9: Gold ETF -->
             <tr>
               <td class="row-num text-muted">9</td>
               <td>
@@ -333,7 +314,6 @@
           </tbody>
         </table>
 
-        <!-- Tab 2: FOF Allocation Table -->
         <div class="sub-tab-panel" *ngIf="activeSubTab === 'fof'">
           <div class="sub-tab-header">
             <h4>Fund of Funds (FOF) Co-Investment</h4>
@@ -353,7 +333,6 @@
           </div>
         </div>
 
-        <!-- Tab 3: Loan Obligations -->
         <div class="sub-tab-panel" *ngIf="activeSubTab === 'loans'">
           <div class="sub-tab-header">
             <h4>Credit Facilities & Debt Obligations</h4>
@@ -385,11 +364,9 @@
         </div>
       </div>
 
-      <!-- Right Side Console: Market Roll (Matching Reference Image) -->
       <div class="market-roll-console">
         <h3 class="console-title">Market Roll</h3>
 
-        <!-- 3D Dice Display Box -->
         <div class="dice-display-box">
           <div class="dice-visual-card">
             <span class="dice-dot dot-1"></span>
@@ -414,7 +391,6 @@
       </div>
     </div>
 
-    <!-- Allocation Summary Footer (Matching Reference Layout) -->
     <div class="allocation-footer-strip">
       <div class="footer-totals">
         <div class="total-item">
@@ -440,7 +416,6 @@
     </div>
   </form>
 
-  <!-- Reset Confirmation Dialog -->
   <div class="modal-backdrop" *ngIf="showResetModal">
     <div class="modal-dialog">
       <div class="modal-header">

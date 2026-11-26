@@ -1,14 +1,3 @@
-/*
-FORMULA DEFINITIONS:
-rate:   annual rate / ( no of yearly payments * 100)
-nPeriod: total no of payments
-pv: present value
-fv: future value
-type: 0(default) - payment due at the end of the month | 1 - paymeny due at the start of the month
-Per – This is the period for which we want to find the interest and must be in the range from 1 to nper.
-Nper – The total number of payment periods.
-*/
-
 const formulas = (function () {
     const PMT = function (rate, nPeriod, pv, fv, type) {
         if (!fv) fv = 0;
@@ -39,15 +28,6 @@ const formulas = (function () {
         return pmt - ipmt;
     }
     const test = function () {
-        let rate = 5;
-        let totalYears = 4;
-        let installmentPerYear = 4;
-        let amount = 100;
-        let month = 2;
-        // let pmt = formulas.PMT(rate/(installmentPerYear*100),totalYears*installmentPerYear,amount,0,0).toFixed(2);
-        // let ipmt  = formulas.IPMT(amount,pmt,rate/(installmentPerYear*100),month).toFixed(2);
-        // let ppmt = formulas.PPMT(rate/(installmentPerYear*100),month,totalYears*installmentPerYear,amount,0,0).toFixed(2);
-        // console.log(pmt,ipmt,ppmt);
     }
     return {
         PMT: PMT,

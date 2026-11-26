@@ -14,6 +14,8 @@ portfolio-king/dist/
 build/
 .next/
 .vercel/
+.angular/
+portfolio-king/.angular/
 
 # Logs & Runtime
 *.log
@@ -31,3 +33,7 @@ pids/
 Thumbs.db
 .idea/
 .vscode/
+
+# Temporary Test & Development Artifacts
+screenshots/
+scratch/*.png

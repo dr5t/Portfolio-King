@@ -1,0 +1,55 @@
+<div class="admin-page-shell">
+  <header class="admin-page-header">
+    <div>
+      <h1>Game History</h1>
+      <p>Review completed and archived sessions without changing their results.</p>
+    </div>
+    <button type="button" class="btn btn-secondary" (click)="loadGames()" [disabled]="loading">Refresh History</button>
+  </header>
+
+  <div class="admin-error" *ngIf="error">{{error}}</div>
+  <div class="admin-loading" *ngIf="loading">Loading game history…</div>
+  <ng-container *ngIf="!loading">
+    <div class="admin-toolbar">
+      <input type="search" [(ngModel)]="search" placeholder="Search by game name or ID" aria-label="Search games">
+      <select class="admin-filter" [(ngModel)]="statusFilter" aria-label="Filter by status">
+        <option value="all">All statuses</option>
+        <option value="completed">Completed</option>
+        <option value="archived">Archived</option>
+      </select>
+      <label>From <input type="date" [(ngModel)]="dateFrom"></label>
+      <label>To <input type="date" [(ngModel)]="dateTo"></label>
+    </div>
+
+    <div class="admin-table-wrap" *ngIf="filteredGames.length > 0">
+      <table class="admin-table">
+        <thead>
+          <tr><th>Game</th><th>Result</th><th>Teams</th><th>Status</th><th>Created</th><th>Duration</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let game of filteredGames">
+            <td>
+              <strong>{{game.name || 'Game'}}</strong>
+              <div class="supporting-text">{{game._id}}</div>
+            </td>
+            <td>{{winner(game)}}</td>
+            <td>{{game.players ? game.players.length : 0}} / 4</td>
+            <td><span class="admin-status" [class.status-archived]="game.game_status === 'archived'"
+                      [class.status-completed]="game.game_status === 'completed'">{{game.game_status}}</span></td>
+            <td>{{(game.timestamp || game.createdAt) | date:'mediumDate'}}</td>
+            <td>Not recorded</td>
+            <td>
+              <div class="admin-inline-actions">
+                <a [routerLink]="['/game-status', game._id]" class="btn btn-sm btn-secondary">View</a>
+                <button type="button" class="btn btn-sm btn-secondary" (click)="exportGame(game)">Export CSV</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="admin-empty" *ngIf="filteredGames.length === 0">
+      {{completedGames.length === 0 ? 'Completed game history will appear here.' : 'No games match these filters.'}}
+    </div>
+  </ng-container>
+</div>

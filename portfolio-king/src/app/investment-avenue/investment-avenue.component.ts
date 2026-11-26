@@ -3,11 +3,11 @@ import {NgForm} from "@angular/forms";
 import {UtilityService} from "../shared/utils/utility-service";
 import {PortfolioService} from "../services/portfolio/portfolio.service";
 import {ActivatedRoute, Router} from "@angular/router";
-import {init} from "protractor/built/launcher";
 import {OwlOptions} from "ngx-owl-carousel-o";
-import * as $ from 'jquery';
+import $ from 'jquery';
 
 @Component({
+  standalone: false,
   selector: 'app-investment-avenue',
   templateUrl: './investment-avenue.component.html',
   styleUrls: ['./investment-avenue.component.scss']
@@ -184,9 +184,6 @@ export class InvestmentAvenueComponent implements OnInit {
       for (i = this.game.players[0].rounds.length - 1; i > 0; i--) {
         if (this.game.players[0].rounds[i].status === 'complete') {
           this.loanStatus = true;
-          // if (i > 1) {
-          //   this.fof_status = true;
-          // }
         }
       }
       if (this.fof_status) {
@@ -319,10 +316,8 @@ export class InvestmentAvenueComponent implements OnInit {
       });
     }
 
-    // if (investments['loan_amt'] && investments['loan_duration']) {
     if (this.loanTaken && investments['loan_duration']) {
       loan = {
-        // amount: this.loanAmt,
         amount: 100000,
         duration: this.loanDuration,
         totalRepayments: 0,
@@ -351,10 +346,6 @@ export class InvestmentAvenueComponent implements OnInit {
   }
 
   onTakeLoan() {
-    // if (this.loanAmt < 50000 || this.loanAmt > 100000) {
-    //   UtilityService.showError("Take loan amount in the range of 0 - 100000");
-    //   return;
-    // }
     if (this.loanDuration < 2 || this.loanDuration > 7) {
       UtilityService.showError("Loan duration must be in the range of 2 - 7");
       return;

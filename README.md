@@ -1,88 +1,255 @@
 <div align="center">
 
-<img src="docs/logo-transparent.png" alt="Portfolio King Logo" width="140" />
+<img src="docs/logo.svg" alt="Portfolio King Logo" width="130" />
 
 # Portfolio King
 
-**Real-Time Multiplayer Financial Strategy Simulation**
+### Real-Time Multiplayer Financial Strategy Simulation
 
-Portfolio King is an interactive investment simulation platform built for finance competitions, business schools, and investment workshops. Teams compete in real time — allocating portfolios, managing loans, navigating market volatility, and tracking performance round by round.
-
-<br/>
-
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-portfolio--king-171717?style=for-the-badge&logo=render&logoColor=white)](https://portfolio-king-043i.onrender.com/login)
-[![Angular](https://img.shields.io/badge/Angular-8-DD0031?style=flat-square&logo=angular&logoColor=white)](https://angular.io)
-[![TypeScript](https://img.shields.io/badge/TypeScript-3.5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org)
-[![Express](https://img.shields.io/badge/Express-4.22-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com)
+[![Angular](https://img.shields.io/badge/Angular-22-DD0031?style=flat-square&logo=angular&logoColor=white)](https://angular.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Node.js](https://img.shields.io/badge/Node.js-26%20LTS-339933?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![MongoDB](https://img.shields.io/badge/MongoDB-3.7-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-010101?style=flat-square&logo=socketdotio&logoColor=white)](https://socket.io)
 [![Render](https://img.shields.io/badge/Deployed%20on-Render-46E3B7?style=flat-square&logo=render&logoColor=white)](https://render.com)
 
-<br/>
+<p align="center">
+  <strong>Build portfolios. Manage risk. Compete in dynamic financial markets.</strong>
+</p>
 
-[Live Demo](https://portfolio-king-043i.onrender.com/login) · [Features](#-features) · [Screenshots](#-screenshots) · [Getting Started](#-getting-started) · [Architecture](#-architecture) · [Deployment](#-deployment)
+<a href="https://portfolio-king-043i.onrender.com/login">
+  <img src="https://img.shields.io/badge/%F0%9F%8C%90%20Live%20Demo-portfolio--king-171717?style=for-the-badge&logo=render&logoColor=white" alt="Live Demo" height="38" />
+</a>
+
+<br/><br/>
+
+[Features](#features) · [Screenshots](#screenshots) · [Installation](#installation) · [Architecture](#architecture)
 
 </div>
 
 ---
 
-## 🎯 Overview
+<a id="project-overview"></a>
+## <img src="docs/assets/icons/overview.svg" width="22" height="22" alt="" valign="middle" /> Project Overview
 
-Portfolio King simulates a structured investment competition over multiple rounds. An administrator creates and manages games while teams compete to grow their portfolios through strategic allocation across equities, debt, gold, and real estate.
+**Portfolio King** is a turn-based multiplayer financial simulation engineered for business schools, corporate treasury training, investment clubs, and university competitions.
 
-Each round, a dice roll determines market conditions — amplifying or dampening returns. Teams handle EMI obligations, can opt into a Fund of Funds layer, take loans when needed, and track their net worth in real time against the leaderboard.
+Up to four teams (institutional syndicates) compete simultaneously from separate devices in an eight-quarter market simulation. Each quarter presents a distinct macroeconomic climate determined by dice mechanics — influencing asset volatility, corporate debt yields, equity performance, and liquidity constraints.
 
-The platform is designed for classroom use, finance workshops, and corporate training events, where up to four teams can compete simultaneously from separate devices.
+The platform has been modernized with an institutional-grade user interface, responsive layout architecture, Lottie loading animations, and comprehensive administration tools while strictly preserving the verified core financial calculation engine, Excel-compatible loan formulas, and game dynamics.
 
 ---
 
-## ✨ Features
+<a id="screenshots"></a>
+<a id="application-preview"></a>
+## <img src="docs/assets/icons/preview.svg" width="22" height="22" alt="" valign="middle" /> Application Preview
+
+<table width="100%">
+  <tr>
+    <td width="50%" align="center">
+      <a href="#authentication--access-control">
+        <img src="docs/screenshots/login.png" alt="Login Interface" width="100%" />
+      </a>
+      <br/>
+      <strong>🔐 Login Interface</strong><br/>
+      <sub>Application screenshot</sub>
+    </td>
+    <td width="50%" align="center">
+      <a href="#executive-administration-suite">
+        <img src="docs/screenshots/admin-overview.png" alt="Admin Dashboard" width="100%" />
+      </a>
+      <br/>
+      <strong>📊 Admin Dashboard</strong><br/>
+      <sub>Application screenshot</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <a href="#syndicate-player-interface">
+        <img src="docs/screenshots/investment-workspace.png" alt="Investment Workspace" width="100%" />
+      </a>
+      <br/>
+      <strong>📈 Investment Workspace</strong><br/>
+      <sub>Application screenshot</sub>
+    </td>
+    <td width="50%" align="center">
+      <a href="#syndicate-player-interface">
+        <img src="docs/screenshots/game-results.png" alt="Game Results" width="100%" />
+      </a>
+      <br/>
+      <strong>🏆 Game Results</strong><br/>
+      <sub>Application screenshot</sub>
+    </td>
+  </tr>
+</table>
+
+<br/>
+
+<div align="center">
+  <img src="docs/screenshots/admin-overview.png" alt="Portfolio King Executive Overview Dashboard" width="100%" />
+  <p><em>Executive Overview Dashboard — session telemetry, active rosters, and simulation analytics.</em></p>
+</div>
+
+<br/>
+
+### Authentication & Access Control
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Team Login Terminal</strong><br/>
+      <img src="docs/screenshots/login.png" alt="Team Authentication" width="100%" />
+      <em>Branded split authentication with bull &amp; bear illustration</em>
+    </td>
+    <td width="50%" align="center">
+      <strong>Administrator Login Terminal</strong><br/>
+      <img src="docs/screenshots/login-admin.png" alt="Admin Authentication" width="100%" />
+      <em>Segmented credential validation with rate limiting</em>
+    </td>
+  </tr>
+</table>
+
+### Executive Administration Suite
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Game Session Management</strong><br/>
+      <img src="docs/screenshots/game-management.png" alt="Game Management" width="100%" />
+      <em>Session lifecycle, inline renaming, duplication, and bulk operations</em>
+    </td>
+    <td width="50%" align="center">
+      <strong>Team Roster &amp; Credentials</strong><br/>
+      <img src="docs/screenshots/team-management.png" alt="Team Management" width="100%" />
+      <em>Auto-generate 4-team rosters, export credentials, and status toggles</em>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Live Sessions Monitor</strong><br/>
+      <img src="docs/screenshots/live-sessions.png" alt="Live Sessions" width="100%" />
+      <em>Real-time multiplayer session inspection and team connectivity</em>
+    </td>
+    <td width="50%" align="center">
+      <strong>Game History &amp; Archives</strong><br/>
+      <img src="docs/screenshots/admin-history.png" alt="Game History" width="100%" />
+      <em>Searchable audit trail of completed tournaments and historical rosters</em>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Tournament Results &amp; Analytics</strong><br/>
+      <img src="docs/screenshots/admin-results.png" alt="Admin Results" width="100%" />
+      <em>Final syndicate standings, net worth rankings, and CSV export</em>
+    </td>
+    <td width="50%" align="center">
+      <strong>System &amp; Simulation Settings</strong><br/>
+      <img src="docs/screenshots/admin-settings.png" alt="Admin Settings" width="100%" />
+      <em>Configurable gameplay parameters, security policies, and environment status</em>
+    </td>
+  </tr>
+</table>
+
+### Syndicate Player Interface
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Pre-Game Waiting Room</strong><br/>
+      <img src="docs/screenshots/waiting-room.png" alt="Waiting Room" width="100%" />
+      <em>Connected cohort verification and session readiness countdown</em>
+    </td>
+    <td width="50%" align="center">
+      <strong>Portfolio Investment Terminal</strong><br/>
+      <img src="docs/screenshots/investment-workspace.png" alt="Investment Workspace" width="100%" />
+      <em>Quarterly capital allocation across asset classes, FOF, and loans</em>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Multiplayer Trading Board</strong><br/>
+      <img src="docs/screenshots/multiplayer-board.png" alt="Game Board" width="100%" />
+      <em>Synchronized turn progression, dice roll outcomes, and event impacts</em>
+    </td>
+    <td width="50%" align="center">
+      <strong>Final Leaderboard &amp; Standings</strong><br/>
+      <img src="docs/screenshots/game-results.png" alt="Final Standings" width="100%" />
+      <em>Final valuation metrics, ROI comparisons, and podium results</em>
+    </td>
+  </tr>
+</table>
+
+### Responsive Mobile Interface
+
+<table>
+  <tr>
+    <td width="33.3%" align="center">
+      <strong>Mobile Authentication</strong><br/>
+      <img src="docs/screenshots/mobile-login.png" alt="Mobile Login" width="100%" />
+    </td>
+    <td width="33.3%" align="center">
+      <strong>Mobile Administration</strong><br/>
+      <img src="docs/screenshots/mobile-dashboard.png" alt="Mobile Dashboard" width="100%" />
+    </td>
+    <td width="33.3%" align="center">
+      <strong>Mobile Trading Terminal</strong><br/>
+      <img src="docs/screenshots/mobile-gameplay.png" alt="Mobile Gameplay" width="100%" />
+    </td>
+  </tr>
+</table>
+
+---
+
+<a id="features"></a>
+## <img src="docs/assets/icons/features.svg" width="22" height="22" alt="" valign="middle" /> Key Features
 
 <table>
 <tr>
-<td width="50%">
+<td width="50%" valign="top">
 
-**🎮 Real-Time Gameplay**
-- WebSocket-powered multiplayer (Socket.IO v4)
-- Synchronized game state across all connected teams
-- Live market impact notifications per round
-- Dice-based market condition simulation
+**🎮 Real-Time Multiplayer Gameplay**
+- WebSocket-powered state synchronization across up to 4 concurrent teams.
+- Shared turn-based round progression and dynamic dice rolls.
+- Live market condition changes and portfolio valuation updates.
+- Automatic disconnection detection and seamless session reconnection.
 
-**👤 Administrator Dashboard**
-- Create, rename, duplicate, and archive games
-- Auto-generate team credentials
-- Monitor active sessions and round progress
-- Export results to CSV
-- End game and publish final standings
+**👤 Complete Administration Suite**
+- Create, duplicate, rename, archive, and delete game sessions.
+- Auto-generate secure 4-team credential packages with single-click copy.
+- Real-time session monitoring with active participant counts.
+- Single and bulk game deletion with modal confirmations.
+- Team account enable/disable toggles with instant socket revocation.
+- Full tournament results with CSV export capability.
 
-**🔐 Secure Authentication**
-- PBKDF2-HMAC-SHA256 (600,000 iterations)
-- Duplicate session prevention
-- Server-side route authorization
-- Production credential guard on startup
+**🔐 Hardened Security Architecture**
+- Asynchronous PBKDF2-HMAC-SHA256 password hashing (600,000 iterations).
+- Cryptographically random per-user salts.
+- Constant-time hash verification to defeat timing attacks.
+- Server-side role authorization guards on all REST endpoints and socket events.
+- Duplicate active session prevention (HTTP 409 Conflict rejection).
+- Production credential checks that halt startup on default passwords.
 
 </td>
-<td width="50%">
+<td width="50%" valign="top">
 
-**💼 Investment Portfolio**
-- Six asset classes: Equity (Large/Mid/Small Cap), Debt–Corporate, Gold, Real Estate
-- Risk ratings and expected return ranges per avenue
-- Round-by-round allocation with reset capability
-- FOF (Fund of Funds) with 2% management fee
-- Loan management with EMI calculations
+**💼 Portfolio Investment Engine**
+- Six core asset classes: Equity (Large/Mid/Small Cap), Corporate Debt, Gold, Real Estate.
+- Fund of Funds (FOF) option with 2% management fee structure.
+- Debt and loan management with Excel-compatible EMI amortization.
+- Baseline 6.2% Bank Fixed Deposit comparison floor.
+- Dynamic dice roll mechanics (1–6) modifying asset yields each round.
 
-**📊 Financial Engine**
-- PMT / PPMT / IPMT calculations (Excel-compatible)
-- 6.2% Bank FD baseline rate
-- Real-time net worth tracking
-- Final leaderboard ranked by portfolio value
-- CSV export with per-team analytics
+**📱 Responsive Institutional UI**
+- Warm ivory (`#F5F5F3`) and charcoal (`#202123`) institutional color tokens.
+- Zero horizontal overflow across all viewports (320px mobile to 1920px desktop).
+- Modern SVG technology iconography and consistent design tokens.
+- Lottie loading animation with a 3-second hard maximum duration.
 
-**📱 Responsive Interface**
-- Works on desktop, tablet, and mobile
-- Warm ivory and charcoal design system
-- Lottie loading animation
+**⚡ Modern Angular 22 Toolchain**
+- Direct Angular 22 + TypeScript 6 migration.
+- Ultra-fast esbuild application pipeline (`ng build` in ~5 seconds).
+- Zero vulnerabilities across root, frontend, and backend packages.
+- Zero reliance on `--openssl-legacy-provider`.
 
 </td>
 </tr>
@@ -90,130 +257,211 @@ The platform is designed for classroom use, finance workshops, and corporate tra
 
 ---
 
-## 📸 Screenshots
+<a id="tech-stack"></a>
+## <img src="docs/assets/icons/tech-stack.svg" width="22" height="22" alt="" valign="middle" /> Technology Stack
+
+<div align="center">
 
 <table>
-<tr>
-<td width="50%" align="center">
+  <tr>
+    <td align="center" width="16%">
+      <img src="docs/assets/icons/angular.svg" width="40" height="40" alt="Angular" /><br/>
+      <sub><b>Angular</b></sub>
+    </td>
+    <td align="center" width="16%">
+      <img src="docs/assets/icons/typescript.svg" width="40" height="40" alt="TypeScript" /><br/>
+      <sub><b>TypeScript</b></sub>
+    </td>
+    <td align="center" width="16%">
+      <img src="docs/assets/icons/nodejs.svg" width="40" height="40" alt="Node.js" /><br/>
+      <sub><b>Node.js</b></sub>
+    </td>
+    <td align="center" width="16%">
+      <img src="docs/assets/icons/mongodb.svg" width="40" height="40" alt="MongoDB" /><br/>
+      <sub><b>MongoDB</b></sub>
+    </td>
+    <td align="center" width="16%">
+      <img src="docs/assets/icons/socketio.svg" width="40" height="40" alt="Socket.IO" /><br/>
+      <sub><b>Socket.IO</b></sub>
+    </td>
+    <td align="center" width="16%">
+      <img src="docs/assets/icons/git.svg" width="40" height="40" alt="Git" /><br/>
+      <sub><b>Git</b></sub>
+    </td>
+  </tr>
+</table>
 
-**Login Interface**
-<img src="docs/screenshots/01-login.png" alt="Login Interface" width="100%" />
+</div>
 
-</td>
-<td width="50%" align="center">
+<br/>
 
-**Admin Game Dashboard**
-<img src="docs/screenshots/02-admin-dashboard.png" alt="Admin Dashboard" width="100%" />
-
-</td>
-</tr>
-<tr>
-<td width="50%" align="center">
-
-**Team Manager**
-<img src="docs/screenshots/03-team-manager.png" alt="Team Manager" width="100%" />
-
-</td>
-<td width="50%" align="center">
-
-**Player Investment Workspace**
-<img src="docs/screenshots/04-investment-workspace.png" alt="Investment Workspace" width="100%" />
-
-</td>
-</tr>
-<tr>
-<td width="50%" align="center">
-
-**Active Game Board**
-<img src="docs/screenshots/05-game-board.png" alt="Game Board" width="100%" />
-
-</td>
-<td width="50%" align="center">
-
-**Multiplayer Round in Progress**
-<img src="docs/screenshots/06-multiplayer.png" alt="Multiplayer Round" width="100%" />
-
-</td>
-</tr>
+<table>
+  <thead>
+    <tr>
+      <th>Layer</th>
+      <th>Technologies</th>
+      <th>Version</th>
+      <th>Role</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center"><strong>Frontend</strong></td>
+      <td>
+        <img src="docs/assets/icons/angular.svg" width="20" height="20" alt="Angular" valign="middle" /> <strong>Angular</strong><br/>
+        <img src="docs/assets/icons/typescript.svg" width="20" height="20" alt="TypeScript" valign="middle" /> <strong>TypeScript</strong><br/>
+        <img src="docs/assets/icons/html5.svg" width="20" height="20" alt="HTML5" valign="middle" /> <strong>HTML5</strong><br/>
+        <img src="docs/assets/icons/sass.svg" width="20" height="20" alt="SCSS" valign="middle" /> <strong>SCSS</strong><br/>
+        <img src="docs/assets/icons/lottie.svg" width="20" height="20" alt="Lottie" valign="middle" /> <strong>Lottie</strong>
+      </td>
+      <td>
+        <code>^22.3.0</code><br/>
+        <code>~6.0.2</code><br/>
+        <code>Standard</code><br/>
+        <code>Dart Sass</code><br/>
+        <code>^5.12.2</code>
+      </td>
+      <td>
+        Component-based single page application, reactive forms, RxJS state management, design tokens, and vector loading animations.
+      </td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Backend</strong></td>
+      <td>
+        <img src="docs/assets/icons/nodejs.svg" width="20" height="20" alt="Node.js" valign="middle" /> <strong>Node.js</strong><br/>
+        <img src="docs/assets/icons/express.svg" width="20" height="20" alt="Express" valign="middle" /> <strong>Express.js</strong><br/>
+        <img src="docs/assets/icons/javascript.svg" width="20" height="20" alt="JavaScript" valign="middle" /> <strong>JavaScript</strong>
+      </td>
+      <td>
+        <code>^26.0.0</code> (LTS 26 Lithium)<br/>
+        <code>^4.22.1</code><br/>
+        <code>ES2022</code>
+      </td>
+      <td>
+        RESTful API server, authenticated session management, Excel financial calculation engine, and static Angular SPA hosting.
+      </td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Real-Time</strong></td>
+      <td>
+        <img src="docs/assets/icons/socketio.svg" width="20" height="20" alt="Socket.IO" valign="middle" /> <strong>Socket.IO</strong>
+      </td>
+      <td><code>^4.8.1</code> (Client &amp; Server)</td>
+      <td>Bidirectional WebSocket engine synchronizing multi-client game states, turn broadcasts, and room telemetry.</td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Database</strong></td>
+      <td>
+        <img src="docs/assets/icons/mongodb.svg" width="20" height="20" alt="MongoDB" valign="middle" /> <strong>MongoDB</strong>
+      </td>
+      <td><code>^3.7.4</code> (Atlas / Community)</td>
+      <td>Document store for game sessions, team credentials, historical rounds, and persistent authentication states.</td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Dev &amp; Deploy</strong></td>
+      <td>
+        <img src="docs/assets/icons/npm.svg" width="20" height="20" alt="npm" valign="middle" /> <strong>npm</strong><br/>
+        <img src="docs/assets/icons/git.svg" width="20" height="20" alt="Git" valign="middle" /> <strong>Git</strong><br/>
+        <img src="docs/assets/icons/render.svg" width="20" height="20" alt="Render" valign="middle" /> <strong>Render</strong>
+      </td>
+      <td>
+        <code>&gt;=10.0.0</code><br/>
+        <code>Latest</code><br/>
+        <code>Cloud Web Service</code>
+      </td>
+      <td>Dependency resolution, multi-workspace builds, version control, and production automated CI/CD hosting.</td>
+    </tr>
+  </tbody>
 </table>
 
 ---
 
-## 🏗 Architecture
+<a id="architecture"></a>
+## <img src="docs/assets/icons/architecture.svg" width="22" height="22" alt="" valign="middle" /> System Architecture
 
 ```mermaid
 graph TD
-    A[Admin Browser] -->|HTTPS + WebSocket| F[Angular Frontend\nport 3000]
-    B[Team Browser × 4] -->|HTTPS + WebSocket| F
+    subgraph Clients["Client Tier (Web Browsers)"]
+        ADMIN["Administrator Browser\n(Desktop / Mobile)"]
+        T1["Team 1 Browser"]
+        T2["Team 2 Browser"]
+        T3["Team 3 Browser"]
+        T4["Team 4 Browser"]
+    end
 
-    F -->|REST API| E[Express Server\nindex.js]
-    F -->|Socket.IO v4| S[Socket.IO Engine\nsocket.js]
+    subgraph Frontend["Angular 22 Single Page Application"]
+        ROUTER["Angular Router\n(AuthGuard / AdminGuard)"]
+        UI_ADMIN["Admin Interface\n(Overview, Games, Teams, Results)"]
+        UI_PLAYER["Player Interface\n(Lobby, Terminal, Game Board)"]
+        SOCK_CLIENT["Socket.IO Client v4\n(PortfolioService)"]
+        API_CLIENT["HTTP REST Client\n(ApiService)"]
+    end
 
-    E --> AUTH[Auth Module\nauth.js — PBKDF2 600k]
-    E --> ROUTES[Admin Routes\nroutes/admin.js]
-    E --> CALC[Financial Engine\nformulas/formulas.js]
-    E --> INV[Investment Config\ninvestments/investments.js]
+    subgraph Backend["Express Application Server (Node 26 LTS)"]
+        STATIC["Static Asset Server\n(dist/Client/)"]
+        AUTH["Security & Auth Engine\nPBKDF2-HMAC-SHA256 (600k iter)"]
+        REST_API["REST Endpoints\n(/login, /api/admin/*)"]
+        SOCK_SERVER["Socket.IO Server v4\n(Multi-Room State Manager)"]
+        FIN_ENGINE["Financial Engine\n(PMT, PPMT, IPMT, FOF, FD)"]
+    end
 
-    S --> AUTH
-    S --> CALC
+    subgraph Data["Database Tier"]
+        MONGO[("MongoDB Database\n(Games, Teams, History, Sessions)")]
+    end
 
-    AUTH --> DB[(MongoDB Atlas\nportfolio DB)]
-    ROUTES --> DB
-    CALC --> DB
+    ADMIN -->|HTTPS| ROUTER
+    T1 & T2 & T3 & T4 -->|HTTPS| ROUTER
+    ROUTER --> UI_ADMIN & UI_PLAYER
+    UI_ADMIN & UI_PLAYER --> API_CLIENT & SOCK_CLIENT
 
-    style F fill:#F5F5F3,stroke:#171717
-    style E fill:#171717,stroke:#171717,color:#fff
-    style S fill:#010101,stroke:#171717,color:#fff
-    style DB fill:#47A248,stroke:#2d7a2d,color:#fff
-    style AUTH fill:#B42318,stroke:#8a1a10,color:#fff
+    API_CLIENT -->|HTTP / JSON| REST_API
+    SOCK_CLIENT <-->|WebSockets| SOCK_SERVER
+
+    REST_API --> AUTH
+    AUTH --> MONGO
+    REST_API --> MONGO
+    SOCK_SERVER --> FIN_ENGINE
+    FIN_ENGINE --> MONGO
 ```
 
-**Request flow:**
-- The Angular SPA is served as a static build from `dist/Client/` by Express
-- REST endpoints handle authentication, game management, and admin operations
-- Socket.IO events handle real-time game synchronization: `join-game`, `player-ready`, `dice-rolled`, `submit-investment`, `game-ended`
-- All socket events are verified server-side before processing
+**Architecture Highlights:**
+- **Single-Origin Deployment:** Express serves the compiled Angular 22 production bundle directly from `dist/Client`, eliminating CORS overhead in production.
+- **Synchronized State Engine:** Socket.IO v4 maintains isolated rooms (`game-<id>`), multicasting dice outcomes and allocation updates to all verified teams.
+- **Server-Side Financial Authority:** Client interfaces never calculate investment settlement figures directly; all yields, EMIs, and net worth calculations are performed on the server.
 
 ---
 
-## 🎲 How the Game Works
+## <img src="docs/assets/icons/gameplay.svg" width="22" height="22" alt="" valign="middle" /> How Portfolio King Works
 
-| Step | Action |
-|------|--------|
-| 1 | Administrator logs in and creates a new game, specifying the number of rounds |
-| 2 | Teams are auto-generated with credentials — shared with participants |
-| 3 | Teams log in and join the waiting room |
-| 4 | Once all teams are ready, the admin starts the round |
-| 5 | Each team allocates their investment budget (₹5,00,000 starting capital) across six asset classes |
-| 6 | Admin rolls the dice — the result (1–6) applies a market multiplier to all returns |
-| 7 | Returns are calculated using PMT/PPMT/IPMT formulas; loans deduct EMI amounts |
-| 8 | Net worth updates in real time for all players |
-| 9 | Rounds repeat until the configured end (maximum 8 quarters) |
-| 10 | Final leaderboard ranks teams by portfolio value minus outstanding loans |
+The simulation executes through an eight-stage lifecycle across two complete macroeconomic cycles (8 fiscal quarters):
 
-**Investment avenues and expected return ranges:**
+```
+Session Creation ──▶ Credential Distribution ──▶ Syndicate Authentication ──▶ Capital Allocation
+                                                                                      │
+Winner Crowned   ◀── Terminal Settlement    ◀── Multi-Quarter Cycle     ◀── Macro Dice Roll
+```
 
-| Avenue | Risk | Expected Return |
-|--------|------|----------------|
-| Equity – Large Cap | ●●○○○ | 8% – 14% |
-| Equity – Mid Cap | ●●●○○ | 10% – 18% |
-| Equity – Small Cap | ●●●●○ | 12% – 24% |
-| Debt – Corporate | ●●○○○ | 6% – 10% |
-| Gold | ●●○○○ | 5% – 9% |
-| Real Estate (REIT) | ●●●○○ | 7% – 12% |
-
-> **Fund of Funds:** An optional allocation tier with a 2% management fee applied before returns.  
-> **Bank FD baseline:** 6.2% guaranteed rate used as a floor comparison metric.
+1. **Session Provisioning:** The administrator creates a new game session in the executive dashboard.
+2. **Credential Issuance:** The administrator triggers the *Auto-Generate 4 Teams* action, producing unique alphanumeric Team IDs and cryptographically random passwords.
+3. **Syndicate Authentication:** Up to four teams log in from their respective devices. Duplicate logins are rejected with HTTP 409 Conflict.
+4. **Capital Allocation:** Teams enter the investment terminal with ₹10,00,000 starting cash. They allocate capital across equities, debt, gold, real estate, bank deposits, and optional Fund of Funds (FOF).
+5. **Macroeconomic Volatility:** A 30-second decision timer runs each round. Teams roll dice (outcomes 1–6) that trigger macroeconomic modifiers altering quarter returns.
+6. **Automated Settlement:** The financial engine computes asset returns, applies the 2% FOF management fee, deducts loan EMIs (PMT/PPMT/IPMT), and updates net worth.
+7. **Quarterly Progression:** The simulation advances through 8 fiscal quarters (Year 1: Q1–Q4, Year 2: Q1–Q4).
+8. **Terminal Settlement & Winner:** Final standings are generated on the leaderboard, ranked by total portfolio net worth, and exported to CSV.
 
 ---
 
-## 🚀 Getting Started
+<a id="installation"></a>
+<a id="getting-started"></a>
+## <img src="docs/assets/icons/getting-started.svg" width="22" height="22" alt="" valign="middle" /> Getting Started
 
 ### Prerequisites
 
-- **Node.js** `≥ 18.0.0` (tested on 18.x LTS and 20.x LTS)
-- **npm** `≥ 9`
-- **MongoDB** — local instance (`mongod`) or a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster
+- **Node.js** `^26.0.0` (LTS 26 Lithium `v26.13.1` or `^24.15.0`)
+- **npm** `≥ 10.0.0`
+- **Git**
+- **MongoDB** — local instance (`mongod`) or a [MongoDB Atlas](https://www.mongodb.com/atlas) cluster
 
 ### Installation
 
@@ -222,21 +470,21 @@ graph TD
 git clone https://github.com/dr5t/Portfolio-King.git
 cd Portfolio-King
 
-# 2. Install all dependencies (root + backend + frontend)
+# 2. Build the entire application (installs root, server, and frontend dependencies)
 npm run build
 ```
 
-> `npm run build` installs backend and frontend dependencies then compiles the Angular app into `portfolio-king/dist/Client/`.
+> **Note:** `npm run build` runs an automated chained install across root, server, and frontend packages, then compiles the production Angular bundle into `portfolio-king/dist/Client/`.
 
-### Environment Configuration
+### Environment Setup
 
-Create a `.env` file in `portfolio-king-server/` using the provided example:
+Create a `.env` file in `portfolio-king-server/` (or copy `.env.example`):
 
 ```bash
-cp portfolio-king-server/.env.example portfolio-king-server/.env
+cp .env.example portfolio-king-server/.env
 ```
 
-Edit the values:
+Edit `portfolio-king-server/.env` with your preferred configuration:
 
 ```env
 PORT=3000
@@ -247,195 +495,203 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=your_secure_password_here
 ```
 
-> **Never commit your `.env` file.** It is listed in `.gitignore`.
-
-### Start the Application
+### Running the Application
 
 ```bash
-# Production mode (serves the compiled Angular build)
+# Production mode (serves compiled Angular bundle from Express)
 npm start
 
 # Application available at:
 # http://localhost:3000
 ```
 
-For development, build the Angular app with watch mode from a separate terminal:
+### Development Mode
+
+For active frontend development with live watch compilation, run the Angular builder from a separate terminal:
 
 ```bash
 cd portfolio-king
-NODE_OPTIONS="--openssl-legacy-provider" npx ng build --watch
+npm run watch
 ```
 
 ---
 
-## ⚙️ Environment Variables
+## <img src="docs/assets/icons/configuration.svg" width="22" height="22" alt="" valign="middle" /> Environment Configuration
 
-| Variable | Purpose | Required |
-|----------|---------|----------|
-| `PORT` | Server listening port | No (default: `3000`) |
-| `HOST` | Bind address | No (default: `0.0.0.0`) |
-| `MONGODB_URI` | MongoDB connection string | **Yes** |
-| `DB_NAME` | Database name | No (default: `portfolio`) |
-| `ADMIN_USERNAME` | Administrator login username | **Yes** |
-| `ADMIN_PASSWORD` | Administrator login password | **Yes** |
+The application is configured via environment variables read at startup by `portfolio-king-server/index.js`:
 
-A safe `.env.example` template is included in both the root and `portfolio-king-server/` directories.
+| Variable | Description | Required | Safe Default / Example |
+| :--- | :--- | :---: | :--- |
+| `PORT` | HTTP port the server listens on | Optional | `3000` |
+| `HOST` | Network interface address to bind | Optional | `0.0.0.0` |
+| `MONGODB_URI` | MongoDB connection URI string | **Yes** | `mongodb://127.0.0.1:27017/portfolio` |
+| `DB_NAME` | Target database collection name | Optional | `portfolio` |
+| `ADMIN_USERNAME` | Master administrator username | **Yes** | `admin` |
+| `ADMIN_PASSWORD` | Master administrator password | **Yes** | `DemoPass@2026` |
+| `NODE_ENV` | Runtime environment mode | Optional | `production` / `development` |
+
+> [!IMPORTANT]
+> The server enforces a security startup guard: if `ADMIN_PASSWORD` is left as `admin`, the server will refuse to start in production to prevent default credential exploitation.
 
 ---
 
-## 📁 Project Structure
+## <img src="docs/assets/icons/project-structure.svg" width="22" height="22" alt="" valign="middle" /> Project Structure
 
 ```
 Portfolio-King/
-├── package.json                  # Root scripts: build & start
-├── render.yaml                   # Render deployment config
-├── .env.example                  # Safe environment template
-├── docs/
-│   ├── logo-transparent.png      # Brand logo
-│   └── screenshots/              # README screenshots
+├── package.json                    # Root build and startup orchestration scripts
+├── render.yaml                     # Render infrastructure-as-code deployment config
+├── .env.example                    # Safe template for environment configuration
 │
-├── portfolio-king/               # Angular frontend
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── login/            # Login component (team + admin)
-│   │   │   ├── home/             # Admin dashboard
-│   │   │   ├── game/             # Game board component
-│   │   │   ├── investment-avenue/ # Player investment UI
-│   │   │   ├── game-status/      # Round status display
-│   │   │   ├── rules/            # Game rules component
-│   │   │   └── services/         # Portfolio, auth, utility services
-│   │   ├── assets/
-│   │   │   ├── imgs/             # Logo, bull-bear illustration, dice
-│   │   │   ├── fonts/            # Custom typography
-│   │   │   └── loading-animation.json  # Lottie animation
-│   │   └── styles.scss           # Global design tokens and styles
-│   └── angular.json
+├── docs/                           # Documentation assets
+│   ├── logo.svg                    # Brand crown vector logo
+│   ├── logo-transparent.png        # Transparent PNG brand asset
+│   ├── assets/
+│   │   └── icons/                  # High-contrast documentation section and tech icons
+│   └── screenshots/                # Application screenshots (desktop 1440x900, mobile 390x844)
 │
-└── portfolio-king-server/        # Express backend
-    ├── index.js                  # Server entry point, HTTP + Socket.IO init
-    ├── auth.js                   # PBKDF2 password hashing & verification
-    ├── socket.js                 # Socket.IO event handlers
+├── portfolio-king/                 # Angular 22 Single Page Application
+│   ├── angular.json                # Angular 22 esbuild application configuration
+│   ├── tsconfig.json               # Modern TypeScript 6 compiler configuration
+│   ├── package.json                # Frontend dependencies (@angular/*, rxjs, socket.io-client)
+│   └── src/
+│       ├── app/
+│       │   ├── admin/              # Admin overview, sessions, history, results, settings
+│       │   ├── game/               # Multiplayer trading board and dice interaction
+│       │   ├── game-status/        # Pre-game lobby and round status components
+│       │   ├── home/               # Executive games dashboard and team manager
+│       │   ├── investment-avenue/  # Portfolio allocation, FOF, and loan terminal
+│       │   ├── login/              # Segmented team and admin authentication
+│       │   ├── rules/              # Simulation tournament rulebook and guidelines
+│       │   └── services/           # ApiService, PortfolioService, AuthGuard, AdminGuard
+│       ├── assets/                 # Brand illustrations, fonts, and loading-animation.json
+│       ├── styles.scss             # Design system variables, tokens, and utility styles
+│       └── polyfills.ts            # Zone.js modern polyfill loader
+│
+└── portfolio-king-server/          # Node.js Express REST & WebSocket Server
+    ├── index.js                    # Server bootstrap, static SPA router, socket binding
+    ├── auth.js                     # PBKDF2-HMAC-SHA256 password hashing and verification
+    ├── socket.js                   # Real-time WebSocket game event orchestration
     ├── routes/
-    │   └── admin.js              # Admin REST API routes
+    │   └── admin.js                # Authenticated administrative REST endpoints
     ├── formulas/
-    │   └── formulas.js           # PMT/PPMT/IPMT financial calculations
-    ├── investments/
-    │   └── investments.js        # Asset class configuration
+    │   └── financial.js            # PMT, PPMT, IPMT amortization and portfolio logic
     └── db/
-        └── portfolio_db.js       # MongoDB connection and queries
+        └── portfolio_db.js         # MongoDB connection lifecycle and schema operations
 ```
 
 ---
 
-## ☁️ Deployment
+## <img src="docs/assets/icons/deployment.svg" width="22" height="22" alt="" valign="middle" /> Production Deployment
 
-Portfolio King is deployed on [Render](https://render.com) using the included `render.yaml`.
+Portfolio King is configured for single-click deployment on **Render** using the included [render.yaml](file:///Users/shauryatiwari/Portfolio%20king/render.yaml) blueprint.
 
-### Render Setup
+**Live Application:** [https://portfolio-king-043i.onrender.com/login](https://portfolio-king-043i.onrender.com/login)
 
-1. **Connect your repository** to Render from the dashboard
-2. Render detects `render.yaml` automatically and configures the service
+### Render Deployment Steps
 
-**Build command:**
-```
-npm run build
-```
+1. **Connect Repository:** Link your GitHub repository `https://github.com/dr5t/Portfolio-King` on the Render Dashboard.
+2. **Select Blueprint:** Render will automatically detect `render.yaml`.
+3. **Configure Environment Variables:**
+   - `NODE_VERSION`: `22.14.0`
+   - `MONGODB_URI`: Your MongoDB Atlas connection string (e.g., `mongodb+srv://user:pass@cluster.mongodb.net/portfolio?retryWrites=true&w=majority`).
+   - `ADMIN_USERNAME`: Master administrator username.
+   - `ADMIN_PASSWORD`: High-entropy master administrator password.
+4. **Deploy:** Render will trigger the build pipeline:
+   - **Build Command:** `npm run build`
+   - **Start Command:** `npm start`
+5. **Atlas Network Access:** Ensure your MongoDB Atlas Network Access whitelist includes `0.0.0.0/0` (allow access from anywhere) so Render cloud instances can reach the database.
 
-**Start command:**
-```
-npm start
-```
-
-**Required environment variables** (set in Render dashboard — do not commit):
-
-| Variable | Value |
-|----------|-------|
-| `MONGODB_URI` | Your MongoDB Atlas connection string |
-| `ADMIN_PASSWORD` | A secure password for the admin account |
-| `NODE_VERSION` | `18.20.8` |
-
-### MongoDB Atlas
-
-1. Create a free cluster at [mongodb.com/atlas](https://www.mongodb.com/atlas)
-2. Add a database user with read/write permissions
-3. Under **Network Access**, add `0.0.0.0/0` (allow from anywhere) for Render's dynamic IPs
-4. Copy the connection string into `MONGODB_URI`
-
-### Live Application
-
-> **[https://portfolio-king-043i.onrender.com/login](https://portfolio-king-043i.onrender.com/login)**
-
-> **Note:** The free Render plan spins down instances after inactivity. The first request after a cold start may take 30–60 seconds while the server wakes up. Subsequent requests are fast.
+> [!NOTE]
+> If deployed on a Render Free instance, the service will spin down after inactivity. Initial cold-start requests may take 30–50 seconds to resume.
 
 ---
 
-## 🧪 Testing
+## <img src="docs/assets/icons/security.svg" width="22" height="22" alt="" valign="middle" /> Security Architecture
 
-The project includes automated test scripts in the `scratch/` directory. Run them from the project root:
+The application has been audited and hardened against common web application vulnerabilities:
+
+- **Password Hashing:** Asynchronous `crypto.pbkdf2` using HMAC-SHA256 with **600,000 iterations** and 32-byte cryptographically secure salts.
+- **Timing Attack Resistance:** Password comparisons utilize `crypto.timingSafeEqual` to eliminate timing discrepancies during credential verification.
+- **Session Integrity & Anti-Duplicate:** Active team sessions maintain socket ID bindings in MongoDB. Concurrent login attempts from separate browsers with the same Team ID are rejected with `409 Conflict`.
+- **Role-Based Route Authorization:** All administrative REST endpoints verify `isAdmin === 'true'` server-side. Unauthenticated requests are rejected with `401 Unauthorized` or `403 Forbidden`.
+- **Injection Defenses:** 
+  - MongoDB queries utilize strict parameter mapping to prevent NoSQL query object injection.
+  - CSV report exports sanitize leading formula characters (`=`, `+`, `-`, `@`) to prevent CSV injection in spreadsheet applications.
+  - Content Security Policy (CSP) headers restrict script execution and style sources.
+
+---
+
+## <img src="docs/assets/icons/testing.svg" width="22" height="22" alt="" valign="middle" /> Testing & Verification
+
+Comprehensive automated test suites are provided to verify system integrity:
 
 ```bash
-# Financial calculation regression tests
+# 1. Run Financial Engine Regression Suite (PMT, PPMT, IPMT, 2% FOF, 6.2% Bank FD)
 node scratch/test-financial-calculations.js
 
-# Authentication and authorization unit tests
+# 2. Run Authentication & Security Audit Suite (12 test vectors)
 node scratch/test-auth-system.js
 
-# 4-team multiplayer end-to-end test (requires Puppeteer)
-node scratch/run-e2e-auth-multiplayer.js
+# 3. Run Lottie Loading Animation Integration Suite
+node scratch/test-loader-lottie.js
 
-# Responsive viewport tests (requires Puppeteer)
+# 4. Run 10-Viewport Responsiveness & Layout Suite (320px to 1920px)
 node scratch/test-viewports-responsiveness.js
 
-# Lottie loading animation verification (requires Puppeteer)
-node scratch/test-loader-lottie.js
+# 5. Run Full 4-Team Multiplayer End-to-End Suite
+node scratch/run-e2e-auth-multiplayer.js
 ```
 
-**Puppeteer dependency:** Tests use the globally installed Puppeteer and system Chrome. Ensure Chrome is installed at `/Applications/Google Chrome.app/` on macOS.
+---
+
+## <img src="docs/assets/icons/troubleshooting.svg" width="22" height="22" alt="" valign="middle" /> Troubleshooting
+
+### MongoDB Connection Refused (`ECONNREFUSED 127.0.0.1:27017`)
+- Ensure local MongoDB is running: `brew services start mongodb-community` (macOS) or `sudo systemctl start mongod` (Linux).
+- If using MongoDB Atlas, verify your IP is whitelisted in Network Access and `MONGODB_URI` contains the correct user credentials.
+
+### Port Already in Use (`EADDRINUSE :::3000`)
+- Another process is occupying port 3000. Identify and terminate it:
+  ```bash
+  lsof -i :3000
+  kill -9 <PID>
+  ```
+
+### Node.js Engine Warning
+- Ensure you are running Node.js `^26.0.0` (or `^24.15.0`). Check your version:
+  ```bash
+  node -v
+  ```
+  Switch to a supported LTS version via nvm: `nvm use 26`.
+
+### Duplicate Session Alert (`Team already connected`)
+- A team account is currently engaged in an active game session. The administrator can disable and re-enable the team from the *Team Management* tab to force a session reset.
 
 ---
 
-## 🔒 Security
+## <img src="docs/assets/icons/license.svg" width="22" height="22" alt="" valign="middle" /> License & Attribution
 
-- **Password hashing:** PBKDF2-HMAC-SHA256 with 600,000 iterations and cryptographically random salts. Existing hashes are automatically migrated on first login.
-- **Session management:** Each team credential may only have one active session. Duplicate logins are rejected with a clear error.
-- **Server-side authorization:** All admin REST routes and all socket events are validated on the server before processing. The client is never trusted for game-state decisions.
-- **HTTP security headers:** Content-Security-Policy, HSTS, X-Frame-Options, and X-Content-Type-Options applied via Express middleware.
-- **Environment secrets:** No credentials in source code. All secrets loaded from environment variables at runtime.
-- **Production guard:** The server refuses to start if `ADMIN_USERNAME` or `ADMIN_PASSWORD` are unset in production.
-- **Dependency audits:** Backend dependencies maintained at zero high/critical vulnerabilities. Run `npm audit` in `portfolio-king-server/` to verify.
+### Original Project Attribution
+- **Creator & Author:** Shaurya ([@dr5t](https://github.com/dr5t))
+- **Repository:** [dr5t/Portfolio-King](https://github.com/dr5t/Portfolio-King)
 
----
+### License
+This project is licensed under the **ISC License**. See the repository history for detailed rights and permissions.
 
-## 🤝 Contributing
-
-This is a private project. If you have been granted access and would like to contribute:
-
-1. Create a feature branch from `main`
-2. Make focused, well-described commits
-3. Test all changes with the existing test suite before opening a pull request
-4. Do not modify financial formulas, authentication logic, or the approved visual design without prior discussion
-
----
-
-## 📄 License & Credits
-
-**Author:** Shaurya Tiwari  
-**Repository:** [github.com/dr5t/Portfolio-King](https://github.com/dr5t/Portfolio-King)
-
-**Third-party assets:**
-- [Lottie Web](https://github.com/airbnb/lottie-web) — MIT License — loading animation renderer
-- [Socket.IO](https://socket.io) — MIT License — real-time communication
-- [ngx-owl-carousel-o](https://github.com/vitalii-andriiovskyi/ngx-owl-carousel-o) — MIT License — carousel component
-- Loading animation © original creator — used with permission
+### Third-Party Assets
+- **Technology Logos:** Simple Icons, Devicon, and respective trademark owners.
+- **Vector Icons:** Lucide Icons.
+- **Loader Animation:** LottieFiles.
 
 ---
 
 <div align="center">
 
-<img src="docs/logo-transparent.png" alt="Portfolio King" width="56" />
+<img src="docs/logo.svg" alt="Portfolio King Logo" width="36" />
 
-**Portfolio King** — Financial Strategy Simulation
+**Portfolio King**
 
-[Live Demo](https://portfolio-king-043i.onrender.com/login) · [GitHub](https://github.com/dr5t/Portfolio-King)
+[Live Application](https://portfolio-king-043i.onrender.com/login) · [GitHub Repository](https://github.com/dr5t/Portfolio-King) · [Back to Top](#portfolio-king)
 
 </div>

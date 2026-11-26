@@ -2,6 +2,7 @@ import {Component, Input, OnInit, SimpleChanges} from '@angular/core';
 import {PortfolioService} from "../../services/portfolio/portfolio.service";
 
 @Component({
+  standalone: false,
   selector: 'app-team-details',
   templateUrl: './team-details.component.html',
   styleUrls: ['./team-details.component.scss']

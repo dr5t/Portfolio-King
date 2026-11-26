@@ -10,7 +10,7 @@
   max-width: 1400px;
   margin: 0 auto;
 
-  /* Top Bar (Session & Team) */
+  
   .terminal-top-bar {
     display: flex;
     justify-content: space-between;
@@ -63,7 +63,7 @@
     }
   }
 
-  /* Metric Cards Grid (4 Cards Horizontal) */
+  
   .metrics-strip-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -142,7 +142,7 @@
     }
   }
 
-  /* Sub-Navigation Tabs */
+  
   .workspace-tabs-row {
     margin-bottom: 16px;
 
@@ -179,7 +179,7 @@
     }
   }
 
-  /* Workspace Content Grid (Table + Market Roll Console) */
+  
   .workspace-content-grid {
     display: grid;
     grid-template-columns: 1fr 260px;
@@ -187,7 +187,7 @@
     align-items: start;
     margin-bottom: 24px;
 
-    /* Main Table Card */
+    
     .table-card {
       background: var(--bg-surface);
       border: 1px solid var(--border-color);
@@ -239,7 +239,7 @@
             margin-top: 1px;
           }
 
-          /* Risk Bar Indicator */
+          
           .risk-bar-indicator {
             display: inline-flex;
             align-items: center;
@@ -274,7 +274,7 @@
             }
           }
 
-          /* Amount Input Box */
+          
           .amount-input-wrap {
             display: inline-flex;
             align-items: center;
@@ -365,7 +365,7 @@
       }
     }
 
-    /* Right Side Market Roll Console */
+    
     .market-roll-console {
       background: var(--bg-surface);
       border: 1px solid var(--border-color);
@@ -467,7 +467,7 @@
     }
   }
 
-  /* Allocation Summary Footer Strip */
+  
   .allocation-footer-strip {
     background: var(--bg-surface);
     border: 1px solid var(--border-color);
@@ -515,7 +515,7 @@
     }
   }
 
-  /* Modal */
+  
   .modal-backdrop {
     position: fixed;
     top: 0;

@@ -5,6 +5,7 @@ import {Router} from "@angular/router";
 import {UtilityService} from "../shared/utils/utility-service";
 
 @Component({
+  standalone: false,
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']

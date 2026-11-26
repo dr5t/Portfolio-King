@@ -9,6 +9,7 @@
     "test": "echo \"No test specified\" && exit 0"
   },
   "engines": {
-    "node": ">=18.0.0 <=25.x"
+    "node": "^26.0.0 || ^24.15.0",
+    "npm": ">=11.0.0"
   }
 }

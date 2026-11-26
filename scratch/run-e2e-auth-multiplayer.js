@@ -108,16 +108,15 @@ async function runTest() {
     await adminPage.screenshot({ path: path.join(SCREENSHOT_DIR, 'auth_01_invalid_admin_alert.png') });
     await dismissAlert(adminPage);
 
-    // 1b. Test Valid Admin Login
-    await adminPage.evaluate(() => {
-      document.querySelector('input[name="username"]').value = '';
-      document.querySelector('input[name="password"]').value = '';
-    });
+    // 1b. Test Valid Admin Login (fresh page load to guarantee pristine inputs)
+    await adminPage.goto(BASE_URL + '/login', { waitUntil: 'networkidle2' });
+    await clickButton(adminPage, 'Admin Login');
+    await adminPage.waitForSelector('input[name="username"]');
     await adminPage.type('input[name="username"]', 'admin');
     await adminPage.type('input[name="password"]', 'admin@1234');
     await adminPage.click('button[type="submit"]');
 
-    await adminPage.waitForSelector('.start-page-container', { timeout: 10000 });
+    await adminPage.waitForSelector('.admin-page-shell, .start-page-container', { timeout: 15000 });
     console.log('✓ Admin authenticated successfully.');
     await sleep(1000);
 
@@ -125,12 +124,32 @@ async function runTest() {
     // PHASE 2: CREATE GAME & ADMIN MANAGE TEAMS
     // -------------------------------------------------------------
     console.log('\n[Phase 2] Admin Managing Teams...');
+    // Navigate to /admin/games if not already there
+    if (!adminPage.url().includes('/admin/games')) {
+      await adminPage.goto(BASE_URL + '/admin/games', { waitUntil: 'networkidle2' });
+      await sleep(1000);
+    }
     // Create new game
-    await clickButton(adminPage, 'Create a new game');
-    await sleep(2000);
+    const createBtn = await adminPage.$('.btn-create-game');
+    if (createBtn) {
+      await adminPage.evaluate(el => el.click(), createBtn);
+      await sleep(500);
+      const confirmBtn = await adminPage.$('.modal-footer .btn-primary');
+      if (confirmBtn) {
+        await adminPage.evaluate(el => el.click(), confirmBtn);
+        await sleep(1500);
+      }
+    } else {
+      await clickButton(adminPage, 'Create Game');
+      await sleep(1500);
+    }
 
     // Open Manage Teams
-    await clickButton(adminPage, 'Manage Teams');
+    await adminPage.evaluate(() => {
+      const links = Array.from(document.querySelectorAll('a, button'));
+      const mt = links.find(l => l.textContent.includes('Manage Teams'));
+      if (mt) mt.click();
+    });
     await adminPage.waitForSelector('.manage-teams-section', { timeout: 10000 });
     console.log('✓ Manage Teams panel opened.');
     await adminPage.screenshot({ path: path.join(SCREENSHOT_DIR, 'auth_02_admin_team_manager.png') });
@@ -216,10 +235,9 @@ async function runTest() {
 
     // 3b. Disabled Team Login Alert
     console.log('  Testing login for disabled Team 4...');
-    await pageA.evaluate(() => {
-      document.querySelector('input[name="username"]').value = '';
-      document.querySelector('input[name="password"]').value = '';
-    });
+    await pageA.goto(BASE_URL + '/login', { waitUntil: 'networkidle2' });
+    await clickButton(pageA, 'Player Login');
+    await pageA.waitForSelector('input[name="username"]');
     await pageA.type('input[name="username"]', generatedCreds[3].teamId);
     await pageA.type('input[name="password"]', generatedCreds[3].rawPassword);
     await pageA.click('button[type="submit"]');
@@ -254,8 +272,10 @@ async function runTest() {
     await sleep(1000);
 
     // Close team manager on Admin page and navigate to waiting room
-    await clickButton(adminPage, 'Close Team Manager');
-    await sleep(1000);
+    if (adminPage.url().includes('/admin/teams')) {
+      await adminPage.goto(BASE_URL + '/admin/games', { waitUntil: 'networkidle2' });
+      await sleep(1000);
+    }
     const gameLinks = await adminPage.$$('.game-item a');
     const newestGameLink = gameLinks[gameLinks.length - 1];
     const newestGameText = await adminPage.evaluate(el => el.textContent.trim(), newestGameLink);

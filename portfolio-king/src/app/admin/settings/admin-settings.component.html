@@ -1,0 +1,49 @@
+<div class="admin-page-shell">
+  <header class="admin-page-header">
+    <div>
+      <h1>Settings</h1>
+      <p>Administrator account and session information.</p>
+    </div>
+  </header>
+
+  <section class="admin-card">
+    <div class="admin-card-header">
+      <div>
+        <h2>Administrator Account</h2>
+        <p>Account details currently associated with this authenticated session.</p>
+      </div>
+    </div>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <tbody>
+          <tr><th>Account type</th><td>Administrator</td></tr>
+          <tr><th>Username</th><td>{{account.userName || account.username || '—'}}</td></tr>
+          <tr><th>Authentication</th><td>Authenticated MongoDB-backed session</td></tr>
+          <tr><th>Session expiry</th><td>24 hours of inactivity</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="admin-card">
+    <div class="admin-card-header">
+      <div>
+        <h2>Application Reference</h2>
+        <p>Game rules remain separate from account settings.</p>
+      </div>
+    </div>
+    <a routerLink="/rules" class="btn btn-secondary">Review Game Rules</a>
+  </section>
+
+  <section class="admin-card">
+    <div class="admin-card-header">
+      <div>
+        <h2>Sign Out</h2>
+        <p>Signing out revokes this authenticated session.</p>
+      </div>
+    </div>
+    <button type="button" class="btn btn-danger" [disabled]="signingOut" (click)="signOut()">
+      {{signingOut ? 'Signing out…' : 'Sign Out'}}
+    </button>
+  </section>
+</div>

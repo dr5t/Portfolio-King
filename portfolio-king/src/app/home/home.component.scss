@@ -10,7 +10,7 @@
   max-width: 1400px;
   margin: 0 auto;
 
-  /* Header Row */
+  
   .page-header-row {
     display: flex;
     justify-content: space-between;
@@ -48,7 +48,7 @@
     }
   }
 
-  /* Table Controls Strip (Search & Filter) */
+  
   .table-controls-strip {
     display: flex;
     justify-content: space-between;
@@ -202,7 +202,7 @@
     }
   }
 
-  /* Structured Reference Table Card */
+  
   .table-card {
     background: var(--bg-surface);
     border: 1px solid var(--border-color);
@@ -294,7 +294,7 @@
         }
       }
 
-      /* Row Action Controls */
+      
       .row-actions-group {
         display: inline-flex;
         align-items: center;
@@ -331,7 +331,7 @@
           }
         }
 
-        /* 3-Dots Dropdown Menu */
+        
         .action-menu-container {
           position: relative;
         }
@@ -383,7 +383,7 @@
     }
   }
 
-  /* Bottom Summary Strip (5 Compact Stat Boxes Matching Reference) */
+  
   .bottom-summary-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -439,7 +439,7 @@
     }
   }
 
-  /* Manage Teams Drawer / Panel */
+  
   .manage-teams-section {
     background: var(--bg-surface);
     border: 1px solid var(--border-color);
@@ -494,7 +494,7 @@
       }
     }
 
-    /* Flash Box for Newly Generated Credentials */
+    
     .credentials-box {
       background: var(--color-warning-bg);
       border: 1px solid #F8E2B5;
@@ -614,7 +614,7 @@
     }
   }
 
-  /* Modals */
+  
   .modal-backdrop {
     position: fixed;
     top: 0;

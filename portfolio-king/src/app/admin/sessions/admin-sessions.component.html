@@ -1,0 +1,74 @@
+<div class="admin-page-shell">
+  <header class="admin-page-header">
+    <div>
+      <h1>Live Sessions</h1>
+      <p>Monitor current game rooms and connected teams.</p>
+    </div>
+    <button type="button" class="btn btn-secondary" (click)="loadGames()" [disabled]="loading">Refresh Sessions</button>
+  </header>
+
+  <div class="admin-error" *ngIf="error">{{error}}</div>
+  <div class="admin-loading" *ngIf="loading">Loading sessions…</div>
+  <ng-container *ngIf="!loading">
+    <section class="admin-stat-grid">
+      <article class="admin-stat-card">
+        <span class="admin-stat-label">Active Sessions</span>
+        <strong class="admin-stat-value">{{sessions.length}}</strong>
+      </article>
+      <article class="admin-stat-card">
+        <span class="admin-stat-label">Connected Teams</span>
+        <strong class="admin-stat-value">{{connectedTeamsCount}}</strong>
+      </article>
+      <article class="admin-stat-card">
+        <span class="admin-stat-label">Paused Sessions</span>
+        <strong class="admin-stat-value">{{countByStatus('paused')}}</strong>
+      </article>
+      <article class="admin-stat-card">
+        <span class="admin-stat-label">Waiting Sessions</span>
+        <strong class="admin-stat-value">{{countByStatus('waiting')}}</strong>
+      </article>
+    </section>
+
+    <section class="admin-card">
+      <div class="admin-card-header">
+        <div>
+          <h2>Current Game Sessions</h2>
+          <p>Round progress reflects the latest persisted player state. Timer data is not stored by the game server.</p>
+        </div>
+      </div>
+      <div class="admin-table-wrap" *ngIf="sessions.length > 0">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Session</th><th>Teams Connected</th><th>Current Round</th><th>Time Remaining</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let game of sessions">
+              <td>
+                <a [routerLink]="['/game-status', game._id]" class="admin-link">{{game.name || 'Game'}}</a>
+                <div class="supporting-text">{{game._id}}</div>
+              </td>
+              <td>{{connectedPlayers(game).length}} / 4</td>
+              <td>{{currentRound(game) || '—'}}</td>
+              <td>Not tracked</td>
+              <td><span class="admin-status" [ngClass]="statusClass(game.game_status)">{{sessionLabel(game)}}</span></td>
+              <td>
+                <div class="admin-inline-actions">
+                  <button type="button" class="btn btn-sm btn-secondary" (click)="openGame(game)">Open</button>
+                  <button type="button" class="btn btn-sm btn-secondary"
+                          *ngIf="game.game_status === 'active' || game.game_status === 'in_progress'"
+                          (click)="changeStatus(game, 'paused')">Pause</button>
+                  <button type="button" class="btn btn-sm btn-secondary" *ngIf="game.game_status === 'paused'"
+                          (click)="changeStatus(game, 'active')">Resume</button>
+                  <button type="button" class="btn btn-sm btn-danger"
+                          *ngIf="game.game_status !== 'completed'"
+                          (click)="changeStatus(game, 'completed')">End</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="admin-empty" *ngIf="sessions.length === 0">There are no active or waiting sessions.</div>
+    </section>
+  </ng-container>
+</div>

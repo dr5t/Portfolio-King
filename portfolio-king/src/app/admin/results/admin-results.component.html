@@ -1,0 +1,89 @@
+<div class="admin-page-shell">
+  <header class="admin-page-header">
+    <div>
+      <h1>Results &amp; Leaderboard</h1>
+      <p>Final standings are ranked using the application’s existing portfolio-value rules.</p>
+    </div>
+    <div class="admin-page-actions" *ngIf="selectedGame">
+      <button type="button" class="btn btn-secondary" (click)="showAnalytics = !showAnalytics">
+        {{showAnalytics ? 'Hide Analytics' : 'Portfolio Analytics'}}
+      </button>
+      <button type="button" class="btn btn-primary" (click)="exportResults()">Export CSV</button>
+    </div>
+  </header>
+
+  <div class="admin-error" *ngIf="error">{{error}}</div>
+  <div class="admin-loading" *ngIf="loading">Loading results…</div>
+  <ng-container *ngIf="!loading">
+    <section class="admin-card" *ngIf="games.length > 0">
+      <div class="admin-toolbar">
+        <label for="results-game-select"><strong>Completed game</strong></label>
+        <select id="results-game-select" [(ngModel)]="selectedGameId" (change)="selectGame(selectedGameId)">
+          <option *ngFor="let game of games" [value]="game._id">{{game.name || 'Game'}} · {{game._id}}</option>
+        </select>
+      </div>
+
+      <div class="admin-stat-grid" *ngIf="selectedGame">
+        <article class="admin-stat-card">
+          <span class="admin-stat-label">Participating Teams</span>
+          <strong class="admin-stat-value">{{leaderboard.length}}</strong>
+        </article>
+        <article class="admin-stat-card">
+          <span class="admin-stat-label">Winning Team</span>
+          <strong class="admin-stat-value">{{leaderboard.length ? leaderboard[0].name : '—'}}</strong>
+        </article>
+        <article class="admin-stat-card">
+          <span class="admin-stat-label">Highest Return</span>
+          <strong class="admin-stat-value">{{leaderboard.length ? (leaderboard[0].returnPct | number:'0.2-2') + '%' : '—'}}</strong>
+        </article>
+        <article class="admin-stat-card">
+          <span class="admin-stat-label">Rounds Recorded</span>
+          <strong class="admin-stat-value">{{roundsRecorded || '—'}}</strong>
+        </article>
+      </div>
+
+      <div class="admin-table-wrap" *ngIf="leaderboard.length > 0">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Rank</th><th>Team</th><th>Final Portfolio</th><th>Total Return</th><th>Outstanding Loans</th><th>Net Worth</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of leaderboard">
+              <td><strong>{{item.rank}}</strong></td>
+              <td><strong>{{item.name}}</strong><span class="admin-status status-completed" *ngIf="item.rank === 1">Winner</span></td>
+              <td>{{item.currentVal | inrCurrency}}</td>
+              <td [class.text-profit]="item.returnPct >= 0" [class.text-loss]="item.returnPct < 0">
+                {{item.returnPct >= 0 ? '+' : ''}}{{item.returnPct | number:'0.2-2'}}%
+              </td>
+              <td>{{item.debt | inrCurrency}}</td>
+              <td><strong>{{item.netWorth | inrCurrency}}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="admin-empty" *ngIf="leaderboard.length === 0">This completed game has no recorded team results.</div>
+    </section>
+
+    <section class="admin-card" *ngIf="showAnalytics && leaderboard.length > 0">
+      <div class="admin-card-header">
+        <div>
+          <h2>Portfolio Return Analysis</h2>
+          <p>Return percentages from the selected game’s final stored round.</p>
+        </div>
+      </div>
+      <div class="admin-chart-list">
+        <div class="admin-chart-row" *ngFor="let item of leaderboard">
+          <span>{{item.name}}</span>
+          <div class="admin-chart-track" [attr.aria-label]="item.returnPct + ' percent return for ' + item.name">
+            <div class="admin-chart-bar" [style.width.%]="returnBarWidth(item)"></div>
+          </div>
+          <strong>{{item.returnPct | number:'0.1-1'}}%</strong>
+        </div>
+      </div>
+    </section>
+
+    <div class="admin-empty admin-card" *ngIf="games.length === 0">
+      No completed games are available yet. Final results will appear here when a game is completed.
+    </div>
+  </ng-container>
+</div>

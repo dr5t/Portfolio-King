@@ -1,8 +1,6 @@
 <div class="start-page-container" (click)="closeActionMenu()">
-  <!-- Main Games Dashboard View -->
   <div class="dashboard-main-content" *ngIf="_user?.isAdmin === 'true'">
-    <!-- Page Header Row -->
-    <div class="page-header-row">
+    <div class="page-header-row" *ngIf="!teamManagementOnly">
       <div class="header-titles">
         <h1 class="page-title">Games</h1>
         <p class="page-subtitle">Create, manage and monitor game sessions</p>
@@ -30,15 +28,15 @@
           <span class="sr-only">Create a new game</span>
         </button>
 
-        <button type="button" class="btn btn-secondary" (click)="toggleManageTeams()">
+        <a [routerLink]="['/admin/teams']" [queryParams]="selectedGameId ? {gameId: selectedGameId} : {}" class="btn btn-secondary">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
-          <span>{{showManageTeams ? 'Close Team Manager' : 'Manage Teams'}}</span>
-        </button>
+          <span>Manage Teams</span>
+        </a>
 
         <button type="button" class="btn btn-secondary" (click)="onGetGames()" [disabled]="refreshPending" title="Refresh game list">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -51,8 +49,14 @@
       </div>
     </div>
 
-    <!-- Team Management Drawer / Modal Section -->
-    <section class="manage-teams-section" *ngIf="showManageTeams" (click)="$event.stopPropagation()">
+    <div class="page-header-row" *ngIf="teamManagementOnly">
+      <div class="header-titles">
+        <h1 class="page-title">Team Management</h1>
+        <p class="page-subtitle">Manage team accounts, access, and credentials for a game.</p>
+      </div>
+    </div>
+
+    <section class="manage-teams-section" *ngIf="teamManagementOnly || showManageTeams" (click)="$event.stopPropagation()">
       <div class="section-top-bar">
         <div>
           <h3 class="section-title">Game Team Administration</h3>
@@ -69,7 +73,7 @@
         </div>
 
         <div class="team-mgmt-actions">
-          <button type="button" class="btn btn-primary" (click)="onAutoGenerateTeams()">
+          <button type="button" class="btn btn-primary" [disabled]="!selectedGameId" (click)="onAutoGenerateTeams()">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
               <circle cx="9" cy="7" r="4"></circle>
@@ -77,13 +81,12 @@
             </svg>
             Auto-Generate 4 Teams
           </button>
-          <button type="button" class="btn btn-secondary" (click)="showCreateTeamForm = !showCreateTeamForm">
+          <button type="button" class="btn btn-secondary" [disabled]="!selectedGameId" (click)="showCreateTeamForm = !showCreateTeamForm">
             + Add Team
           </button>
         </div>
       </div>
 
-      <!-- Newly Generated Credentials Flash Box -->
       <div class="credentials-box" *ngIf="latestCredentials && latestCredentials.length > 0">
         <div class="cred-box-header">
           <div class="cred-box-title">
@@ -107,7 +110,6 @@
         </div>
       </div>
 
-      <!-- Single Team Create Form -->
       <div class="single-team-form" *ngIf="showCreateTeamForm">
         <h4 class="form-title">Create Single Team</h4>
         <div class="form-inputs-row">
@@ -119,7 +121,6 @@
         </div>
       </div>
 
-      <!-- Teams Roster Table -->
       <div class="bulk-action-toolbar">
         <span>{{selectedTeamsCount}} selected</span>
         <div class="bulk-action-menu" (click)="$event.stopPropagation()">
@@ -195,8 +196,7 @@
       </div>
     </section>
 
-    <!-- Search & Filter Controls -->
-    <div class="table-controls-strip">
+    <div class="table-controls-strip" *ngIf="!teamManagementOnly">
       <div class="search-box">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"></circle>
@@ -219,8 +219,7 @@
       </div>
     </div>
 
-    <!-- Structured Reference Games Table -->
-    <div class="table-card">
+    <div class="table-card" *ngIf="!teamManagementOnly">
       <table class="reference-table games-table">
         <thead>
           <tr>
@@ -247,10 +246,8 @@
                      [checked]="isGameSelected(g._id)"
                      (change)="toggleGameSelection(g._id, $event.target.checked)">
             </td>
-            <!-- Row Number -->
             <td class="row-num text-muted">{{i + 1}}</td>
 
-            <!-- Game Name -->
             <td class="font-semibold game-item">
               <span *ngIf="editingGameId !== g._id">
                 <a [routerLink]="['/game-status', g._id]" class="game-link">{{g.name || 'Game ' + g._index}}</a>
@@ -262,22 +259,18 @@
               </div>
             </td>
 
-            <!-- Game ID (Short PKG-XXXX format) -->
             <td>
               <span class="game-short-id tabular-nums">{{getGameShortId(g._id)}}</span>
             </td>
 
-            <!-- Teams Count (e.g. 4 / 4) -->
             <td class="tabular-nums">
               {{g.players ? g.players.length : 0}} / 4
             </td>
 
-            <!-- Round (e.g. Q1, Q3, -) -->
             <td class="tabular-nums">
               {{g.players && g.players[0] && g.players[0].rounds ? 'Q' + (g.players[0].rounds.length || 1) : '-'}}
             </td>
 
-            <!-- Status Pill with Clean SVG Icon -->
             <td>
               <span class="status-pill status-active" *ngIf="g.game_status === 'active' || g.game_status === 'in_progress'">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
@@ -315,15 +308,12 @@
               </span>
             </td>
 
-            <!-- Created At -->
             <td class="created-at text-muted">
               {{g.timestamp | date:'dd MMM yyyy, HH:mm'}}
             </td>
 
-            <!-- Action Controls (Eye, Play/Pause, 3-dots dropdown) -->
             <td class="text-right actions-cell">
               <div class="row-actions-group">
-                <!-- Eye View Icon Link -->
                 <a [routerLink]="['/game-status', g._id]" class="action-icon-btn" title="View Game Room">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -331,7 +321,6 @@
                   </svg>
                 </a>
 
-                <!-- Play / Pause Icon Button -->
                 <button type="button" class="action-icon-btn" (click)="onToggleGamePause(g)"
                         *ngIf="g.game_status === 'active' || g.game_status === 'in_progress' || g.game_status === 'paused'"
                         [title]="g.game_status === 'active' || g.game_status === 'in_progress' ? 'Pause Game' : 'Resume Game'">
@@ -344,7 +333,6 @@
                   </svg>
                 </button>
 
-                <!-- Three-Dots Dropdown Trigger -->
                 <div class="action-menu-container" (click)="$event.stopPropagation()">
                   <button type="button" class="action-icon-btn dots-btn" (click)="toggleActionMenu(g._id, $event)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -354,8 +342,16 @@
                     </svg>
                   </button>
 
-                  <!-- Popover Dropdown Menu -->
                   <div class="action-dropdown-menu" *ngIf="activeActionMenuGameId === g._id">
+                        <button type="button" class="dropdown-item" (click)="navigateToTeams(g); closeActionMenu()">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                          </svg>
+                          Manage Teams
+                        </button>
                     <button type="button" class="dropdown-item" (click)="startRenameGame(g); closeActionMenu()">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
@@ -405,8 +401,7 @@
       </table>
     </div>
 
-    <!-- Bottom Reference Summary Strip (5 Compact Stat Boxes) -->
-    <div class="bottom-summary-grid">
+    <div class="bottom-summary-grid" *ngIf="!teamManagementOnly">
       <div class="stat-box">
         <div class="stat-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -476,7 +471,6 @@
     </div>
   </div>
 
-  <!-- Player Landing View (When authenticated as player) -->
   <div class="dashboard-main-content" *ngIf="_user?.isPlayer">
     <div class="page-header-row">
       <div class="header-titles">
@@ -516,8 +510,7 @@
     </div>
   </div>
 
-  <!-- Create Game Modal -->
-  <div class="modal-backdrop" *ngIf="showCreateGameModal">
+  <div class="modal-backdrop" *ngIf="showCreateGameModal && !teamManagementOnly">
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 class="modal-title">Create Simulation Session</h3>
@@ -536,8 +529,7 @@
     </div>
   </div>
 
-  <!-- Delete Confirmation Modal (Requires typing exact game name) -->
-  <div class="modal-backdrop" *ngIf="showDeleteGameModal">
+  <div class="modal-backdrop" *ngIf="showDeleteGameModal && !teamManagementOnly">
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 class="modal-title text-loss">Confirm Permanent Session Deletion</h3>

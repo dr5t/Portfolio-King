@@ -4,13 +4,14 @@ import {UtilityService} from "./shared/utils/utility-service";
 import {Router, NavigationEnd, ActivatedRoute} from "@angular/router";
 
 @Component({
+  standalone: false,
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
   public currentUrl: string = '';
-  public activeTab: string = 'games';
+  public activeTab: string = 'overview';
   public isMuted: boolean = false;
   public isFullscreen: boolean = false;
   public sidebarCollapsed: boolean = false;
@@ -32,20 +33,24 @@ export class AppComponent implements OnInit {
         this.currentUrl = event.urlAfterRedirects || event.url;
         this.mobileNavOpen = false;
         
-        // Determine active tab
         const urlTree = this.router.parseUrl(this.currentUrl);
-        if (this.currentUrl.includes('/rules')) {
+        const adminPage = this.currentUrl.match(/^\/admin\/([^/?]+)/);
+        if (adminPage) {
+          this.activeTab = adminPage[1];
+        } else if (this.currentUrl.includes('/rules')) {
           this.activeTab = 'rules';
         } else if (this.currentUrl.includes('/investment')) {
           this.activeTab = 'portfolio';
         } else if (this.currentUrl.includes('/game-status')) {
-          this.activeTab = (this.user && this.user.isAdmin === 'true') ? 'results' : 'currentGame';
+          this.activeTab = (this.user && this.user.isAdmin === 'true')
+            ? (urlTree.queryParams && urlTree.queryParams['view'] === 'history' ? 'history' : 'results')
+            : 'currentGame';
         } else if (this.currentUrl.includes('/game/')) {
           this.activeTab = 'currentGame';
         } else if (urlTree.queryParams && urlTree.queryParams['tab']) {
           this.activeTab = urlTree.queryParams['tab'];
         } else {
-          this.activeTab = (this.user && this.user.isAdmin === 'true') ? 'games' : 'currentGame';
+          this.activeTab = (this.user && this.user.isAdmin === 'true') ? 'overview' : 'currentGame';
         }
       }
     });

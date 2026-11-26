@@ -1,10 +1,11 @@
 import {Component, OnInit} from '@angular/core';
-import * as $ from 'jquery';
+import $ from 'jquery';
 import {PortfolioService} from "../services/portfolio/portfolio.service";
 import {UtilityService} from "../shared/utils/utility-service";
 import {ActivatedRoute, Router} from "@angular/router";
 
 @Component({
+  standalone: false,
   selector: 'app-game',
   templateUrl: './game.component.html',
   styleUrls: ['./game.component.scss']
@@ -301,7 +302,6 @@ export class GameComponent implements OnInit {
           let investment = this.onGetInvestmentValue(this.game.round_seq[0].playerId, this.game.round_seq[0].investment);
           this.diceStatus = (investment>5000);
           console.log('check here', investment);
-          // this.diceStatus = true;
           console.log('retry timer called');
           this.retryTimer = setTimeout(() => {
             this.retryVisible = false;

@@ -1,7 +1,5 @@
 <div class="app-layout" [class.no-sidebar]="isLoginPage" [class.sidebar-collapsed]="sidebarCollapsed">
-  <!-- Charcoal Sidebar Shell (Hidden on Login Page) -->
   <aside class="app-sidebar" *ngIf="!isLoginPage" [class.mobile-open]="mobileNavOpen">
-    <!-- Brand Header -->
     <div class="sidebar-brand">
       <div class="brand-logo-wrap">
         <img src="assets/imgs/logo.svg" alt="Portfolio King" class="sidebar-logo">
@@ -14,14 +12,12 @@
       </button>
     </div>
 
-    <!-- Section Label -->
     <div class="sidebar-section-label" *ngIf="!sidebarCollapsed">
       {{ (user && user.isAdmin === 'true') ? 'ADMIN' : 'GAME' }}
     </div>
 
-    <!-- Navigation List: Admin -->
     <nav class="sidebar-nav" *ngIf="user && user.isAdmin === 'true'">
-      <a routerLink="/" [queryParams]="{tab: 'overview'}" class="nav-item" [class.active]="activeTab === 'overview'">
+      <a routerLink="/admin/overview" class="nav-item" [class.active]="activeTab === 'overview'">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="7" height="7"></rect>
           <rect x="14" y="3" width="7" height="7"></rect>
@@ -31,7 +27,7 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Overview</span>
       </a>
 
-      <a routerLink="/" [queryParams]="{tab: 'games'}" class="nav-item" [class.active]="activeTab === 'games'">
+      <a routerLink="/admin/games" class="nav-item" [class.active]="activeTab === 'games'">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="2" y="6" width="20" height="12" rx="2"></rect>
           <line x1="6" y1="12" x2="10" y2="12"></line>
@@ -42,7 +38,7 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Games</span>
       </a>
 
-      <a routerLink="/" [queryParams]="{tab: 'teams'}" class="nav-item" [class.active]="activeTab === 'teams'">
+      <a routerLink="/admin/teams" class="nav-item" [class.active]="activeTab === 'teams'">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
           <circle cx="9" cy="7" r="4"></circle>
@@ -52,7 +48,7 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Teams</span>
       </a>
 
-      <a routerLink="/" [queryParams]="{tab: 'sessions'}" class="nav-item" [class.active]="activeTab === 'sessions'">
+      <a routerLink="/admin/sessions" class="nav-item" [class.active]="activeTab === 'sessions'">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="4 17 10 11 4 5"></polyline>
           <line x1="12" y1="19" x2="20" y2="19"></line>
@@ -60,7 +56,7 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Sessions</span>
       </a>
 
-      <a routerLink="/" [queryParams]="{tab: 'history'}" class="nav-item" [class.active]="activeTab === 'history'">
+      <a routerLink="/admin/history" class="nav-item" [class.active]="activeTab === 'history'">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"></circle>
           <polyline points="12 6 12 12 16 14"></polyline>
@@ -68,7 +64,7 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">History</span>
       </a>
 
-      <a routerLink="/" [queryParams]="{tab: 'results'}" class="nav-item" [class.active]="activeTab === 'results'">
+      <a routerLink="/admin/results" class="nav-item" [class.active]="activeTab === 'results'">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"></path>
           <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"></path>
@@ -79,16 +75,23 @@
         <span class="nav-label" *ngIf="!sidebarCollapsed">Results</span>
       </a>
 
-      <a routerLink="/rules" class="nav-item" [class.active]="activeTab === 'rules'">
+      <a routerLink="/admin/settings" class="nav-item" [class.active]="activeTab === 'settings'">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3"></circle>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Settings</span>
       </a>
+
+      <a routerLink="/rules" class="nav-item" [class.active]="activeTab === 'rules'">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Rules</span>
+      </a>
     </nav>
 
-    <!-- Navigation List: Player -->
     <nav class="sidebar-nav" *ngIf="user && user.isPlayer">
       <a [routerLink]="user.gameId ? ['/game-status', user.gameId] : ['/']" class="nav-item" [class.active]="activeTab === 'currentGame'">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -125,7 +128,6 @@
       </a>
     </nav>
 
-    <!-- Navigation List: Unauthenticated -->
     <nav class="sidebar-nav" *ngIf="!user">
       <a routerLink="/login" class="nav-item" [class.active]="isLoginPage">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -144,7 +146,6 @@
       </a>
     </nav>
 
-    <!-- Sidebar Bottom: Logout -->
     <div class="sidebar-footer">
       <button type="button" class="sidebar-logout-btn" (click)="onLogout()" *ngIf="user" [title]="sidebarCollapsed ? 'Logout' : ''">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -157,12 +158,9 @@
     </div>
   </aside>
 
-  <!-- Mobile Overlay Backdrop -->
   <div class="sidebar-mobile-backdrop" *ngIf="mobileNavOpen" (click)="toggleMobileNav()"></div>
 
-  <!-- Main Content Layout (Top Header + Router Outlet) -->
   <div class="app-content-layout">
-    <!-- Compact Top Bar Header -->
     <header class="app-top-header" *ngIf="!isLoginPage">
       <div class="header-left">
         <button type="button" class="mobile-menu-btn" (click)="toggleMobileNav()">
@@ -175,7 +173,6 @@
       </div>
 
       <div class="header-right">
-        <!-- Projector Mode Fullscreen -->
         <button type="button" class="header-icon-btn" (click)="toggleFullscreen()" [title]="isFullscreen ? 'Exit Fullscreen' : 'Fullscreen (Projector Mode)'">
           <svg *ngIf="!isFullscreen" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
@@ -185,7 +182,6 @@
           </svg>
         </button>
 
-        <!-- Audio Mute/Unmute -->
         <button type="button" class="header-icon-btn" (click)="toggleAudio()" [title]="isMuted ? 'Unmute' : 'Mute'">
           <svg *ngIf="!isMuted" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -242,7 +238,6 @@
           </section>
         </div>
 
-        <!-- User Identity Profile -->
         <div class="header-user-profile" *ngIf="user">
           <div class="avatar-circle">
             {{ (user.isAdmin === 'true' ? 'A' : (user.userName || user.name || 'T')).charAt(0).toUpperCase() }}
@@ -252,7 +247,6 @@
       </div>
     </header>
 
-    <!-- Routed Page Main Content -->
     <main class="app-main-content">
       <div class="show-error">
         <div class="msg-box">
@@ -271,7 +265,6 @@
   </div>
 </div>
 
-<!-- Global In-App Loading Overlay -->
 <div class="loader" id="app-dynamic-loader">
   <div id="dynamic-lottie-anim" class="lottie-loader-container"></div>
 </div>

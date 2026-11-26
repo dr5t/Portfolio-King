@@ -5,7 +5,7 @@ const auth = require('../auth');
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-router.post('/login', function (req, res) {
+router.post('/login', async function (req, res) {
     const { username, password, userType } = req.body;
     if (!username || !password) {
         return res.status(400).json({ message: 'Missing required fields.' });
@@ -15,7 +15,7 @@ router.post('/login', function (req, res) {
     }
     if (userType === 'Admin') {
         if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-            const token = auth.createSession({
+            const token = await auth.createSession({
                 role: 'admin',
                 userName: ADMIN_USERNAME
             });

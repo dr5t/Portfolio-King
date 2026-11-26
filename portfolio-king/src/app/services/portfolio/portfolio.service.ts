@@ -1,10 +1,11 @@
 import {Inject, Injectable} from '@angular/core';
-import * as io from 'socket.io-client';
+import {HttpHeaders} from '@angular/common/http';
+import {io, Socket} from 'socket.io-client';
 import {ApiService} from "../api/api.service";
 import {EndPoints} from "../api/endpoints";
 import {LOCAL_STORAGE, StorageService} from 'ngx-webstorage-service';
-import {Subject} from "rxjs/index";
-import {share} from "rxjs/internal/operators";
+import {Subject} from "rxjs";
+import {share} from "rxjs/operators";
 import {environment} from "../../../environments/environment";
 
 const STORAGE_KEY = 'login_obj';
@@ -23,7 +24,7 @@ export interface AppNotification {
 export class PortfolioService {
 
   private url = environment.endpoint || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-  private _socket;
+  private _socket: Socket | any;
   private _user: any = false;
   public gameStatus = new Subject<boolean>();
   public sessionExpired = new Subject<string>();
@@ -37,6 +38,9 @@ export class PortfolioService {
   }
 
   get user() {
+    if (!this._user) {
+      this._user = this.getLoginObj() || false;
+    }
     return this._user;
   }
 
@@ -50,12 +54,8 @@ export class PortfolioService {
   }
 
   initSocket() {
-    let user = this.getLoginObj();
-    let queryString = '';
-    if (user) {
-      queryString = JSON.stringify(user);
-    }
-    this._socket = io(this.url, {query: 'user=' + queryString});
+    this._user = this.getLoginObj() || false;
+    this._socket = io(this.url);
     this._socket.on('update-user', (user) => {
       this.user = user;
     });
@@ -165,12 +165,20 @@ export class PortfolioService {
     return seq;
   }
 
-  getTeams(gameId: string) {
+  getTeams(gameId?: string) {
     let reqOpts: any = {};
     if (this.user && this.user.token) {
       reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
     }
-    return this.api.get('api/teams', { gameId }, reqOpts);
+    return this.api.get('api/teams', gameId ? { gameId } : undefined, reqOpts);
+  }
+
+  getGame(gameId: string) {
+    const reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
+    return this.api.get(this.endpoint.getGame, { gameId }, reqOpts);
   }
 
   createTeam(teamData: any) {
@@ -308,14 +316,21 @@ export class PortfolioService {
     }, reqOpts);
   }
 
-  getGameCsvExportUrl(gameId: string): string {
-    const token = this.user ? this.user.token : '';
-    return `${this.url}/api/games/export/${gameId}?token=${token}`;
+  downloadGameCsv(gameId: string) {
+    const user = this.user || this.getLoginObj();
+    const headers = user && user.token
+      ? new HttpHeaders({ Authorization: 'Bearer ' + user.token })
+      : new HttpHeaders();
+    return this.api.getBlob(`api/games/export/${gameId}`, headers);
   }
 
   getAllGames() {
+    const reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
     let {getAllGames} = this.endpoint;
-    let seq = this.api.get(getAllGames);
+    let seq = this.api.get(getAllGames, undefined, reqOpts);
     return seq;
   }
 
@@ -373,7 +388,11 @@ export class PortfolioService {
 
   onGetGame(gameId) {
     let {getGame} = this.endpoint;
-    this.api.get(getGame, {gameId: gameId}).subscribe((game) => {
+    const reqOpts: any = {};
+    if (this.user && this.user.token) {
+      reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
+    }
+    this.api.get(getGame, {gameId: gameId}, reqOpts).subscribe((game) => {
       this.game = game;
       if (this.game.players.length === 4 && this.game.game_status !== 'done') {
         let gameStatus = true;
@@ -427,8 +446,7 @@ export class PortfolioService {
     const socketId = this.socket ? this.socket.id : null;
     let seq = this.api.post(logout, {
       userId: currentUser && currentUser.id,
-      socketId,
-      token: currentUser && currentUser.token
+      socketId
     }, {
       headers: {
         'Content-Type': 'application/json',

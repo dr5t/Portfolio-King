@@ -1,15 +1,18 @@
-import {Component, OnInit} from '@angular/core';
-import * as $ from 'jquery';
+import {ChangeDetectorRef, Component, Input, OnDestroy, OnInit} from '@angular/core';
+import $ from 'jquery';
 import {PortfolioService} from "../services/portfolio/portfolio.service";
 import {Router, ActivatedRoute} from "@angular/router";
 import {UtilityService} from "../shared/utils/utility-service";
 
 @Component({
+  standalone: false,
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
+  @Input() teamManagementOnly: boolean = false;
+  private destroyed = false;
 
   public allGames: any[] = [];
   public filteredGames: any[] = [];
@@ -17,11 +20,9 @@ export class HomeComponent implements OnInit {
   public prevGames: any[] = [];
   public _user: any;
 
-  // Search & Filter
   public gameSearchQuery: string = '';
   public gameStatusFilter: string = 'all';
 
-  // Game Management State
   public showCreateGameModal: boolean = false;
   public newGameName: string = '';
   public editingGameId: string = null;
@@ -45,6 +46,10 @@ export class HomeComponent implements OnInit {
   toggleActionMenu(gameId: string, event?: Event) {
     if (event) event.stopPropagation();
     this.activeActionMenuGameId = this.activeActionMenuGameId === gameId ? null : gameId;
+  }
+
+  navigateToTeams(game: any) {
+    this.router.navigate(['/admin/teams'], { queryParams: { gameId: String(game._id) } });
   }
 
   closeActionMenu() {
@@ -139,10 +144,12 @@ export class HomeComponent implements OnInit {
           } else {
             UtilityService.showMessage(`${res.deletedCount} game(s) deleted. Team accounts were preserved.`, false, 2500);
           }
+          this.updateView();
         },
         (err: any) => {
           this.bulkDeletePending = false;
           this.showAdminRequestError(err, 'Failed to delete games.');
+          this.updateView();
         }
       );
       return;
@@ -166,10 +173,12 @@ export class HomeComponent implements OnInit {
         } else {
           UtilityService.showMessage(`${res.deletedCount} team(s) deleted.`, false, 2500);
         }
+        this.updateView();
       },
       (err: any) => {
         this.bulkDeletePending = false;
         this.showAdminRequestError(err, 'Failed to delete teams.');
+        this.updateView();
       }
     );
   }
@@ -195,12 +204,25 @@ export class HomeComponent implements OnInit {
       this.selectedTeamIds = [];
       if (this.showManageTeams && this.selectedGameId) this.loadTeamsForSelectedGame();
     }
+    if (this.teamManagementOnly && this.selectedGameId) {
+      this.loadTeamsForSelectedGame();
+    }
     this.applyGameFilters();
+    if (this.activatedRoute.snapshot.queryParams['action'] === 'create' && !this.teamManagementOnly) {
+      this.openCreateGameModal();
+      this.router.navigate([], {
+        relativeTo: this.activatedRoute,
+        queryParams: { action: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    }
   }
 
   private showAdminRequestError(error: any, fallback: string) {
     if (error && error.status === 401) {
-      this.portfolioService.clearExpiredSession('Your admin session has expired. Please sign in again.');
+      const sessionType = this._user && this._user.isPlayer ? 'team' : 'admin';
+      this.portfolioService.clearExpiredSession(`Your ${sessionType} session has expired. Please sign in again.`);
       return;
     }
     const message = error && error.error && error.error.message
@@ -260,7 +282,6 @@ export class HomeComponent implements OnInit {
     return `PKG-${id.slice(-4).toUpperCase()}`;
   }
 
-  // Team Management State
   public showManageTeams: boolean = false;
   public selectedGameId: string = '';
   public teamsList: any[] = [];
@@ -276,29 +297,60 @@ export class HomeComponent implements OnInit {
   public selectedTeamIds: string[] = [];
   public deleteTeamPending: boolean = false;
 
-  // Active view tab
   public activeTab: string = 'overview';
 
   constructor(private portfolioService: PortfolioService,
               private router: Router,
-              private activatedRoute: ActivatedRoute) {
+              private activatedRoute: ActivatedRoute,
+              private changeDetector: ChangeDetectorRef) {
   }
 
   ngOnInit() {
-    this.activatedRoute.queryParams.subscribe(params => {
-      if (params['tab']) {
-        this.activeTab = params['tab'];
-        if (this.activeTab === 'teams') {
-          this.showManageTeams = true;
-        }
-      }
-    });
     this.init();
+  }
+
+  ngOnDestroy() {
+    this.destroyed = true;
+  }
+
+  private updateView() {
+    if (!this.destroyed) this.changeDetector.detectChanges();
   }
 
   init() {
     this._user = this.portfolioService.user;
-    this.onGetGames(true);
+    const currentPath = this.router.url.split('?')[0];
+    if (this._user && this._user.isAdmin === 'true') {
+      if (currentPath === '/' || currentPath === '') {
+        const legacyTab = this.activatedRoute.snapshot.queryParams['tab'];
+        const validTabs = ['overview', 'games', 'teams', 'sessions', 'history', 'results', 'settings'];
+        const target = validTabs.indexOf(legacyTab) >= 0 ? legacyTab : 'overview';
+        this.router.navigate(['/admin', target], { replaceUrl: true });
+        return;
+      }
+      this.activatedRoute.queryParams.subscribe(params => {
+        if (params.gameId) this.selectedGameId = String(params.gameId);
+      });
+      this.showManageTeams = this.teamManagementOnly;
+      this.onGetGames(true);
+      return;
+    }
+
+    if (this._user && this._user.isPlayer && this._user.gameId) {
+      UtilityService.showLoader();
+      this.portfolioService.getGame(String(this._user.gameId)).subscribe(
+        (game: any) => {
+          this.allGames = game ? [game] : [];
+          UtilityService.hideLoader();
+          this.updateView();
+        },
+        (error: any) => {
+          UtilityService.hideLoader();
+          this.showAdminRequestError(error, 'Failed to load your assigned game.');
+          this.updateView();
+        }
+      );
+    }
   }
 
   onGetGames(showPageLoader: boolean = false) {
@@ -322,19 +374,27 @@ export class HomeComponent implements OnInit {
             this.prevGames.push(game);
           }
         });
+        if (!this.allGames.some(game => String(game._id) === String(this.selectedGameId))) {
+          this.selectedGameId = '';
+        }
         if (this.currGames.length > 0 && !this.selectedGameId) {
           this.selectedGameId = this.currGames[this.currGames.length - 1]._id;
         } else if (this.allGames.length > 0 && !this.selectedGameId) {
           this.selectedGameId = this.allGames[0]._id;
         }
+        if ((this.teamManagementOnly || this.showManageTeams) && this.selectedGameId) {
+          this.loadTeamsForSelectedGame();
+        }
         this.applyGameFilters();
         if (showPageLoader) UtilityService.hideLoader();
         this.refreshPending = false;
+        this.updateView();
       },
       (err: any) => {
         if (showPageLoader) UtilityService.hideLoader();
         this.refreshPending = false;
         this.showAdminRequestError(err, 'Failed to load games.');
+        this.updateView();
       }
     );
   }
@@ -362,7 +422,6 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  // --- GAME MANAGEMENT ---
 
   openCreateGameModal() {
     this.newGameName = `Game ${this.allGames.length + 1}`;
@@ -392,10 +451,12 @@ export class HomeComponent implements OnInit {
         this.newGameName = '';
         this.applyGameFilters();
         UtilityService.showMessage(`Created ${newGame.name} successfully.`, false, 2500);
+        this.updateView();
       },
       (err: any) => {
         this.createGamePending = false;
         this.showAdminRequestError(err, 'Failed to create game.');
+        this.updateView();
       }
     );
   }
@@ -417,9 +478,11 @@ export class HomeComponent implements OnInit {
         game.name = trimmed;
         this.editingGameId = null;
         UtilityService.showMessage('Game renamed successfully.', false, 2000);
+        this.updateView();
       },
       (err: any) => {
         this.showAdminRequestError(err, 'Failed to rename game.');
+        this.updateView();
       }
     );
   }
@@ -446,10 +509,12 @@ export class HomeComponent implements OnInit {
         } else {
           UtilityService.showError('The game was not duplicated.');
         }
+        this.updateView();
       },
       (err: any) => {
         this.duplicatePendingGameIds = this.duplicatePendingGameIds.filter(id => id !== gameId);
         this.showAdminRequestError(err, 'Failed to duplicate game.');
+        this.updateView();
       }
     );
   }
@@ -461,9 +526,11 @@ export class HomeComponent implements OnInit {
         game.game_status = newStatus;
         this.applyGameFilters();
         UtilityService.showMessage(`Game is now ${newStatus}.`, false, 2000);
+        this.updateView();
       },
       (err: any) => {
         this.showAdminRequestError(err, 'Failed to update game status.');
+        this.updateView();
       }
     );
   }
@@ -475,9 +542,11 @@ export class HomeComponent implements OnInit {
         game.game_status = newStatus;
         this.applyGameFilters();
         UtilityService.showMessage(`Game ${newStatus === 'archived' ? 'archived' : 'unarchived'} successfully.`, false, 2000);
+        this.updateView();
       },
       (err: any) => {
         this.showAdminRequestError(err, 'Failed to archive game.');
+        this.updateView();
       }
     );
   }
@@ -509,25 +578,36 @@ export class HomeComponent implements OnInit {
         this.deleteGamePending = false;
         if (!res || !res.success || String(res.gameId) !== deletedId) {
           UtilityService.showError(res && res.message ? res.message : 'The game was not deleted.');
+          this.updateView();
           return;
         }
         this.removeGamesById([deletedId]);
         this.cancelDeleteGame();
         UtilityService.showMessage('Game deleted. Registered team accounts were preserved.', false, 2500);
+        this.updateView();
       },
       (err: any) => {
         this.deleteGamePending = false;
         this.showAdminRequestError(err, 'Failed to delete game.');
+        this.updateView();
       }
     );
   }
 
   onExportGameCsv(game: any) {
-    const url = this.portfolioService.getGameCsvExportUrl(game._id);
-    window.open(url, '_blank');
+    this.portfolioService.downloadGameCsv(String(game._id)).subscribe(
+      (file: Blob) => {
+        const url = window.URL.createObjectURL(file);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `portfolio-king-${String(game._id).slice(-4).toUpperCase()}.csv`;
+        link.click();
+        setTimeout(() => window.URL.revokeObjectURL(url), 0);
+      },
+      error => this.showAdminRequestError(error, 'Failed to export game results.')
+    );
   }
 
-  // --- TEAM MANAGEMENT ---
 
   toggleManageTeams() {
     this.showManageTeams = !this.showManageTeams;
@@ -552,9 +632,11 @@ export class HomeComponent implements OnInit {
         this.teamsList = teams || [];
         const validTeamIds = this.teamsList.map(team => String(team._id));
         this.selectedTeamIds = this.selectedTeamIds.filter(id => validTeamIds.indexOf(id) >= 0);
+        this.updateView();
       },
       (err: any) => {
         this.showAdminRequestError(err, 'Failed to load teams.');
+        this.updateView();
       }
     );
   }
@@ -571,10 +653,12 @@ export class HomeComponent implements OnInit {
         this.latestCredentials = res.teams || [];
         this.loadTeamsForSelectedGame();
         UtilityService.showMessage(`Generated ${res.teams.length} teams successfully.`, false, 3000);
+        this.updateView();
       },
       (err: any) => {
         UtilityService.hideLoader();
         this.showAdminRequestError(err, 'Failed to auto-generate teams.');
+        this.updateView();
       }
     );
   }
@@ -605,10 +689,12 @@ export class HomeComponent implements OnInit {
         this.showCreateTeamForm = false;
         this.loadTeamsForSelectedGame();
         UtilityService.showMessage('Team created successfully.', false, 2500);
+        this.updateView();
       },
       (err: any) => {
         UtilityService.hideLoader();
         this.showAdminRequestError(err, 'Failed to create team.');
+        this.updateView();
       }
     );
   }
@@ -625,9 +711,11 @@ export class HomeComponent implements OnInit {
         team.name = this.editingTeamName.trim();
         this.editingTeamId = null;
         UtilityService.showMessage('Team name updated.', false, 2000);
+        this.updateView();
       },
       (err: any) => {
         this.showAdminRequestError(err, 'Failed to update team.');
+        this.updateView();
       }
     );
   }
@@ -643,9 +731,11 @@ export class HomeComponent implements OnInit {
       () => {
         team.status = newStatus;
         UtilityService.showMessage(`Team is now ${newStatus}.`, false, 2000);
+        this.updateView();
       },
       (err: any) => {
         this.showAdminRequestError(err, 'Failed to update team status.');
+        this.updateView();
       }
     );
   }
@@ -659,9 +749,11 @@ export class HomeComponent implements OnInit {
           rawPassword: res.rawPassword
         }];
         UtilityService.showMessage('Password reset successfully. Copy new credentials above.', false, 3000);
+        this.updateView();
       },
       (err: any) => {
         this.showAdminRequestError(err, 'Failed to reset password.');
+        this.updateView();
       }
     );
   }
@@ -686,16 +778,19 @@ export class HomeComponent implements OnInit {
         this.deleteTeamPending = false;
         if (!res || !res.success) {
           UtilityService.showError(res && res.message ? res.message : 'The team was not deleted.');
+          this.updateView();
           return;
         }
         this.teamsList = this.teamsList.filter(t => String(t._id) !== deletedId);
         this.selectedTeamIds = this.selectedTeamIds.filter(id => id !== deletedId);
         this.cancelDeleteTeam();
         UtilityService.showMessage('Team deleted successfully.', false, 2000);
+        this.updateView();
       },
       (err: any) => {
         this.deleteTeamPending = false;
         this.showAdminRequestError(err, 'Failed to delete team.');
+        this.updateView();
       }
     );
   }

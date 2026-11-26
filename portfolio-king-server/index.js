@@ -24,7 +24,11 @@ if (process.env.NODE_ENV === 'production') {
     }
 }
 
-const clientDistPath = path.resolve(__dirname, '../portfolio-king/dist/Client');
+const clientDistBrowserPath = path.resolve(__dirname, '../portfolio-king/dist/Client/browser');
+const clientDistFallbackPath = path.resolve(__dirname, '../portfolio-king/dist/Client');
+const clientDistPath = fs.existsSync(path.join(clientDistBrowserPath, 'index.html'))
+    ? clientDistBrowserPath
+    : clientDistFallbackPath;
 
 var users = [];
 var games = [];
@@ -67,6 +71,26 @@ function isSocketConnected(socketId) {
         return !!io.sockets.connected[socketId].connected;
     }
     return false;
+}
+
+function getPublicSocketUsers() {
+    return users.map(({ token, ...user }) => user);
+}
+
+async function getSocketSession(token, socket) {
+    try {
+        return await auth.getSession(token);
+    } catch (error) {
+        console.error('Socket session verification failed:', error.message);
+        socket.emit('session-verification-error', { message: 'Session verification unavailable.' });
+        return false;
+    }
+}
+
+function belongsToSessionTeam(player, session) {
+    return player.teamId
+        ? String(player.teamId) === String(session.teamId)
+        : player.name === session.teamName;
 }
 
 function notifyAdmins(title, description) {
@@ -148,7 +172,7 @@ async function deleteGameRecord(gameId) {
         }
 
         io.to(id).emit('game-deleted', { gameId: id, gameName: game.name || 'Game' });
-        const revokedSessions = auth.revokeSessionsForGame(io, id);
+        const revokedSessions = await auth.revokeSessionsForGame(io, id);
         users.forEach(user => {
             if (String(user.gameId) === id) {
                 user.status = 'inactive';
@@ -304,7 +328,7 @@ async function deleteTeamRecords(teamObjectIds, expectedGameId) {
 
         let revokedSessions = 0;
         for (const team of deletedTeams) {
-            revokedSessions += auth.revokeSessionsForTeam(io, team.teamId);
+            revokedSessions += await auth.revokeSessionsForTeam(io, team.teamId);
         }
         if (deletedTeams.length > 0) {
             notifyAdmins(
@@ -357,24 +381,29 @@ app.post('/login', async function (req, res) {
         }
         if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
             auth.resetRateLimit(ip);
-            const token = auth.createSession({
-                role: 'admin',
-                userName: ADMIN_USERNAME,
-                socketId
-            });
-            users.forEach(user => {
-                if (user.socketId === socketId) {
-                    user.type = 'admin';
-                    user.name = ADMIN_USERNAME;
-                    user.token = token;
-                }
-            });
-            return res.json({
-                isAdmin: 'true',
-                userName: ADMIN_USERNAME,
-                token,
-                socketId
-            });
+            try {
+                const token = await auth.createSession({
+                    role: 'admin',
+                    userName: ADMIN_USERNAME,
+                    socketId
+                });
+                users.forEach(user => {
+                    if (user.socketId === socketId) {
+                        user.type = 'admin';
+                        user.name = ADMIN_USERNAME;
+                        user.token = token;
+                    }
+                });
+                return res.json({
+                    isAdmin: 'true',
+                    userName: ADMIN_USERNAME,
+                    token,
+                    socketId
+                });
+            } catch (error) {
+                console.error('Admin session creation failed:', error.message);
+                return res.status(503).json({ message: 'Session creation unavailable.' });
+            }
         } else {
             auth.recordFailedAttempt(ip);
             return res.status(401).json({ message: 'Invalid Admin ID or Password.' });
@@ -408,7 +437,6 @@ app.post('/login', async function (req, res) {
                 return res.status(401).json({ message: 'Invalid Team ID or Password.' });
             }
 
-            // Auto-rehash if using legacy or outdated algorithm
             if (verification.needsRehash) {
                 try {
                     const upgradedHash = await auth.hashPassword(password);
@@ -421,22 +449,39 @@ app.post('/login', async function (req, res) {
                 }
             }
 
-            const activeSession = auth.findSessionByTeamId(team.teamId);
+            const activeSession = await auth.findSessionByTeamId(team.teamId);
+            let replaceDisconnectedTeamSession = false;
             if (activeSession) {
                 const isSameSocket = socketId && activeSession.socketId && activeSession.socketId === socketId;
-                if (!isSameSocket) {
+                const isConnected = activeSession.socketId && isSocketConnected(activeSession.socketId);
+                if (!isSameSocket && isConnected) {
                     return res.status(409).json({ message: 'Team already connected.' });
                 }
+                replaceDisconnectedTeamSession = !isSameSocket;
+            }
+
+            if (gameDeletionLocks.has(String(team.gameId)) ||
+                teamDeletionLocks.has(String(team._id)) ||
+                teamDeletionLocks.has(String(team.teamId))) {
+                return res.status(409).json({ message: 'This team account is being removed. Please try again later.' });
             }
 
             auth.resetRateLimit(ip);
-            const token = auth.createSession({
-                role: 'player',
-                teamId: team.teamId,
-                teamName: team.name,
-                gameId: team.gameId,
-                socketId
-            });
+            let token;
+            try {
+                token = await auth.createSession({
+                    role: 'player',
+                    teamId: team.teamId,
+                    teamName: team.name,
+                    gameId: team.gameId,
+                    socketId
+                }, replaceDisconnectedTeamSession);
+            } catch (error) {
+                if (error.code === 11000) {
+                    return res.status(409).json({ message: 'Team already connected.' });
+                }
+                throw error;
+            }
             users.forEach(user => {
                 if (user.socketId === socketId) {
                     user.type = 'player';
@@ -470,8 +515,10 @@ app.get('/api/teams', auth.authenticateAdmin, async function (req, res) {
             query.gameId = String(req.query.gameId);
         }
         const teams = await db.collection('teams').find(query).toArray();
+        const activeSessions = await auth.findSessionsByTeamIds(teams.map(team => team.teamId));
+        const sessionsByTeam = new Map(activeSessions.map(session => [session.teamId, session]));
         const sanitized = teams.map(t => {
-            const session = auth.findSessionByTeamId(t.teamId);
+            const session = sessionsByTeam.get(t.teamId);
             const isConnected = !!(session && session.socketId && isSocketConnected(session.socketId));
             return {
                 _id: t._id,
@@ -622,6 +669,12 @@ app.put('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
     if (!isValidObjectId(req.params.id)) {
         return res.status(400).json({ message: 'Invalid Team ID.' });
     }
+    const lockId = String(req.params.id);
+    const disableRequested = req.body && req.body.status === 'disabled';
+    if (disableRequested && teamDeletionLocks.has(lockId)) {
+        return res.status(409).json({ message: 'This team account is already being changed.' });
+    }
+    if (disableRequested) teamDeletionLocks.add(lockId);
     try {
         const db = getDb();
         const updates = { updatedAt: new Date() };
@@ -646,7 +699,7 @@ app.put('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
             return res.status(404).json({ message: 'Team not found.' });
         }
         if (updates.status === 'disabled') {
-            auth.revokeSessionsForTeam(io, result.value.teamId, 'disabled');
+            await auth.revokeSessionsForTeam(io, result.value.teamId, 'disabled');
         }
         notifyAdmins(
             'Team account updated',
@@ -655,6 +708,8 @@ app.put('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
         res.json(result.value);
     } catch (err) {
         res.status(500).json({ message: 'Server unavailable.' });
+    } finally {
+        if (disableRequested) teamDeletionLocks.delete(lockId);
     }
 });
 
@@ -662,6 +717,11 @@ app.post('/api/teams/:id/reset-password', auth.authenticateAdmin, async function
     if (!isValidObjectId(req.params.id)) {
         return res.status(400).json({ message: 'Invalid Team ID.' });
     }
+    const lockId = String(req.params.id);
+    if (teamDeletionLocks.has(lockId)) {
+        return res.status(409).json({ message: 'This team account is already being changed.' });
+    }
+    teamDeletionLocks.add(lockId);
     try {
         const db = getDb();
         const rawPassword = req.body.password && req.body.password.trim() ? req.body.password.trim() : auth.generatePassword();
@@ -674,11 +734,13 @@ app.post('/api/teams/:id/reset-password', auth.authenticateAdmin, async function
         if (!team.value) {
             return res.status(404).json({ message: 'Team not found.' });
         }
-        auth.revokeSessionsForTeam(io, team.value.teamId, 'password-reset');
+        await auth.revokeSessionsForTeam(io, team.value.teamId, 'password-reset');
         notifyAdmins('Team password reset', `The password for ${team.value.teamId} was reset.`);
         res.json({ teamId: team.value.teamId, rawPassword });
     } catch (err) {
         res.status(500).json({ message: 'Server unavailable.' });
+    } finally {
+        teamDeletionLocks.delete(lockId);
     }
 });
 
@@ -741,34 +803,34 @@ app.post('/api/teams/bulk-delete', auth.authenticateAdmin, async function (req, 
     }
 });
 
-app.post('/logout', function (req, res) {
-    const token = req.headers.authorization ? req.headers.authorization.replace('Bearer ', '') : (req.body && req.body.token);
-    const session = token ? auth.getSession(token) : null;
-    if (session) {
-        auth.deleteSession(token);
-        if (session.socketId) {
-            auth.disconnectSocket(io, session.socketId);
-        }
-    }
-    if (req.body && req.body.socketId) {
-        auth.disconnectSocket(io, req.body.socketId);
-        users = users.filter(user => user.socketId !== req.body.socketId);
+app.post('/logout', async function (req, res) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    try {
+        const session = token ? await auth.getSession(token) : null;
+        const revokedSession = token ? await auth.deleteSession(token) : null;
+        const socketId = session ? session.socketId : revokedSession && revokedSession.socketId;
+        if (socketId) auth.disconnectSocket(io, socketId);
+        if (socketId) users = users.filter(user => user.socketId !== socketId);
+    } catch (error) {
+        console.error('Session logout failed:', error.message);
+        return res.status(503).json({ message: 'Logout unavailable.' });
     }
     res.send({message: 'ok'});
 });
 
-app.get('/users', function (req, res) {
-    res.send(users);
+app.get('/users', auth.authenticateAdmin, function (req, res) {
+    res.send(getPublicSocketUsers());
 });
-app.get('/games', function (req, res) {
+app.get('/games', auth.authenticateAdmin, function (req, res) {
     res.send(games);
 });
 
-app.get('/clean', function (req, res) {
+app.get('/clean', auth.authenticateAdmin, function (req, res) {
     if (users) {
         users = users.filter(user => user.status !== 'inactive');
     }
-    res.send(users);
+    res.send(getPublicSocketUsers());
 })
 
 app.post('/create-game', auth.authenticateAdmin, function (req, res) {
@@ -1017,18 +1079,37 @@ app.get('/api/games/export/:id', auth.authenticateAdmin, async function (req, re
     }
 });
 
-app.get('/get-all-games', function (req, res) {
+app.get('/get-all-games', auth.authenticateAdmin, function (req, res) {
     res.send(games);
 });
 
-app.get('/get-game', function (req, res) {
-    let game;
-    let id = req.query.gameId;
-    games.forEach((g) => {
-        if (g._id == id) {
-            game = g;
+app.get('/get-game', auth.authenticateSession, async function (req, res) {
+    const id = String(req.query.gameId || '');
+    if (!isValidObjectId(id)) {
+        return res.status(400).json({ message: 'Invalid Game ID.' });
+    }
+    if (req.session.role === 'player') {
+        if (String(req.session.gameId) !== id) {
+            return res.status(403).json({ message: 'This team is not assigned to the requested game.' });
         }
-    });
+        try {
+            const team = await getDb().collection('teams').findOne(
+                { teamId: req.session.teamId },
+                { projection: { status: 1, gameId: 1 } }
+            );
+            if (!team || team.status === 'disabled' || String(team.gameId) !== id) {
+                return res.status(403).json({ message: 'This team cannot access the requested game.' });
+            }
+        } catch (error) {
+            return res.status(503).json({ message: 'Game access could not be verified.' });
+        }
+    } else if (req.session.role !== 'admin') {
+        return res.status(403).json({ message: 'Game access is not authorized.' });
+    }
+    const game = games.find(item => String(item._id) === id);
+    if (!game) {
+        return res.status(404).json({ message: 'Game not found.' });
+    }
     res.send(game);
 });
 
@@ -1042,60 +1123,45 @@ const getAllGames = () => {
 const ioConnection = () => {
     io.on('connection', function (socket) {
         console.log('a user connected');
-        let socketUser = null;
         let connectedUser = {
             socketId: socket.id,
             status: 'active'
         };
-        const queryUser = socket.handshake.query.user;
-        if (queryUser) {
-            try {
-                socketUser = typeof queryUser === 'string' ? JSON.parse(queryUser) : queryUser;
-            } catch (error) {
-                socket.emit('session-expired', { message: 'Your session could not be restored. Please sign in again.' });
-            }
-        }
-        if (socketUser && socketUser.socketId) {
-            users = users.filter(user => user.socketId !== socketUser.socketId);
-        }
-        const restoredSession = socketUser && socketUser.token ? auth.getSession(socketUser.token) : null;
-        if (restoredSession) {
-            connectedUser.token = restoredSession.token;
-            connectedUser.userType = restoredSession.role;
-            connectedUser.name = restoredSession.userName || restoredSession.teamName;
-            connectedUser.teamId = restoredSession.teamId;
-            connectedUser.gameId = restoredSession.gameId;
-            auth.updateSessionSocket(restoredSession.token, socket.id);
-            if (restoredSession.role === 'admin') {
-                socket.join(ADMIN_NOTIFICATION_ROOM);
-            }
-            const authenticatedUser = {
-                ...socketUser,
-                token: restoredSession.token,
-                socketId: socket.id,
-                userName: restoredSession.userName || restoredSession.teamName,
-                isAdmin: restoredSession.role === 'admin' ? 'true' : undefined,
-                isPlayer: restoredSession.role === 'player' ? 'true' : undefined,
-                teamId: restoredSession.teamId || socketUser.teamId,
-                gameId: restoredSession.gameId || socketUser.gameId
-            };
-            io.to(socket.id).emit('update-user', authenticatedUser);
-        } else if (socketUser && socketUser.token) {
-            io.to(socket.id).emit('session-expired', { message: 'Your admin session expired. Please sign in again.' });
-        }
         users.push(connectedUser);
-        socket.on('authenticate', data => {
-            const session = data && typeof data.token === 'string' ? auth.getSession(data.token) : null;
+    socket.on('authenticate', async data => {
+        try {
+            const session = data && typeof data.token === 'string'
+                ? await auth.getSession(data.token)
+                : null;
             if (!session) {
                 io.to(socket.id).emit('session-expired', { message: 'Your session has expired. Please sign in again.' });
                 return;
+            }
+            if (session.role === 'player') {
+                if (session.socketId && session.socketId !== socket.id && isSocketConnected(session.socketId)) {
+                    io.to(socket.id).emit('player-add-error', { error: true, msg: 'Team already connected.' });
+                    socket.disconnect(true);
+                    return;
+                }
+                const team = await getDb().collection('teams').findOne(
+                    { teamId: session.teamId },
+                    { projection: { status: 1 } }
+                );
+                if (!team || team.status === 'disabled') {
+                    await auth.deleteSession(data.token);
+                    io.to(socket.id).emit('team-session-revoked', {
+                        teamId: session.teamId,
+                        reason: team ? 'disabled' : 'deleted'
+                    });
+                    return;
+                }
             }
             connectedUser.token = session.token;
             connectedUser.userType = session.role;
             connectedUser.name = session.userName || session.teamName;
             connectedUser.teamId = session.teamId;
             connectedUser.gameId = session.gameId;
-            auth.updateSessionSocket(session.token, socket.id);
+            await auth.updateSessionSocket(session.token, socket.id);
             if (session.role === 'admin') {
                 socket.join(ADMIN_NOTIFICATION_ROOM);
             }
@@ -1108,6 +1174,10 @@ const ioConnection = () => {
                 teamId: session.teamId,
                 gameId: session.gameId
             });
+        } catch (error) {
+            console.error('Socket session authentication failed:', error.message);
+            io.to(socket.id).emit('session-verification-error', { message: 'Session verification unavailable.' });
+        }
         });
         socket.on('disconnect', () => {
             users.forEach(user => {
@@ -1122,7 +1192,8 @@ const ioConnection = () => {
                 const found = users.find(u => u.socketId === socket.id);
                 if (found && found.token) token = found.token;
             }
-            const session = auth.getSession(token);
+            const session = await getSocketSession(token, socket);
+            if (session === false) return;
             if (!session) {
                 io.to(socket.id).emit("player-add-error", { error: true, msg: "Session expired" });
                 notifyAdmins('Player connection error', 'A team attempted to join with an expired session.');
@@ -1139,7 +1210,7 @@ const ioConnection = () => {
                 }
             });
 
-            if (session.role === 'admin' || data.userType === 'spectator') {
+            if (session.role === 'admin') {
                 socket.join(data.gameId);
                 const targetGame = games.find(g => String(g._id) === String(data.gameId));
                 if (targetGame) {
@@ -1158,9 +1229,9 @@ const ioConnection = () => {
                 try {
                     const db = getDb();
                     const teamDoc = await db.collection('teams').findOne({ teamId: session.teamId });
-                    if (teamDoc && teamDoc.status === 'disabled') {
-                        io.to(socket.id).emit("player-add-error", { error: true, msg: "Team account disabled." });
-                        notifyAdmins('Player connection error', `Disabled team ${session.teamName || session.teamId} attempted to connect.`);
+                    if (!teamDoc || teamDoc.status === 'disabled') {
+                        io.to(socket.id).emit("player-add-error", { error: true, msg: teamDoc ? "Team account disabled." : "Team account unavailable." });
+                        notifyAdmins('Player connection error', `Unavailable team ${session.teamName || session.teamId} attempted to connect.`);
                         return;
                     }
                 } catch (err) {
@@ -1168,13 +1239,26 @@ const ioConnection = () => {
                     return;
                 }
 
-                const activeSess = auth.findSessionByTeamId(session.teamId);
+                let activeSess;
+                try {
+                    activeSess = await auth.findSessionByTeamId(session.teamId);
+                } catch (error) {
+                    console.error('Team session lookup failed:', error.message);
+                    io.to(socket.id).emit("player-add-error", { error: true, msg: "Server unavailable." });
+                    return;
+                }
                 if (activeSess && activeSess.socketId && activeSess.socketId !== socket.id && isSocketConnected(activeSess.socketId)) {
                     io.to(socket.id).emit("player-add-error", { error: true, msg: "Team already connected." });
                     notifyAdmins('Player connection error', `${session.teamName || session.teamId} tried to connect while already active.`);
                     return;
                 }
-                auth.updateSessionSocket(session.token, socket.id);
+                try {
+                    await auth.updateSessionSocket(session.token, socket.id);
+                } catch (error) {
+                    console.error('Team socket session update failed:', error.message);
+                    io.to(socket.id).emit("player-add-error", { error: true, msg: "Server unavailable." });
+                    return;
+                }
 
                 let targetGame = null;
                 let existingPlayer = null;
@@ -1182,7 +1266,7 @@ const ioConnection = () => {
                     if (JSON.stringify(g._id) === JSON.stringify(data.gameId)) {
                         targetGame = g;
                         g.players.forEach(p => {
-                            if (p.teamId === session.teamId || p.name === session.teamName || (data.userId && JSON.stringify(p._id) === JSON.stringify(data.userId))) {
+                            if (belongsToSessionTeam(p, session)) {
                                 existingPlayer = p;
                             }
                         });
@@ -1229,7 +1313,7 @@ const ioConnection = () => {
         });
         socket.on('leave-game', async data => {
             const connectedUser = users.find(user => user.socketId === socket.id);
-            const session = connectedUser ? auth.getSession(connectedUser.token) : null;
+            const session = connectedUser ? await getSocketSession(connectedUser.token, socket) : null;
             if (!session || session.role !== 'player') return;
 
             const gameId = String(session.gameId || '');
@@ -1250,19 +1334,20 @@ const ioConnection = () => {
             }
             delete connectedUser.gameId;
         });
-        socket.on('player-ready', (data) => {
+        socket.on('player-ready', async (data) => {
             const user = users.find(u => u.socketId === socket.id);
-            const session = user ? auth.getSession(user.token) : null;
-            if (session && session.role === 'player' && data && String(session.gameId) !== String(data.gameId)) {
+            const session = user ? await getSocketSession(user.token, socket) : null;
+            if (!session || session.role !== 'player' || !data ||
+                String(session.gameId) !== String(data.gameId)) {
                 return;
             }
             if (data && data.userId) {
                 games.forEach(game => {
                     if (JSON.stringify(game._id) === JSON.stringify(data.gameId)) {
                         game.players.forEach(player => {
-                            if (JSON.stringify(player._id) === JSON.stringify(data.userId)) {
+                            if (String(player._id) === String(data.userId) && belongsToSessionTeam(player, session)) {
                                 if (player.game_status === 'ready') {
-                                    return; // Idempotency check: prevent duplicate submission
+                                    return;
                                 }
                                 player.game_status = 'ready';
                                 let round = {};
@@ -1274,15 +1359,11 @@ const ioConnection = () => {
                                     round.round_starting_value = data.totalInvestment;
                                     round.total_portfolio_value = data.totalInvestment;
                                 }
-                                // Bank FD
                                 if (data.round[0].return_value > 0) {
                                     round.total_portfolio_value += (data.round[0].return_value - data.round[0].value);
                                 }
-                                // Loan
                                 player.loans = data.prevLoans;
                                 if (data.loan && data.loan.status === 'active') {
-                                    // round.total_portfolio_value += data.loan.amount;
-                                    // round.round_starting_value += data.loan.amount;
                                     data.loan.pmt = parseFloat(formula.PMT(data.loan.rate / (4 * 100), data.loan.duration * 4, data.loan.amount, 0, 0).toFixed(2));
                                     data.loan.balance = data.loan.amount;
                                     player.loans.push(data.loan);
@@ -1301,9 +1382,9 @@ const ioConnection = () => {
                 })
             }
         });
-        socket.on('game-start', (data) => {
+        socket.on('game-start', async (data) => {
             const user = users.find(u => u.socketId === socket.id);
-            const session = user ? auth.getSession(user.token) : null;
+            const session = user ? await getSocketSession(user.token, socket) : null;
             if (!session || session.role !== 'admin') {
                 return;
             }
@@ -1371,9 +1452,9 @@ const ioConnection = () => {
             })
         });
 
-        socket.on('round-ready', (data) => {
+        socket.on('round-ready', async (data) => {
             const user = users.find(u => u.socketId === socket.id);
-            const session = user ? auth.getSession(user.token) : null;
+            const session = user ? await getSocketSession(user.token, socket) : null;
             if (!session || session.role !== 'admin') {
                 return;
             }
@@ -1392,7 +1473,7 @@ const ioConnection = () => {
 
         socket.on('game-state-change', async (data) => {
             const user = users.find(u => u.socketId === socket.id);
-            const session = user ? auth.getSession(user.token) : null;
+            const session = user ? await getSocketSession(user.token, socket) : null;
             if (!session || session.role !== 'admin') {
                 return;
             }
@@ -1433,10 +1514,11 @@ const ioConnection = () => {
             }
         });
 
-        socket.on('dice-rolled', (data) => {
+        socket.on('dice-rolled', async (data) => {
             const user = users.find(u => u.socketId === socket.id);
-            const session = user ? auth.getSession(user.token) : null;
-            if (session && session.role === 'player' && data && String(session.gameId) !== String(data.gameId)) {
+            const session = user ? await getSocketSession(user.token, socket) : null;
+            if (!session || session.role !== 'player' || !data ||
+                String(session.gameId) !== String(data.gameId)) {
                 return;
             }
             if (data && data.gameId) {
@@ -1444,8 +1526,14 @@ const ioConnection = () => {
                 if (!targetGame || !targetGame.round_seq || targetGame.round_seq.length === 0) {
                     return;
                 }
+                const currentPlayer = targetGame.players.find(player =>
+                    String(player._id) === String(targetGame.round_seq[0].playerId)
+                );
+                if (!currentPlayer || !belongsToSessionTeam(currentPlayer, session)) {
+                    return;
+                }
                 if (data.player_id && String(targetGame.round_seq[0].playerId) !== String(data.player_id)) {
-                    return; // Unauthorized roll: not player's turn
+                    return;
                 }
             }
             clearTimeout(diceTimer);
@@ -1513,7 +1601,6 @@ const onDiceRolled = (rollStatus, data, socket) => {
                 game.players.forEach(player => {
                     player.rounds[player.rounds.length - 1].status = 'complete';
                     let totalVal = 0, totalReturn = 0;
-                    // round end check
                     if (player.rounds.length === 8) {
                         g_status = true;
                     }
@@ -1549,7 +1636,6 @@ const onDiceRolled = (rollStatus, data, socket) => {
                                 player.rounds[player.rounds.length - 1].total_portfolio_value += returnVal - insvt.value;
                             }
                         });
-                        // years can be changed from here
                         if (player.rounds.length >= 8) {
                             player.loans.forEach(loan => {
                                 if (loan.status === 'active') {
@@ -1744,7 +1830,7 @@ const updateGame = (gameId, round_ready, game_status, players) => {
         )
 };
 
-app.get('/update-game', function (req, res) {
+app.get('/update-game', auth.authenticateAdmin, function (req, res) {
     getAllGames()
         .then((result) => {
             games = result;
@@ -1762,22 +1848,32 @@ if (fs.existsSync(clientDistPath)) {
 const port = process.env.PORT || 3000;
 const hostname = process.env.HOST || process.env.HOST_TEST || '0.0.0.0';
 
-const server = http.listen(port, hostname, function () {
-    console.log("PORT", port, "hostname", hostname);
-    console.log('server listening on ', port);
-    mongoClient(() => {
+let server;
+mongoClient(async () => {
+    await auth.initializeSessionStore(getDb());
+    try {
+        games.push(...await getAllGames());
+    } catch (error) {
+        console.error('Could not load games at startup:', error.message);
+        throw error;
+    }
+    ioConnection();
+    server = http.listen(port, hostname, function () {
+        console.log("PORT", port, "hostname", hostname);
+        console.log('server listening on ', port);
         console.log('connected to database server');
-        getAllGames()
-            .then((result) => {
-                games.push(...result);
-                ioConnection();
-                console.log("game ready");
-            });
+        console.log("game ready");
     });
+}).catch(error => {
+    console.error('Server startup failed:', error.message);
+    process.exit(1);
 });
 
 const gracefulShutdown = (signal) => {
     console.log(`Received ${signal}, shutting down gracefully...`);
+    if (!server) {
+        process.exit(0);
+    }
     server.close(() => {
         console.log('HTTP server closed.');
         process.exit(0);
