@@ -25,9 +25,10 @@
             "aot": false,
             "assets": [
               "src/favicon.ico",
-              "src/favicon.svg",
+              "src/favicon.png",
               "src/favicon-16x16.png",
               "src/favicon-32x32.png",
+              "src/favicon-48x48.png",
               "src/favicon-192x192.png",
               "src/favicon-512x512.png",
               "src/apple-touch-icon.png",
@@ -96,9 +97,10 @@
             "karmaConfig": "karma.conf.js",
             "assets": [
               "src/favicon.ico",
-              "src/favicon.svg",
+              "src/favicon.png",
               "src/favicon-16x16.png",
               "src/favicon-32x32.png",
+              "src/favicon-48x48.png",
               "src/favicon-192x192.png",
               "src/favicon-512x512.png",
               "src/apple-touch-icon.png",
