@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Royal Gold Linear Gradients -->
+    <linearGradient id="goldCrownGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF2A3" />
+      <stop offset="25%" stop-color="#FCD34D" />
+      <stop offset="60%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#B45309" />
+    </linearGradient>
+
+    <linearGradient id="goldLightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="40%" stop-color="#FEF08A" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#F59E0B" stop-opacity="0" />
+    </linearGradient>
+
+    <linearGradient id="goldBaseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#92400E" />
+      <stop offset="20%" stop-color="#F59E0B" />
+      <stop offset="50%" stop-color="#FEF08A" />
+      <stop offset="80%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#78350F" />
+    </linearGradient>
+
+    <!-- Growth / Stock Arrow Gradient -->
+    <linearGradient id="growthGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#047857" />
+      <stop offset="50%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#34D399" />
+    </linearGradient>
+
+    <!-- Emerald Gem Gradient -->
+    <radialGradient id="emeraldGrad" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#A7F3D0" />
+      <stop offset="40%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#064E3B" />
+    </radialGradient>
+
+    <!-- Sapphire Center Gem Gradient -->
+    <radialGradient id="sapphireGrad" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#BAE6FD" />
+      <stop offset="40%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0C4A6E" />
+    </radialGradient>
+
+    <!-- Ruby Gem Gradient -->
+    <radialGradient id="rubyGrad" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FECDD3" />
+      <stop offset="40%" stop-color="#F43F5E" />
+      <stop offset="100%" stop-color="#881337" />
+    </radialGradient>
+
+    <!-- Glowing Drop Shadow for Transparent Canvas -->
+    <filter id="crownGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35" />
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#D97706" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Crown Base Shadow & Body -->
+  <g filter="url(#crownGlow)">
+    <!-- Main Crown Body -->
+    <path d="M 64,368 
+             L 96,180 
+             L 176,276 
+             L 256,104 
+             L 336,276 
+             L 416,180 
+             L 448,368 
+             Z" 
+          fill="url(#goldCrownGrad)" 
+          stroke="#78350F" 
+          stroke-width="6" 
+          stroke-linejoin="round" />
+
+    <!-- Crown Inner Shading / Facets -->
+    <!-- Left Wing -->
+    <polygon points="64,368 96,180 176,276 160,368" fill="#D97706" opacity="0.4" />
+    <polygon points="96,180 176,276 256,368 176,368" fill="#FBBF24" opacity="0.3" />
+    
+    <!-- Right Wing -->
+    <polygon points="448,368 416,180 336,276 352,368" fill="#92400E" opacity="0.4" />
+    <polygon points="416,180 336,276 256,368 336,368" fill="#F59E0B" opacity="0.3" />
+
+    <!-- Central Majestic Peak Highlight -->
+    <polygon points="176,276 256,104 336,276 256,330" fill="url(#goldLightGrad)" opacity="0.8" />
+
+    <!-- Upward Growth / Financial Trend Arrow Inside Crown -->
+    <path d="M 216,340 
+             L 256,220 
+             L 296,340 
+             L 268,340 
+             L 268,370 
+             L 244,370 
+             L 244,340 
+             Z" 
+          fill="url(#growthGrad)" 
+          stroke="#064E3B" 
+          stroke-width="3" />
+
+    <!-- Upward Trend Chart Line overlay -->
+    <polyline points="100,320 180,290 256,230 330,260 410,210" 
+              fill="none" 
+              stroke="#FFFFFF" 
+              stroke-width="6" 
+              stroke-linecap="round" 
+              stroke-linejoin="round" 
+              opacity="0.9" />
+    <!-- Chart Points -->
+    <circle cx="100" cy="320" r="7" fill="#10B981" stroke="#FFFFFF" stroke-width="3" />
+    <circle cx="180" cy="290" r="7" fill="#10B981" stroke="#FFFFFF" stroke-width="3" />
+    <circle cx="256" cy="230" r="9" fill="#F59E0B" stroke="#FFFFFF" stroke-width="3" />
+    <circle cx="330" cy="260" r="7" fill="#10B981" stroke="#FFFFFF" stroke-width="3" />
+    <circle cx="410" cy="210" r="8" fill="#34D399" stroke="#FFFFFF" stroke-width="3" />
+
+    <!-- Royal Headband / Pedestal Base -->
+    <rect x="52" y="364" width="408" height="64" rx="14" fill="url(#goldBaseGrad)" stroke="#78350F" stroke-width="6" />
+    
+    <!-- Base Metallic Rim Top Accent -->
+    <line x1="56" y1="372" x2="456" y2="372" stroke="#FEF08A" stroke-width="3" stroke-linecap="round" />
+
+    <!-- Jewels on the Headband Base -->
+    <circle cx="104" cy="396" r="16" fill="url(#emeraldGrad)" stroke="#064E3B" stroke-width="3" />
+    <rect x="166" y="380" width="32" height="32" rx="6" transform="rotate(45 182 396)" fill="url(#rubyGrad)" stroke="#881337" stroke-width="3" />
+    <circle cx="256" cy="396" r="20" fill="url(#sapphireGrad)" stroke="#082F49" stroke-width="4" />
+    <rect x="314" y="380" width="32" height="32" rx="6" transform="rotate(45 330 396)" fill="url(#rubyGrad)" stroke="#881337" stroke-width="3" />
+    <circle cx="408" cy="396" r="16" fill="url(#emeraldGrad)" stroke="#064E3B" stroke-width="3" />
+
+    <!-- Crown Peaks Jewels / Finials -->
+    <!-- Far Left -->
+    <circle cx="96" cy="180" r="22" fill="url(#goldBaseGrad)" stroke="#78350F" stroke-width="4" />
+    <circle cx="96" cy="180" r="14" fill="url(#emeraldGrad)" />
+
+    <!-- Mid Left -->
+    <circle cx="176" cy="276" r="18" fill="url(#goldBaseGrad)" stroke="#78350F" stroke-width="4" />
+    <circle cx="176" cy="276" r="11" fill="url(#rubyGrad)" />
+
+    <!-- Center Highest Peak -->
+    <circle cx="256" cy="104" r="28" fill="url(#goldBaseGrad)" stroke="#78350F" stroke-width="5" />
+    <circle cx="256" cy="104" r="18" fill="url(#sapphireGrad)" />
+    <!-- Sparkle on top jewel -->
+    <polygon points="256,72 260,86 274,90 260,94 256,108 252,94 238,90 252,86" fill="#FFFFFF" />
+
+    <!-- Mid Right -->
+    <circle cx="336" cy="276" r="18" fill="url(#goldBaseGrad)" stroke="#78350F" stroke-width="4" />
+    <circle cx="336" cy="276" r="11" fill="url(#rubyGrad)" />
+
+    <!-- Far Right -->
+    <circle cx="416" cy="180" r="22" fill="url(#goldBaseGrad)" stroke="#78350F" stroke-width="4" />
+    <circle cx="416" cy="180" r="14" fill="url(#emeraldGrad)" />
+  </g>
+</svg>

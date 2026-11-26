@@ -1,4 +1,8 @@
-const app = require('express')();
+require('dotenv').config();
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const app = express();
 const http = require('http').createServer(app);
 const adminRoutes = require('./routes/admin');
 const s = require('searchjs');
@@ -9,7 +13,10 @@ const ObjectID = require('./db/portfolio_db').ObjectID;
 const io = require('./socket').init(http);
 const formula = require('./formulas/formulas').formulas;
 const investmentReturnSheet = require('./investments/investments').investmentReturnSheet;
-require('dotenv').config();
+
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin@1234';
+const clientDistPath = path.resolve(__dirname, '../portfolio-king/dist/Client');
 
 var users = [];
 var games = [];
@@ -20,17 +27,27 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
     next();
 });
 
-app.get('/login', function (req, res) {
+app.get('/login', function (req, res, next) {
+    if (!req.query.userType) {
+        if (fs.existsSync(clientDistPath)) {
+            return res.sendFile(path.join(clientDistPath, 'index.html'));
+        }
+        return next();
+    }
     let response = {};
     console.log(req.query.userType);
     if (req.query.userType === 'Admin') {
-        if (req.query.username === 'admin' && req.query.password === 'admin@1234') {
+        if (req.query.username === ADMIN_USERNAME && req.query.password === ADMIN_PASSWORD) {
             response.isAdmin = 'true';
-            response.userName = 'admin';
+            response.userName = ADMIN_USERNAME;
             users.forEach(user => {
                 if (user.socketId === req.query.socketId) {
                     user.type = 'admin';
@@ -63,7 +80,7 @@ app.post('/logout', function (req, res) {
     res.send({message: 'ok'});
 });
 
-app.get('/', function (req, res) {
+app.get('/users', function (req, res) {
     res.send(users);
 });
 app.get('/games', function (req, res) {
@@ -130,14 +147,14 @@ const ioConnection = () => {
                     users.forEach(user => {
                         if (user.socketId === socketUser.socketId) {
                             socket.join(user.gameId);
-                            if (data.userType === 'Player') {
+                            if (connectedUser.userType === 'player') {
                                 games.forEach(game => {
                                     if (JSON.stringify(game._id) === JSON.stringify(user.gameId)) {
                                         game.players.forEach(player => {
-                                            if (JSON.stringify(player._id) === data.userId) {
+                                            if (JSON.stringify(player._id) === JSON.stringify(socketUser.id)) {
                                                 player.status = 'active';
                                                 socket.broadcast.to(JSON.stringify(game._id)).emit("game-updated", game);
-                                                updatePlayer(data.gameId, player._id, 'active', 'paused', player.rounds);
+                                                updatePlayer(user.gameId, player._id, 'active', 'paused', player.rounds);
                                             }
                                         })
                                     }
@@ -198,7 +215,7 @@ const ioConnection = () => {
             }
             else if (data.userType === 'player' && data.userId) {
                 games.forEach(game => {
-                    if (JSON.stringify(game._id) === data.gameId) {
+                    if (JSON.stringify(game._id) === JSON.stringify(data.gameId)) {
                         game.players.forEach(player => {
                             if (JSON.stringify(player._id) === JSON.stringify(data.userId)) {
                                 player.status = 'active';
@@ -217,16 +234,17 @@ const ioConnection = () => {
         socket.on('leave-game', (data) => {
             users.forEach(user => {
                 if (user.socketId === data.socketId) {
+                    let userGameId = user.gameId;
                     socket.leave(user.gameId);
                     delete user.gameId;
                     if (data.userType === 'Player') {
                         games.forEach(game => {
-                            if (JSON.stringify(game._id) === JSON.stringify(user.gameId)) {
+                            if (JSON.stringify(game._id) === JSON.stringify(userGameId)) {
                                 game.players.forEach(player => {
-                                    if (JSON.stringify(player._id) === data.userId) {
+                                    if (JSON.stringify(player._id) === JSON.stringify(data.userId)) {
                                         player.status = 'inactive';
                                         socket.broadcast.to(JSON.stringify(game._id)).emit("game-updated", game);
-                                        updatePlayer(data.gameId, player._id, 'inactive', 'paused', player.rounds, player.loans);
+                                        updatePlayer(userGameId, player._id, 'inactive', 'paused', player.rounds, player.loans);
                                     }
                                 })
                             }
@@ -593,21 +611,28 @@ const getInvestmentReturn = (investment_option, investemnt, dice_value) => {
 
 const updatePlayer = (gameId, player_id, status, game_status, round, loans) => {
     const db = getDb();
+    const updateDoc = {
+        $set: {
+            "players.$.status": status,
+            "players.$.game_status": game_status
+        }
+    };
+    if (loans !== undefined) {
+        updateDoc.$set["players.$.loans"] = loans;
+    }
+    if (Array.isArray(round)) {
+        updateDoc.$set["players.$.rounds"] = round;
+    } else if (round) {
+        updateDoc.$push = {
+            "players.$.rounds": round
+        };
+    }
     return db.collection('games')
         .findOneAndUpdate(
             {_id: new ObjectID(gameId), 'players._id': new ObjectID(player_id)},
-            {
-                $set: {
-                    "players.$.status": status,
-                    "players.$.game_status": game_status,
-                    "players.$.loans": loans
-                },
-                $push: {
-                    "players.$.rounds": round
-                }
-            },
+            updateDoc,
             {returnOriginal: false}
-        )
+        );
 };
 
 const updateGame = (gameId, round_ready, game_status, players) => {
@@ -638,8 +663,15 @@ app.get('/test-game', function (req, res) {
     res.send(getGameSequence("5d83359f638941340c294d3e"));
 });
 
+if (fs.existsSync(clientDistPath)) {
+    app.use(express.static(clientDistPath));
+    app.get('*', function (req, res) {
+        res.sendFile(path.join(clientDistPath, 'index.html'));
+    });
+}
+
 const port = process.env.PORT || 3000;
-const hostname = process.env.HOST_TEST || '127.0.0.1';
+const hostname = process.env.HOST || process.env.HOST_TEST || '0.0.0.0';
 
 http.listen(port, hostname, function () {
     console.log("PORT", port, "hostname", hostname)

@@ -5,6 +5,7 @@ import {EndPoints} from "../api/endpoints";
 import {LOCAL_STORAGE, StorageService} from 'ngx-webstorage-service';
 import {Subject} from "rxjs/index";
 import {share} from "rxjs/internal/operators";
+import {environment} from "../../../environments/environment";
 
 const STORAGE_KEY = 'login_obj';
 
@@ -13,9 +14,7 @@ const STORAGE_KEY = 'login_obj';
 })
 export class PortfolioService {
 
-  //private url = 'http://192.168.1.6:3000';
-  //private url = 'http://localhost:3000';
-  private url = 'http://localhost:3000';
+  private url = environment.endpoint || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
   private _socket;
   private _user: any = false;
   public gameStatus = new Subject<boolean>();

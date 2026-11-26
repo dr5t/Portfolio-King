@@ -15,8 +15,8 @@ export class GameComponent implements OnInit {
   public allowGame: any;
   public game: any;
   private socket: any;
-  private user: any;
-  private diceStatus: boolean = false;
+  public user: any;
+  public diceStatus: boolean = false;
   private timer: any;
   public completeMessage: any;
   private gameId: any;
@@ -234,7 +234,7 @@ export class GameComponent implements OnInit {
     }
   }
 
-  onDiceClick() {
+  onDiceClick(e?: any) {
     console.log("Dice clicked")
     let num1 = Math.floor(Math.random() * 6 + 1);
     let num2 = Math.floor(Math.random() * 6 + 1);

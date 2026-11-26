@@ -14,7 +14,7 @@ import * as $ from 'jquery';
 })
 export class InvestmentAvenueComponent implements OnInit {
 
-  private totalPortfolioValue: number;
+  public totalPortfolioValue: number;
   private investmentArray: any = [];
   private gameId: any;
   private game: any;
@@ -43,9 +43,11 @@ export class InvestmentAvenueComponent implements OnInit {
   }
 
   init() {
-    this.totalPortfolioValue = this.router.getCurrentNavigation().extras.state.ptValue;
-    this.prevLoans = this.router.getCurrentNavigation().extras.state.loans;
-    this.players = this.router.getCurrentNavigation().extras.state.players;
+    const nav = this.router.getCurrentNavigation();
+    const state = (nav && nav.extras && nav.extras.state) || (history && history.state) || {};
+    this.totalPortfolioValue = state.ptValue !== undefined ? state.ptValue : 1000000;
+    this.prevLoans = state.loans || [];
+    this.players = state.players || [];
     console.log(this.players);
   }
 
@@ -247,7 +249,7 @@ export class InvestmentAvenueComponent implements OnInit {
     this.loanTaken = true;
   }
 
-  onDiceRoll() {
+  onDiceRoll(e?: any) {
     this.r1 = Math.floor(Math.random() * 6 + 1);
     this.r2 = Math.floor(Math.random() * 6 + 1);
     let dice1 = $('#dice1');

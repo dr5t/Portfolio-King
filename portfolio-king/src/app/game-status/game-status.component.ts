@@ -12,11 +12,11 @@ import {OwlOptions} from 'ngx-owl-carousel-o';
 export class GameStatusComponent implements OnInit {
 
   private gameId: any;
-  private user: any;
-  private onPlayerReady: boolean = false;
+  public user: any;
+  public onPlayerReady: boolean = false;
   public game: any;
   private gameStatus: any;
-  private customOptions: OwlOptions;
+  public customOptions: OwlOptions;
   public portfolioLeaderId: any = [];
   public portfolioLeaderValue: any = [];
   public quarter: any = 0;

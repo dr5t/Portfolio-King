@@ -1,0 +1,14 @@
+{
+  "name": "portfolio-king",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portfolio King - Multiplayer Financial Strategy Game",
+  "scripts": {
+    "build": "npm --prefix portfolio-king-server install && npm --prefix portfolio-king install && npm --prefix portfolio-king run build",
+    "start": "node portfolio-king-server/index.js",
+    "test": "echo \"No test specified\" && exit 0"
+  },
+  "engines": {
+    "node": ">=18.0.0 <=25.x"
+  }
+}
