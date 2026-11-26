@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, OnDestroy, OnInit} from '@angular/core';
 import {PortfolioService} from '../../services/portfolio/portfolio.service';
 import {getGameLeaderboard} from '../../shared/utils/game-results';
 
@@ -8,7 +8,7 @@ import {getGameLeaderboard} from '../../shared/utils/game-results';
   templateUrl: './admin-history.component.html',
   styleUrls: ['../admin-page.scss']
 })
-export class AdminHistoryComponent implements OnInit {
+export class AdminHistoryComponent implements OnInit, OnDestroy {
   games: any[] = [];
   loading = true;
   error = '';
@@ -16,12 +16,33 @@ export class AdminHistoryComponent implements OnInit {
   statusFilter = 'all';
   dateFrom = '';
   dateTo = '';
+  private socketHandler: () => void;
+  private socketDeleteHandler: () => void;
+  private notificationHandler: () => void;
+  private destroyed = false;
 
   constructor(private portfolioService: PortfolioService, private changeDetector: ChangeDetectorRef) {
   }
 
   ngOnInit() {
     this.loadGames();
+    const socket = this.portfolioService.socket;
+    if (socket) {
+      this.socketHandler = () => this.loadGames();
+      this.socketDeleteHandler = () => this.loadGames();
+      this.notificationHandler = () => this.loadGames();
+      socket.on('game-updated', this.socketHandler);
+      socket.on('game-deleted', this.socketDeleteHandler);
+      socket.on('admin-notification', this.notificationHandler);
+    }
+  }
+
+  ngOnDestroy() {
+    this.destroyed = true;
+    const socket = this.portfolioService.socket;
+    if (socket && this.socketHandler) socket.off('game-updated', this.socketHandler);
+    if (socket && this.socketDeleteHandler) socket.off('game-deleted', this.socketDeleteHandler);
+    if (socket && this.notificationHandler) socket.off('admin-notification', this.notificationHandler);
   }
 
   loadGames() {
@@ -31,12 +52,12 @@ export class AdminHistoryComponent implements OnInit {
       (games: any) => {
         this.games = games || [];
         this.loading = false;
-        this.changeDetector.detectChanges();
+        if (!this.destroyed) this.changeDetector.detectChanges();
       },
       error => {
         this.error = this.errorMessage(error, 'Could not load game history.');
         this.loading = false;
-        this.changeDetector.detectChanges();
+        if (!this.destroyed) this.changeDetector.detectChanges();
       }
     );
   }

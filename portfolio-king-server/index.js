@@ -101,6 +101,13 @@ function notifyAdmins(title, description) {
     });
 }
 
+function broadcastGameUpdated(gameId, game) {
+    if (gameId) {
+        io.to(String(gameId)).emit('game-updated', game);
+    }
+    io.to(ADMIN_NOTIFICATION_ROOM).emit('game-updated', game);
+}
+
 function requestError(status, message) {
     const error = new Error(message);
     error.status = status;
@@ -172,6 +179,7 @@ async function deleteGameRecord(gameId) {
         }
 
         io.to(id).emit('game-deleted', { gameId: id, gameName: game.name || 'Game' });
+        io.to(ADMIN_NOTIFICATION_ROOM).emit('game-deleted', { gameId: id, gameName: game.name || 'Game' });
         const revokedSessions = await auth.revokeSessionsForGame(io, id);
         users.forEach(user => {
             if (String(user.gameId) === id) {
@@ -840,6 +848,7 @@ app.post('/create-game', auth.authenticateAdmin, function (req, res) {
             const newGame = result.ops[0];
             games.push(newGame);
             notifyAdmins('Game created', `"${newGame.name}" was created.`);
+            io.to(ADMIN_NOTIFICATION_ROOM).emit('game-updated', newGame);
             res.send(result);
         })
         .catch((err) => {
@@ -868,7 +877,7 @@ app.post('/api/games/rename', auth.authenticateAdmin, async function (req, res) 
         const game = games.find(g => String(g._id) === String(gameId));
         if (game) {
             game.name = trimmed;
-            io.to(gameId).emit('game-updated', game);
+            broadcastGameUpdated(gameId, game);
         }
         notifyAdmins('Game renamed', `The game was renamed to "${trimmed}".`);
         res.json({ success: true, name: trimmed, game });
@@ -902,6 +911,7 @@ app.post('/api/games/duplicate', auth.authenticateAdmin, async function (req, re
         const duplicated = result.ops[0];
         games.push(duplicated);
         notifyAdmins('Game duplicated', `"${duplicated.name}" was created as a copy.`);
+        io.to(ADMIN_NOTIFICATION_ROOM).emit('game-updated', duplicated);
         res.json({ success: true, game: duplicated });
     } catch (err) {
         res.status(500).json({ message: 'Failed to duplicate game.' });
@@ -930,7 +940,7 @@ app.post('/api/games/status', auth.authenticateAdmin, async function (req, res) 
         if (game) {
             game.game_status = status;
             io.to(gameId).emit('game-state-changed', { gameId, game_state: status });
-            io.to(gameId).emit('game-updated', game);
+            broadcastGameUpdated(gameId, game);
         }
         if (status === 'active' || status === 'completed' || status === 'paused' || status === 'archived') {
             const title = status === 'active' ? 'Game started' : status === 'completed' ? 'Game completed' : `Game ${status}`;
@@ -1279,8 +1289,7 @@ const ioConnection = () => {
                     socket.join(data.gameId);
                     updatePlayer(data.gameId, existingPlayer._id, 'active', existingPlayer.game_status, existingPlayer.rounds, existingPlayer.loans)
                         .then(() => {
-                            socket.broadcast.to(data.gameId).emit("game-updated", targetGame);
-                            io.to(socket.id).emit("game-updated", targetGame);
+                            broadcastGameUpdated(data.gameId, targetGame);
                         });
                     return;
                 }
@@ -1306,6 +1315,8 @@ const ioConnection = () => {
                                 gameId: data.gameId
                             });
                             io.to(socket.id).emit("player-added-to-game", {player: player, gameId: data.gameId});
+                            const updatedGame = games.find(g => JSON.stringify(g._id) === JSON.stringify(value._id)) || value;
+                            broadcastGameUpdated(data.gameId, updatedGame);
                             notifyAdmins('Team joined game', `${player.name} joined "${value.name || 'a game session'}".`);
                         }
                     });
@@ -1326,7 +1337,7 @@ const ioConnection = () => {
                 player.status = 'inactive';
                 try {
                     await updatePlayer(gameId, player._id, 'inactive', 'paused', player.rounds, player.loans);
-                    io.to(gameId).emit('game-updated', game);
+                    broadcastGameUpdated(gameId, game);
                     notifyAdmins('Team left game', `${player.name} left "${game.name || 'a game session'}".`);
                 } catch (error) {
                     notifyAdmins('Game connection error', `Could not persist the disconnect for ${player.name}.`);
@@ -1373,8 +1384,7 @@ const ioConnection = () => {
                                 player.rounds.push(round);
                                 updatePlayer(data.gameId, player._id, player.status, 'ready', round, player.loans)
                                     .then(() => {
-                                        socket.broadcast.to(data.gameId).emit("game-updated", game);
-                                        io.to(socket.id).emit("game-updated", game);
+                                        broadcastGameUpdated(data.gameId, game);
                                     });
                             }
                         })
@@ -1398,8 +1408,7 @@ const ioConnection = () => {
                                 notifyAdmins('Game started', `"${game.name || 'Game'}" was started.`);
                             }
                             game.round_seq = getGameSequence(game._id);
-                            socket.broadcast.to(data.gameId).emit("game-updated", game);
-                            io.to(socket.id).emit("game-updated", game);
+                            broadcastGameUpdated(data.gameId, game);
                             if (game.round_seq.length === 0) {
                                 let g_status = false;
                                 game.players.forEach(player => {
@@ -1439,6 +1448,7 @@ const ioConnection = () => {
                                 game.roundReady = false;
                                 updateGame(game._id, false, game.game_status, game.players)
                                     .then(() => {
+                                        broadcastGameUpdated(game._id, game);
                                         if (g_status) {
                                             notifyAdmins('Game completed', `"${game.name || 'Game'}" completed all rounds.`);
                                         }
@@ -1464,8 +1474,7 @@ const ioConnection = () => {
                     updateGame(data.gameId, true, "active", game.players)
                         .then(res => {
                             game.round_seq = getGameSequence(game._id);
-                            socket.broadcast.to(data.gameId).emit("game-updated", game);
-                            io.to(socket.id).emit("game-updated", game);
+                            broadcastGameUpdated(data.gameId, game);
                         });
                 }
             })
@@ -1500,8 +1509,7 @@ const ioConnection = () => {
                     gameId: data.gameId,
                     game_state: data.state
                 });
-                socket.broadcast.to(data.gameId).emit("game-updated", targetGame);
-                io.to(socket.id).emit("game-updated", targetGame);
+                broadcastGameUpdated(data.gameId, targetGame);
                 if (previousStatus !== data.state) {
                     if (data.state === 'active') {
                         notifyAdmins('Game started', `"${targetGame.name || 'Game'}" was started.`);
@@ -1669,6 +1677,7 @@ const onDiceRolled = (rollStatus, data, socket) => {
                     game.roundReady = false;
                     updateGame(game._id, false, game.game_status, game.players)
                         .then(() => {
+                            broadcastGameUpdated(game._id, game);
                             if (g_status) {
                                 notifyAdmins('Game completed', `"${game.name || 'Game'}" completed all rounds.`);
                             }

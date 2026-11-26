@@ -112,7 +112,7 @@ async function runTests() {
   // 7. Verify MongoDB storage: NO plaintext passwords, salted hash present
   console.log('[Test 7] Verifying salted password hashing in MongoDB...');
   const client = await MongoClient.connect(MONGO_URI, { useUnifiedTopology: true });
-  const db = client.db('portfolio');
+  const db = client.db(process.env.DB_NAME || 'portfolio');
   const storedTeams = await db.collection('teams').find({ gameId: String(testGameId) }).toArray();
   for (const t of storedTeams) {
     if (!t.passwordHash || (!t.passwordHash.startsWith('pbkdf2$600000$') && !t.passwordHash.includes(':'))) {

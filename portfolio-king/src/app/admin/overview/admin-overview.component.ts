@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, OnDestroy, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
 import {PortfolioService} from '../../services/portfolio/portfolio.service';
 
@@ -8,7 +8,7 @@ import {PortfolioService} from '../../services/portfolio/portfolio.service';
   templateUrl: './admin-overview.component.html',
   styleUrls: ['../admin-page.scss']
 })
-export class AdminOverviewComponent implements OnInit {
+export class AdminOverviewComponent implements OnInit, OnDestroy {
   games: any[] = [];
   teams: any[] = [];
   loadingGames = true;
@@ -17,6 +17,10 @@ export class AdminOverviewComponent implements OnInit {
   teamsError = '';
   monthlyActivity: Array<{ label: string, count: number }> = [];
   readonly statuses = ['active', 'waiting', 'paused', 'completed', 'archived'];
+  private socketHandler: (game: any) => void;
+  private socketDeleteHandler: (event: any) => void;
+  private notificationHandler: () => void;
+  private destroyed = false;
 
   constructor(private portfolioService: PortfolioService, private router: Router,
               private changeDetector: ChangeDetectorRef) {
@@ -25,6 +29,44 @@ export class AdminOverviewComponent implements OnInit {
   ngOnInit() {
     this.loadGames();
     this.loadTeams();
+    const socket = this.portfolioService.socket;
+    if (socket) {
+      this.socketHandler = (game: any) => {
+        if (!game || !game._id) return;
+        const id = String(game._id);
+        const idx = this.games.findIndex(g => String(g._id) === id);
+        if (idx >= 0) {
+          this.games[idx] = { ...this.games[idx], ...game };
+        } else {
+          this.games.push(game);
+        }
+        this.monthlyActivity = this.buildMonthlyActivity(this.games);
+        if (!this.destroyed) this.changeDetector.detectChanges();
+      };
+      this.socketDeleteHandler = (event: any) => {
+        const id = event && event.gameId ? String(event.gameId) : '';
+        if (id) {
+          this.games = this.games.filter(game => String(game._id) !== id);
+          this.monthlyActivity = this.buildMonthlyActivity(this.games);
+          if (!this.destroyed) this.changeDetector.detectChanges();
+        }
+      };
+      this.notificationHandler = () => {
+        this.loadGames();
+        this.loadTeams();
+      };
+      socket.on('game-updated', this.socketHandler);
+      socket.on('game-deleted', this.socketDeleteHandler);
+      socket.on('admin-notification', this.notificationHandler);
+    }
+  }
+
+  ngOnDestroy() {
+    this.destroyed = true;
+    const socket = this.portfolioService.socket;
+    if (socket && this.socketHandler) socket.off('game-updated', this.socketHandler);
+    if (socket && this.socketDeleteHandler) socket.off('game-deleted', this.socketDeleteHandler);
+    if (socket && this.notificationHandler) socket.off('admin-notification', this.notificationHandler);
   }
 
   loadGames() {
@@ -33,12 +75,12 @@ export class AdminOverviewComponent implements OnInit {
         this.games = games || [];
         this.monthlyActivity = this.buildMonthlyActivity(this.games);
         this.loadingGames = false;
-        this.changeDetector.detectChanges();
+        if (!this.destroyed) this.changeDetector.detectChanges();
       },
       error => {
         this.gamesError = this.errorMessage(error, 'Could not load game statistics.');
         this.loadingGames = false;
-        this.changeDetector.detectChanges();
+        if (!this.destroyed) this.changeDetector.detectChanges();
       }
     );
   }
@@ -48,12 +90,12 @@ export class AdminOverviewComponent implements OnInit {
       (teams: any) => {
         this.teams = teams || [];
         this.loadingTeams = false;
-        this.changeDetector.detectChanges();
+        if (!this.destroyed) this.changeDetector.detectChanges();
       },
       error => {
         this.teamsError = this.errorMessage(error, 'Could not load team statistics.');
         this.loadingTeams = false;
-        this.changeDetector.detectChanges();
+        if (!this.destroyed) this.changeDetector.detectChanges();
       }
     );
   }

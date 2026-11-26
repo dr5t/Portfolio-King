@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, OnDestroy, OnInit} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {PortfolioService} from '../../services/portfolio/portfolio.service';
 import {getGameLeaderboard} from '../../shared/utils/game-results';
@@ -9,12 +9,16 @@ import {getGameLeaderboard} from '../../shared/utils/game-results';
   templateUrl: './admin-results.component.html',
   styleUrls: ['../admin-page.scss']
 })
-export class AdminResultsComponent implements OnInit {
+export class AdminResultsComponent implements OnInit, OnDestroy {
   games: any[] = [];
   selectedGameId = '';
   loading = true;
   error = '';
   showAnalytics = false;
+  private socketHandler: () => void;
+  private socketDeleteHandler: () => void;
+  private notificationHandler: () => void;
+  private destroyed = false;
 
   constructor(private portfolioService: PortfolioService, private route: ActivatedRoute,
               private changeDetector: ChangeDetectorRef) {
@@ -25,6 +29,23 @@ export class AdminResultsComponent implements OnInit {
       if (params.gameId) this.selectedGameId = String(params.gameId);
     });
     this.loadGames();
+    const socket = this.portfolioService.socket;
+    if (socket) {
+      this.socketHandler = () => this.loadGames();
+      this.socketDeleteHandler = () => this.loadGames();
+      this.notificationHandler = () => this.loadGames();
+      socket.on('game-updated', this.socketHandler);
+      socket.on('game-deleted', this.socketDeleteHandler);
+      socket.on('admin-notification', this.notificationHandler);
+    }
+  }
+
+  ngOnDestroy() {
+    this.destroyed = true;
+    const socket = this.portfolioService.socket;
+    if (socket && this.socketHandler) socket.off('game-updated', this.socketHandler);
+    if (socket && this.socketDeleteHandler) socket.off('game-deleted', this.socketDeleteHandler);
+    if (socket && this.notificationHandler) socket.off('admin-notification', this.notificationHandler);
   }
 
   loadGames() {
@@ -37,12 +58,12 @@ export class AdminResultsComponent implements OnInit {
           this.selectedGameId = this.games.length ? String(this.games[0]._id) : '';
         }
         this.loading = false;
-        this.changeDetector.detectChanges();
+        if (!this.destroyed) this.changeDetector.detectChanges();
       },
       error => {
         this.error = this.errorMessage(error, 'Could not load completed game results.');
         this.loading = false;
-        this.changeDetector.detectChanges();
+        if (!this.destroyed) this.changeDetector.detectChanges();
       }
     );
   }

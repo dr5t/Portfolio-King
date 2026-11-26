@@ -347,7 +347,7 @@ export class PortfolioService {
   }
 
   onPlayerAddError = (err?: any) => {
-    this._socket.off('player-added-to-game');
+    if (this._socket) this._socket.off('player-added-to-game', this.addPlayerToGame);
     const errObj = (typeof err === 'object' && err !== null) ? { error: true, ...err } : { error: true, msg: '4 players already added. Please refresh ' };
     this.gameStatus.next(errObj);
   }
@@ -362,9 +362,9 @@ export class PortfolioService {
       userName: userName,
       token: this.user ? this.user.token : null
     });
-    this._socket.off('player-added-to-game');
-    this._socket.off('player-add-error');
-    this._socket.off('game-updated');
+    this._socket.off('player-added-to-game', this.addPlayerToGame);
+    this._socket.off('player-add-error', this.onPlayerAddError);
+    this._socket.off('game-updated', this.onGameUpdated);
     this._socket.on('player-added-to-game', this.addPlayerToGame);
     this._socket.on('player-add-error', this.onPlayerAddError);
     this._socket.on('game-updated', this.onGameUpdated);
@@ -409,10 +409,12 @@ export class PortfolioService {
   }
 
   onPlayerLeaveGame(gameId, socketId, userId) {
-    this._socket.off('player-added-to-game');
-    this._socket.off('player-add-error');
-    this._socket.off('game-updated');
-    this._socket.emit('leave-game', {gameId: gameId, socketId: socketId, userId: userId});
+    if (this._socket) {
+      this._socket.off('player-added-to-game', this.addPlayerToGame);
+      this._socket.off('player-add-error', this.onPlayerAddError);
+      this._socket.off('game-updated', this.onGameUpdated);
+      this._socket.emit('leave-game', {gameId: gameId, socketId: socketId, userId: userId});
+    }
   }
 
   onGameStart(gameId) {

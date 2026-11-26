@@ -13,6 +13,9 @@ import {UtilityService} from "../shared/utils/utility-service";
 export class HomeComponent implements OnInit, OnDestroy {
   @Input() teamManagementOnly: boolean = false;
   private destroyed = false;
+  private socketHandler: (game: any) => void;
+  private socketDeleteHandler: (event: any) => void;
+  private notificationHandler: (notification: any) => void;
 
   public allGames: any[] = [];
   public filteredGames: any[] = [];
@@ -183,14 +186,12 @@ export class HomeComponent implements OnInit, OnDestroy {
     );
   }
 
-  private removeGamesById(ids: string[]) {
-    const removed = new Set(ids);
-    this.allGames = this.allGames.filter(game => !removed.has(String(game._id)));
-    this.selectedGameIds = this.selectedGameIds.filter(id => !removed.has(id));
+  private partitionGames() {
     this.currGames = [];
     this.prevGames = [];
     this.allGames.forEach((game, index) => {
       game._index = index + 1;
+      if (!game.name) game.name = `Game ${game._index}`;
       if (game.game_status === 'active' || game.game_status === 'paused' ||
           game.game_status === 'waiting' || game.game_status === 'ready') {
         this.currGames.push(game);
@@ -198,6 +199,13 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.prevGames.push(game);
       }
     });
+  }
+
+  private removeGamesById(ids: string[]) {
+    const removed = new Set(ids);
+    this.allGames = this.allGames.filter(game => !removed.has(String(game._id)));
+    this.selectedGameIds = this.selectedGameIds.filter(id => !removed.has(id));
+    this.partitionGames();
     if (removed.has(String(this.selectedGameId))) {
       this.selectedGameId = this.allGames.length ? String(this.allGames[0]._id) : '';
       this.teamsList = [];
@@ -311,6 +319,10 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.destroyed = true;
+    const socket = this.portfolioService.socket;
+    if (socket && this.socketHandler) socket.off('game-updated', this.socketHandler);
+    if (socket && this.socketDeleteHandler) socket.off('game-deleted', this.socketDeleteHandler);
+    if (socket && this.notificationHandler) socket.off('admin-notification', this.notificationHandler);
   }
 
   private updateView() {
@@ -321,6 +333,41 @@ export class HomeComponent implements OnInit, OnDestroy {
     this._user = this.portfolioService.user;
     const currentPath = this.router.url.split('?')[0];
     if (this._user && this._user.isAdmin === 'true') {
+      const socket = this.portfolioService.socket;
+      if (socket && !this.socketHandler) {
+        this.socketHandler = (game: any) => {
+          if (!game || !game._id) return;
+          const id = String(game._id);
+          const idx = this.allGames.findIndex(g => String(g._id) === id);
+          if (idx >= 0) {
+            this.allGames[idx] = { ...this.allGames[idx], ...game };
+          } else {
+            game._index = this.allGames.length + 1;
+            if (!game.name) game.name = `Game ${game._index}`;
+            this.allGames.push(game);
+          }
+          this.partitionGames();
+          this.applyGameFilters();
+          this.updateView();
+        };
+        this.socketDeleteHandler = (event: any) => {
+          const id = event && event.gameId ? String(event.gameId) : '';
+          if (id) {
+            this.removeGamesById([id]);
+            this.updateView();
+          }
+        };
+        this.notificationHandler = () => {
+          this.onGetGames(false);
+          if ((this.teamManagementOnly || this.showManageTeams) && this.selectedGameId) {
+            this.loadTeamsForSelectedGame();
+          }
+        };
+        socket.on('game-updated', this.socketHandler);
+        socket.on('game-deleted', this.socketDeleteHandler);
+        socket.on('admin-notification', this.notificationHandler);
+      }
+
       if (currentPath === '/' || currentPath === '') {
         const legacyTab = this.activatedRoute.snapshot.queryParams['tab'];
         const validTabs = ['overview', 'games', 'teams', 'sessions', 'history', 'results', 'settings'];
@@ -361,19 +408,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.allGames = games || [];
         const validGameIds = this.allGames.map(game => String(game._id));
         this.selectedGameIds = this.selectedGameIds.filter(id => validGameIds.indexOf(id) >= 0);
-        this.currGames = [];
-        this.prevGames = [];
-        this.allGames.forEach((game, i) => {
-          game._index = i + 1;
-          if (!game.name) {
-            game.name = `Game ${i + 1}`;
-          }
-          if (game.game_status === 'active' || game.game_status === 'paused' || game.game_status === 'waiting' || game.game_status === 'ready') {
-            this.currGames.push(game);
-          } else {
-            this.prevGames.push(game);
-          }
-        });
+        this.partitionGames();
         if (!this.allGames.some(game => String(game._id) === String(this.selectedGameId))) {
           this.selectedGameId = '';
         }
