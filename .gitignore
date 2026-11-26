@@ -35,5 +35,7 @@ Thumbs.db
 .vscode/
 
 # Temporary Test & Development Artifacts
-screenshots/
+/screenshots/
 scratch/*.png
+!docs/screenshots/
+!docs/screenshots/*.png
