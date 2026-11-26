@@ -1852,6 +1852,32 @@ app.get('/update-game', auth.authenticateAdmin, function (req, res) {
 });
 
 if (fs.existsSync(clientDistPath)) {
+    const zlib = require('zlib');
+    app.use((req, res, next) => {
+        const acceptEncoding = req.headers['accept-encoding'] || '';
+        if (!acceptEncoding.includes('gzip') || req.method !== 'GET') {
+            return next();
+        }
+        const ext = path.extname(req.path).toLowerCase();
+        if (['.js', '.css', '.html', '.svg', '.json'].includes(ext) || req.path === '/' || !ext) {
+            let filePath = path.join(clientDistPath, ext ? req.path : 'index.html');
+            if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+                const mimeTypes = {
+                    '.js': 'application/javascript',
+                    '.css': 'text/css',
+                    '.html': 'text/html',
+                    '.svg': 'image/svg+xml',
+                    '.json': 'application/json'
+                };
+                const contentType = mimeTypes[path.extname(filePath).toLowerCase()] || 'text/html';
+                res.setHeader('Content-Type', contentType);
+                res.setHeader('Content-Encoding', 'gzip');
+                res.setHeader('Vary', 'Accept-Encoding');
+                return fs.createReadStream(filePath).pipe(zlib.createGzip()).pipe(res);
+            }
+        }
+        next();
+    });
     app.use(express.static(clientDistPath));
     app.get('*', function (req, res) {
         res.sendFile(path.join(clientDistPath, 'index.html'));

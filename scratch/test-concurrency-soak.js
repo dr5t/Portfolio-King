@@ -57,6 +57,7 @@ async function run() {
   const elDelay = monitorEventLoopDelay({ resolution: 20 });
   elDelay.enable();
 
+  const TEST_PASS = process.env.TEST_ADMIN_PASS || 'pk-audit-test-pass';
   // Start isolated backend with expanded libuv thread pool
   const server = spawn('node', ['index.js'], {
     cwd: './portfolio-king-server',
@@ -65,7 +66,7 @@ async function run() {
       PORT: String(PORT),
       MONGO_URL: MONGO_URI,
       ADMIN_USERNAME: 'admin',
-      ADMIN_PASSWORD: 'secure_password_test_2026',
+      ADMIN_PASSWORD: TEST_PASS,
       UV_THREADPOOL_SIZE: '16'
     }
   });
@@ -85,7 +86,7 @@ async function run() {
   const adminLogin = await req({ path: '/login', method: 'POST' }, {
     userType: 'Admin',
     username: 'admin',
-    password: 'secure_password_test_2026'
+    password: TEST_PASS
   });
   const adminToken = adminLogin.json.token;
 

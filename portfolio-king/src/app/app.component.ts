@@ -10,7 +10,7 @@ import {Router, NavigationEnd, ActivatedRoute} from "@angular/router";
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-  public currentUrl: string = '';
+  public currentUrl: string = typeof window !== 'undefined' ? window.location.pathname : '';
   public activeTab: string = 'overview';
   public isMuted: boolean = false;
   public isFullscreen: boolean = false;
@@ -57,6 +57,9 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit() {
+    if (typeof window !== 'undefined' && (window as any).dismissInitialLoader) {
+      (window as any).dismissInitialLoader();
+    }
     this.initLottieLoader();
   }
 
@@ -117,7 +120,8 @@ export class AppComponent implements OnInit {
   }
 
   get isLoginPage(): boolean {
-    return this.currentUrl.includes('/login');
+    const path = this.currentUrl || (typeof window !== 'undefined' ? window.location.pathname : '');
+    return path.includes('/login');
   }
 
   toggleSidebar() {

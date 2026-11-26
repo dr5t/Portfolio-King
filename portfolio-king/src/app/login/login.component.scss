@@ -41,6 +41,7 @@
         .crown-logo {
           width: 140px;
           height: 140px;
+          aspect-ratio: 1 / 1;
           object-fit: contain;
           display: block;
         }
@@ -77,6 +78,7 @@
         width: 100%;
         height: auto;
         max-height: 400px;
+        aspect-ratio: 494 / 274;
         object-fit: cover;
         object-position: bottom center;
         display: block;

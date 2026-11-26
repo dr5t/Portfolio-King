@@ -67,6 +67,7 @@ async function runDeterministic8QSimulation() {
   console.log('  PORTFOLIO KING 8-QUARTER DETERMINISTIC MULTIPLAYER AUDIT');
   console.log('================================================================\n');
 
+  const TEST_PASS = process.env.TEST_ADMIN_PASS || 'pk-audit-test-pass';
   // Start backend server
   const server = spawn('node', ['index.js'], {
     cwd: './portfolio-king-server',
@@ -76,7 +77,7 @@ async function runDeterministic8QSimulation() {
       MONGODB_URI: MONGO_URI,
       DB_NAME: DB_NAME,
       ADMIN_USERNAME: 'admin',
-      ADMIN_PASSWORD: 'secure_password_test_2026',
+      ADMIN_PASSWORD: TEST_PASS,
       UV_THREADPOOL_SIZE: '16'
     }
   });
@@ -95,7 +96,7 @@ async function runDeterministic8QSimulation() {
   const adminLogin = await req({ path: '/login', method: 'POST' }, {
     userType: 'Admin',
     username: 'admin',
-    password: 'secure_password_test_2026'
+    password: TEST_PASS
   });
   const adminToken = adminLogin.json.token;
   console.log(`  ✓ Admin authenticated with persistent session token.`);
