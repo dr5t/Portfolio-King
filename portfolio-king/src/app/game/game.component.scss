@@ -372,6 +372,56 @@ $t: 30;
   }
 }
 
+.session-status-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-color, #E5E5E0);
+  border-radius: 9999px;
+  padding: 8px 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #171717);
+
+  .status-indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #F59E0B;
+
+    &.dot-paused { background-color: #6B7280; }
+    &.dot-active { background-color: #10B981; }
+    &.dot-disconnected { background-color: #EF4444; }
+  }
+
+  .status-banner-text {
+    white-space: nowrap;
+  }
+
+  .btn-status-reopen {
+    background: transparent;
+    border: none;
+    color: var(--color-gold, #A18440);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0 4px;
+
+    &:hover {
+      color: var(--text-primary, #171717);
+    }
+  }
+}
+
 .wait-msg-container {
   position: fixed;
   top: 0;
@@ -402,6 +452,32 @@ $t: 30;
     width: 90%;
     text-align: center;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+
+    .wait-close-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 6px;
+      border-radius: var(--radius-sm, 6px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s ease, background-color 0.15s ease;
+
+      &:hover {
+        color: var(--text-primary);
+        background-color: var(--bg-hover, rgba(0, 0, 0, 0.05));
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--color-gold, #A18440);
+        outline-offset: 1px;
+      }
+    }
 
     .wait-icon-container {
       width: 48px;

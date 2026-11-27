@@ -55,17 +55,41 @@
   </div>
 </div>
 
-<div class="wait-msg-container" *ngIf="!allowGame">
-  <div class="wait-msg-overlay"></div>
-  <div class="wait-msg">
+<div class="session-status-banner" *ngIf="!allowGame && overlayDismissed" role="status" aria-live="polite">
+  <div class="status-indicator-dot" [ngClass]="sessionStatusDotClass"></div>
+  <span class="status-banner-text">{{sessionStatusText}}</span>
+  <button type="button" class="btn-status-reopen" (click)="showOverlay()">View Details</button>
+</div>
+
+<div class="wait-msg-container" *ngIf="!allowGame && !overlayDismissed">
+  <div class="wait-msg-overlay" (click)="dismissOverlay()"></div>
+  <div class="wait-msg" role="dialog" aria-modal="true" [attr.aria-label]="sessionStatusText">
+    <button type="button" class="wait-close-btn" (click)="dismissOverlay()" aria-label="Dismiss waiting overlay">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
     <div class="wait-icon-container">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#171717" stroke-width="2">
+      <svg *ngIf="sessionState === 'disconnected'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+        <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+      <svg *ngIf="sessionState === 'paused'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#171717" stroke-width="2">
+        <rect x="6" y="4" width="4" height="16"></rect>
+        <rect x="14" y="4" width="4" height="16"></rect>
+      </svg>
+      <svg *ngIf="sessionState !== 'disconnected' && sessionState !== 'paused'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#171717" stroke-width="2">
         <circle cx="12" cy="12" r="10"></circle>
         <polyline points="12 6 12 12 16 14"></polyline>
       </svg>
     </div>
-    <div class="wait-title">{{connectedPlayerCount >= 4 ? 'All participants joined (4/4). Waiting for admin to start.' : ('Waiting for participants (' + connectedPlayerCount + '/4 joined)')}}</div>
-    <div class="wait-desc">Please wait for all 4 authorized teams to connect and admin to commence the round.</div>
+    <div class="wait-title">{{sessionStatusText}}</div>
+    <div class="wait-desc">{{sessionStatusDescription}}</div>
   </div>
 </div>
 

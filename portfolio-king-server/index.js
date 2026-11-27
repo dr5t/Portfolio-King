@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const app = express();
 const http = require('http').createServer(app);
 const adminRoutes = require('./routes/admin');
@@ -1815,27 +1816,58 @@ const ioConnection = () => {
                 String(session.gameId) !== String(data.gameId)) {
                 return;
             }
-            if (data && data.gameId) {
-                const targetGame = games.find(g => String(g._id) === String(data.gameId));
-                if (!targetGame || !targetGame.round_seq || targetGame.round_seq.length === 0) {
-                    return;
-                }
-                const currentPlayer = targetGame.players.find(player =>
-                    String(player._id) === String(targetGame.round_seq[0].playerId)
-                );
-                if (!currentPlayer || !belongsToSessionTeam(currentPlayer, session)) {
-                    return;
-                }
-                if (data.player_id && String(targetGame.round_seq[0].playerId) !== String(data.player_id)) {
-                    return;
-                }
+            const targetGame = games.find(g => String(g._id) === String(data.gameId));
+            if (!targetGame || !targetGame.round_seq || targetGame.round_seq.length === 0) {
+                return;
             }
-            clearTimeout(diceTimer);
-            diceTimer = setTimeout(() => {
-                onDiceRolled(false, data, socket);
-            }, 60000);
+            if (targetGame.game_status !== 'active' || targetGame.isRollingDice) {
+                return;
+            }
+            const currentTurn = targetGame.round_seq[0];
+            const currentPlayer = targetGame.players.find(player =>
+                String(player._id) === String(currentTurn.playerId)
+            );
+            if (!currentPlayer || !belongsToSessionTeam(currentPlayer, session)) {
+                return;
+            }
+            if (data.player_id && String(currentTurn.playerId) !== String(data.player_id)) {
+                return;
+            }
+
+            targetGame.isRollingDice = true;
+
+            let diceValue1;
+            let diceValue2;
+            if (data.isRetry && !data.retryTaken && currentTurn.lastRoll) {
+                diceValue1 = currentTurn.lastRoll.diceValue1;
+                diceValue2 = currentTurn.lastRoll.diceValue2;
+            } else {
+                diceValue1 = crypto.randomInt(1, 7);
+                diceValue2 = crypto.randomInt(1, 7);
+                currentTurn.lastRoll = { diceValue1, diceValue2 };
+            }
+
+            data.diceValue1 = diceValue1;
+            data.diceValue2 = diceValue2;
+            data.player_id = currentTurn.playerId;
+            data.investment_opt = currentTurn.investment;
+
+            const currentRound = currentPlayer.rounds && currentPlayer.rounds.length > 0
+                ? currentPlayer.rounds[currentPlayer.rounds.length - 1]
+                : null;
+            const invstObj = currentRound && currentRound.investment
+                ? currentRound.investment.find(inv => inv.name === currentTurn.investment)
+                : null;
+            if (invstObj && typeof invstObj.value === 'number') {
+                data.investment = invstObj.value;
+            }
+
+            if (targetGame.diceTimer) {
+                clearTimeout(targetGame.diceTimer);
+                delete targetGame.diceTimer;
+            }
             onDiceRolled(true, data, socket);
-        })
+        });
     });
 };
 
@@ -1993,6 +2025,7 @@ const onDiceRolled = (rollStatus, data, socket) => {
                 isRetry: data.isRetry,
                 retryTaken: data.retryTaken
             });
+            game.isRollingDice = false;
         }
     })
 };

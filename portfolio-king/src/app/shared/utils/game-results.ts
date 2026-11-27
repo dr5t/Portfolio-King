@@ -13,7 +13,7 @@ export function getGameLeaderboard(game: any): any[] {
       ? player.loans.reduce((sum, loan) => sum + (loan.balance || 0), 0)
       : 0;
     const netWorth = currentVal - totalDebt;
-    const returnPct = initialVal > 0 ? ((currentVal - initialVal) / initialVal) * 100 : 0;
+    const returnPct = initialVal > 0 ? ((netWorth - initialVal) / initialVal) * 100 : 0;
     return {
       _id: player._id,
       name: player.name,
@@ -26,6 +26,6 @@ export function getGameLeaderboard(game: any): any[] {
       gameStatus: player.game_status || 'joined'
     };
   });
-  list.sort((a, b) => b.currentVal - a.currentVal);
+  list.sort((a, b) => b.netWorth - a.netWorth || b.currentVal - a.currentVal);
   return list.map((item, index) => ({ ...item, rank: index + 1 }));
 }

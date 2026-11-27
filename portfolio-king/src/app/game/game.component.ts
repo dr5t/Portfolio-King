@@ -33,6 +33,76 @@ export class GameComponent implements OnInit, OnDestroy {
   public isRetry: boolean = false;
   public diceAnimationTimer: any;
   public waitingTimer: any;
+  public overlayDismissed: boolean = false;
+  private gameUpdateSub: any;
+
+  dismissOverlay(): void {
+    this.overlayDismissed = true;
+    this.updateView();
+  }
+
+  showOverlay(): void {
+    this.overlayDismissed = false;
+    this.updateView();
+  }
+
+  get isSocketConnected(): boolean {
+    return !!(this.portfolioService.socket && this.portfolioService.socket.connected);
+  }
+
+  get sessionState(): 'disconnected' | 'paused' | 'waiting' | 'inactive' | 'active' {
+    if (!this.isSocketConnected) {
+      return 'disconnected';
+    }
+    if (this.game) {
+      if (this.game.game_status === 'paused') return 'paused';
+      if (this.game.game_status === 'completed') return 'inactive';
+      if (this.game.game_status === 'waiting' || this.game.game_status === 'ready') return 'waiting';
+      if (this.allowGame || this.game.game_status === 'active' || this.game.game_status === 'in_progress') return 'active';
+    }
+    return 'inactive';
+  }
+
+  get sessionStatusText(): string {
+    const state = this.sessionState;
+    if (state === 'disconnected') {
+      return 'Connection lost. Reconnecting…';
+    }
+    if (state === 'paused') {
+      return 'Session Paused by Administrator';
+    }
+    if (state === 'waiting') {
+      return this.connectedPlayerCount >= 4
+        ? 'All participants joined (4/4). Waiting for admin to start.'
+        : `Waiting for participants (${this.connectedPlayerCount}/4 joined)`;
+    }
+    if (state === 'active') {
+      return 'Session Active';
+    }
+    return 'Session Inactive. Awaiting commencement.';
+  }
+
+  get sessionStatusDescription(): string {
+    const state = this.sessionState;
+    if (state === 'disconnected') {
+      return 'Attempting to restore live connection to the simulation server…';
+    }
+    if (state === 'paused') {
+      return 'The game simulation is currently paused. Please wait for the administrator to resume.';
+    }
+    if (state === 'waiting') {
+      return 'Please wait for all 4 authorized teams to connect and admin to commence the round.';
+    }
+    return 'This simulation session is not currently running. Waiting for administrator to begin.';
+  }
+
+  get sessionStatusDotClass(): string {
+    const state = this.sessionState;
+    if (state === 'disconnected') return 'dot-disconnected';
+    if (state === 'paused') return 'dot-paused';
+    if (state === 'active') return 'dot-active';
+    return '';
+  }
 
   get connectedPlayerCount(): number {
     if (this.game && typeof this.game.connectedPlayerCount === 'number') {
@@ -130,6 +200,32 @@ export class GameComponent implements OnInit, OnDestroy {
           }
         });
       }
+      if (this.gameUpdateSub) {
+        this.gameUpdateSub.unsubscribe();
+      }
+      this.gameUpdateSub = this.portfolioService.gameUpdated.subscribe((updatedGame: any) => {
+        if (updatedGame && String(updatedGame._id) === String(this.gameId)) {
+          this.game = updatedGame;
+          this.portfolioService.game = updatedGame;
+          if (updatedGame.game_status === 'paused' || updatedGame.game_status === 'waiting') {
+            this.allowGame = false;
+          } else if (updatedGame.game_status === 'active' || updatedGame.game_status === 'in_progress') {
+            if (updatedGame.players && updatedGame.players.length === 4) {
+              const allReady = updatedGame.players.every((p: any) => p.game_status === 'ready' || p.game_status === 'active');
+              if (allReady) {
+                if (!this.allowGame) {
+                  this.allowGame = true;
+                  this.overlayDismissed = false;
+                  this.startGame();
+                }
+              } else {
+                this.allowGame = false;
+              }
+            }
+          }
+          this.updateView();
+        }
+      });
     });
   }
 
@@ -236,15 +332,10 @@ export class GameComponent implements OnInit, OnDestroy {
       this.diceStatus = true;
       this.timer = setTimeout(() => {
         if (this.diceStatus === true) {
-          let num1 = Math.floor(Math.random() * 6 + 1);
-          let num2 = Math.floor(Math.random() * 6 + 1);
-          this.onDiceRoll(num1, num2);
           this.diceStatus = false;
           let investment = this.onGetInvestmentValue(this.game.round_seq[0].playerId, this.game.round_seq[0].investment);
           this.socket.emit('dice-rolled', {
             gameId: this.game._id,
-            diceValue1: num1,
-            diceValue2: num2,
             investment_opt: this.game.round_seq[0].investment,
             investment: investment,
             player_id: this.user.id,
@@ -266,10 +357,7 @@ export class GameComponent implements OnInit, OnDestroy {
 
   onDiceClick(e?: any) {
     console.log("Dice clicked")
-    let num1 = Math.floor(Math.random() * 6 + 1);
-    let num2 = Math.floor(Math.random() * 6 + 1);
     this.diceStatus = false;
-    this.onDiceRoll(num1, num2);
     clearTimeout(this.timer);
     if (this.isRetry) {
       clearTimeout(this.retryTimer);
@@ -278,8 +366,6 @@ export class GameComponent implements OnInit, OnDestroy {
     let investment = this.onGetInvestmentValue(this.game.round_seq[0].playerId, this.game.round_seq[0].investment);
     this.socket.emit('dice-rolled', {
       gameId: this.game._id,
-      diceValue1: num1,
-      diceValue2: num2,
       investment_opt: this.game.round_seq[0].investment,
       investment: investment,
       player_id: this.user.id,
@@ -297,9 +383,9 @@ export class GameComponent implements OnInit, OnDestroy {
     $('.l-half .half-inner').removeClass('animate-l');
     $('.r-half .half-inner').removeClass('animate-r');
     console.log(isRetry, retryTaken, errorMsg);
-    if (JSON.stringify(prevPlayer) !== JSON.stringify(this.user.id) && !isRetry) {
+    if (!isRetry) {
       this.onDiceRoll(diceValue1, diceValue2);
-    } else if (JSON.stringify(prevPlayer) !== JSON.stringify(this.user.id) && isRetry && retryTaken && errorMsg.length === 0) {
+    } else if (isRetry && retryTaken && (!errorMsg || errorMsg.length === 0)) {
       this.onDiceRoll(diceValue1, diceValue2);
     }
     let waitTime = 15000;
@@ -334,8 +420,6 @@ export class GameComponent implements OnInit, OnDestroy {
             this.curr_state = 'start';
             this.socket.emit('dice-rolled', {
               gameId: this.game._id,
-              diceValue1: diceValue1,
-              diceValue2: diceValue2,
               investment_opt: this.game.round_seq[0].investment,
               investment: investment,
               player_id: this.user.id,
@@ -372,16 +456,11 @@ export class GameComponent implements OnInit, OnDestroy {
             this.diceStatus = true;
             this.timer = setTimeout(() => {
               console.log('player timeout', this.user.id);
-              let num1 = Math.floor(Math.random() * 6 + 1);
-              let num2 = Math.floor(Math.random() * 6 + 1);
               this.diceStatus = false;
               clearTimeout(this.timer);
-              this.onDiceRoll(num1, num2);
               let investment = this.onGetInvestmentValue(this.game.round_seq[0].playerId, this.game.round_seq[0].investment);
               this.socket.emit('dice-rolled', {
                 gameId: this.game._id,
-                diceValue1: num1,
-                diceValue2: num2,
                 investment_opt: this.game.round_seq[0].investment,
                 investment: investment,
                 player_id: this.user.id,
@@ -448,6 +527,9 @@ export class GameComponent implements OnInit, OnDestroy {
     }
     if (this.gameStatus) {
       this.gameStatus.unsubscribe();
+    }
+    if (this.gameUpdateSub) {
+      this.gameUpdateSub.unsubscribe();
     }
   }
 

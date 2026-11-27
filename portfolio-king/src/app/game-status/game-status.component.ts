@@ -339,7 +339,14 @@ export class GameStatusComponent implements OnInit, OnDestroy {
 
   get isWinner(): boolean {
     const w = this.winnerEntry;
-    return !!(w && this.user && !this.user.isAdmin && w._id === this.user.id);
+    const isPlayerAdmin = this.user && (this.user.isAdmin === true || this.user.isAdmin === 'true');
+    if (!w || !this.user || isPlayerAdmin) return false;
+    const isCompleted = this.game && (this.game.game_status === 'completed' || this.gameEnd);
+    if (!isCompleted) return false;
+    const uid = String(this.user.id || this.user._id || '');
+    const tid = String(this.user.teamId || '');
+    const wid = String(w._id || '');
+    return (uid !== '' && uid === wid) || (tid !== '' && tid === wid);
   }
 
   get winnerName(): string {
