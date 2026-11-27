@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {PortfolioService} from "../services/portfolio/portfolio.service";
 import {ActivatedRoute, NavigationExtras, Router} from "@angular/router";
 import {UtilityService} from "../shared/utils/utility-service";
@@ -34,6 +34,11 @@ export class GameStatusComponent implements OnInit {
   public audio2: any;
   public roundNumber: any = 0;
   public activeViewMode: 'leaderboard' | 'carousel' = 'leaderboard';
+
+  public showCelebration = false;
+  public videoEnded = false;
+  public celebrationVideoSrc = '';
+  @ViewChild('celebrationVideo') celebrationVideoRef!: ElementRef<HTMLVideoElement>;
 
   constructor(public portfolioService: PortfolioService,
               private route: Router,
@@ -166,6 +171,7 @@ export class GameStatusComponent implements OnInit {
             }
             if (this.gameEnd && !this._ifLeaderShown) {
               this.playCrackers();
+              this.triggerCelebration();
               this._ifLeaderShown = true;
               this.roundNumber = 8;
               if (this.portfolioLeaderValue.length === 1) {
@@ -283,5 +289,48 @@ export class GameStatusComponent implements OnInit {
     return (this.game && this.game.players)
       ? this.game.players.filter((p: any) => p.status === 'active').length
       : 0;
+  }
+
+  private get winnerEntry(): any {
+    const list = this.getLeaderboardList();
+    return list && list.length > 0 ? list[0] : null;
+  }
+
+  get isWinner(): boolean {
+    const w = this.winnerEntry;
+    return !!(w && this.user && !this.user.isAdmin && w._id === this.user.id);
+  }
+
+  get winnerName(): string {
+    return this.winnerEntry?.name || '';
+  }
+
+  get winnerNetWorth(): number {
+    return this.winnerEntry?.netWorth ?? 0;
+  }
+
+  get winnerROI(): number {
+    return this.winnerEntry?.returnPct ?? 0;
+  }
+
+  triggerCelebration(): void {
+    if (this.isWinner && !this.showCelebration) {
+      this.celebrationVideoSrc = 'assets/videos/celebration.mp4';
+      this.showCelebration = true;
+      this.videoEnded = false;
+    }
+  }
+
+  onVideoEnded(): void {
+    this.videoEnded = true;
+    if (this.celebrationVideoRef?.nativeElement) {
+      this.celebrationVideoRef.nativeElement.src = '';
+    }
+  }
+
+  dismissCelebration(): void {
+    this.showCelebration = false;
+    this.celebrationVideoSrc = '';
+    this.videoEnded = false;
   }
 }

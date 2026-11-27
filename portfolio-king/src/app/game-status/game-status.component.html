@@ -255,3 +255,36 @@
     </div>
   </main>
 </div>
+
+<div class="celebration-overlay" *ngIf="showCelebration" aria-live="assertive" role="dialog" aria-modal="true">
+  <video #celebrationVideo
+         *ngIf="!videoEnded"
+         class="celebration-video"
+         [src]="celebrationVideoSrc"
+         muted
+         autoplay
+         playsinline
+         disablePictureInPicture
+         controlsList="nodownload nofullscreen noremoteplayback"
+         (ended)="onVideoEnded()">
+  </video>
+  <div class="celebration-message" [class.message-visible]="videoEnded">
+    <div class="trophy-icon">🏆</div>
+    <h1 class="celebration-heading">Congratulations!</h1>
+    <p class="celebration-subheading">You are the Portfolio King!</p>
+    <p class="celebration-team">{{ winnerName }}</p>
+    <div class="celebration-stats">
+      <div class="stat-pill">
+        <span class="stat-label">Final Net Worth</span>
+        <span class="stat-val">₹{{ winnerNetWorth | number:'1.0-0' }}</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-label">Total ROI</span>
+        <span class="stat-val">{{ winnerROI | number:'1.2-2' }}%</span>
+      </div>
+    </div>
+    <button class="btn btn-primary celebration-cta" (click)="dismissCelebration()">
+      View Final Results
+    </button>
+  </div>
+</div>
