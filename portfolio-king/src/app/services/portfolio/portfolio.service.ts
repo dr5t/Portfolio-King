@@ -26,6 +26,8 @@ export class PortfolioService {
   private url = environment.endpoint || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
   private _socket: Socket | any;
   private _user: any = false;
+  private _hasConnectionError = false;
+  public activeGameId: string | null = null;
   public gameStatus = new Subject<boolean>();
   public gameUpdated = new Subject<any>();
   public sessionExpired = new Subject<string>();
@@ -54,8 +56,21 @@ export class PortfolioService {
   }
 
   initSocket() {
+    if (this._socket) {
+      if (!this._socket.connected) {
+        this._socket.connect();
+      }
+      return;
+    }
     this._user = this.getLoginObj() || false;
-    this._socket = io(this.url);
+    this._socket = io(this.url, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000
+    });
     this._socket.on('update-user', (user) => {
       this.user = user;
     });
@@ -63,8 +78,13 @@ export class PortfolioService {
       this.onGameUpdated(game);
     });
     this._socket.on('connect', () => {
+      this._hasConnectionError = false;
       if (this.user && this.user.token) {
-        this._socket.emit('authenticate', { token: this.user.token });
+        this._socket.emit('authenticate', { token: this.user.token, gameId: this.activeGameId });
+      }
+      if (this.activeGameId) {
+        const userType = this.user && this.user.isAdmin === 'true' ? 'admin' : 'player';
+        this.onJoinGame(this.activeGameId, this._socket.id, userType, this.user ? (this.user.userName || this.user.teamName) : '', this.user ? this.user.id : false);
       }
     });
     this._socket.on('admin-notification', notification => {
@@ -73,7 +93,8 @@ export class PortfolioService {
       }
     });
     this._socket.on('connect_error', () => {
-      if (this.user && this.user.isAdmin === 'true') {
+      if (this.user && this.user.isAdmin === 'true' && !this._hasConnectionError) {
+        this._hasConnectionError = true;
         this.addNotification({
           title: 'Connection issue',
           description: 'The live connection could not be established.'
@@ -102,13 +123,13 @@ export class PortfolioService {
     });
   }
 
-  authenticateSocket() {
+  authenticateSocket(gameId?: string) {
     if (!this._socket) {
       this.initSocket();
       return;
     }
     if (this._socket.connected && this.user && this.user.token) {
-      this._socket.emit('authenticate', { token: this.user.token });
+      this._socket.emit('authenticate', { token: this.user.token, gameId: gameId || this.activeGameId });
     }
   }
 
@@ -356,10 +377,13 @@ export class PortfolioService {
   }
 
   onJoinGame(gameId, socketId, userType, userName, userId = false) {
-    console.log("onJoinGame", gameId, socketId, userType, userName, userId);
+    if (!this._socket) {
+      this.initSocket();
+    }
+    const activeSocketId = (this._socket && this._socket.id) ? this._socket.id : socketId;
     this._socket.emit('join-game', {
       gameId: gameId,
-      socketId: socketId,
+      socketId: activeSocketId,
       userType: userType,
       userId: userId,
       userName: userName,
@@ -367,10 +391,8 @@ export class PortfolioService {
     });
     this._socket.off('player-added-to-game', this.addPlayerToGame);
     this._socket.off('player-add-error', this.onPlayerAddError);
-    this._socket.off('game-updated', this.onGameUpdated);
     this._socket.on('player-added-to-game', this.addPlayerToGame);
     this._socket.on('player-add-error', this.onPlayerAddError);
-    this._socket.on('game-updated', this.onGameUpdated);
   }
 
   onGameUpdated = (game) => {
@@ -395,7 +417,7 @@ export class PortfolioService {
     if (this.user && this.user.token) {
       reqOpts.headers = { Authorization: 'Bearer ' + this.user.token };
     }
-    this.api.get(getGame, {gameId: gameId}, reqOpts).subscribe((game) => {
+    this.api.get(getGame, {gameId: gameId}, reqOpts).subscribe((game: any) => {
       this.game = game;
       this.gameUpdated.next(game);
       if (this.game && this.game.players && this.game.players.length === 4 && this.game.game_status !== 'done') {

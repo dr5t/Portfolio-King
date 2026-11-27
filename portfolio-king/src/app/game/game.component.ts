@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, OnDestroy, OnInit} from '@angular/core';
 import $ from 'jquery';
 import {PortfolioService} from "../services/portfolio/portfolio.service";
 import {UtilityService} from "../shared/utils/utility-service";
@@ -10,7 +10,7 @@ import {ActivatedRoute, Router} from "@angular/router";
   templateUrl: './game.component.html',
   styleUrls: ['./game.component.scss']
 })
-export class GameComponent implements OnInit {
+export class GameComponent implements OnInit, OnDestroy {
 
   private gameStatus: any;
   public allowGame: any;
@@ -55,7 +55,14 @@ export class GameComponent implements OnInit {
 
   constructor(private portfolioService: PortfolioService,
               private activatedRoute: ActivatedRoute,
-              private route: Router) {
+              private route: Router,
+              private changeDetector: ChangeDetectorRef) {
+  }
+
+  private updateView() {
+    if (this.changeDetector && !(this.changeDetector as any)['destroyed']) {
+      this.changeDetector.detectChanges();
+    }
   }
 
   ngOnInit() {
@@ -65,13 +72,14 @@ export class GameComponent implements OnInit {
       this.socket.on('get-rolled-dice', this.onGetDice);
       this.socket.on('game-state-changed', this.onGameStateChanged);
       this.gameId = id;
+      this.portfolioService.activeGameId = id;
       if (!this.portfolioService.game) {
         let user = this.portfolioService.user;
         let userType = 'player';
         if (user.isAdmin) {
           userType = 'admin';
         }
-        this.portfolioService.onJoinGame(this.gameId, user.socketId, userType, user.userName, user.id);
+        this.portfolioService.onJoinGame(this.gameId, this.socket?.id || user.socketId, userType, user.userName, user.id);
         this.portfolioService.onGetGame(this.gameId);
         this.gameStatus = this.portfolioService.gameStatus.subscribe((res) => {
           if (res === undefined) {
@@ -97,6 +105,7 @@ export class GameComponent implements OnInit {
               this.startGame();
             }
             this.allowGame = game_status;
+            this.updateView();
           }
         });
       } else {
@@ -117,6 +126,7 @@ export class GameComponent implements OnInit {
               this.startGame();
             }
             this.allowGame = game_status;
+            this.updateView();
           }
         });
       }
@@ -427,6 +437,17 @@ export class GameComponent implements OnInit {
     } else {
       $('.l-half .half-inner').css('animation-play-state', 'running');
       $('.r-half .half-inner').css('animation-play-state', 'running');
+    }
+  }
+
+  ngOnDestroy() {
+    this.portfolioService.activeGameId = null;
+    if (this.socket) {
+      this.socket.off('get-rolled-dice', this.onGetDice);
+      this.socket.off('game-state-changed', this.onGameStateChanged);
+    }
+    if (this.gameStatus) {
+      this.gameStatus.unsubscribe();
     }
   }
 

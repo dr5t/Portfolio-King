@@ -1364,10 +1364,13 @@ const ioConnection = () => {
                 return;
             }
             if (session.role === 'player') {
-                if (session.socketId && session.socketId !== socket.id && isSocketConnected(session.socketId)) {
-                    io.to(socket.id).emit('player-add-error', { error: true, msg: 'Team already connected.' });
-                    socket.disconnect(true);
-                    return;
+                if (session.socketId && session.socketId !== socket.id) {
+                    if (isSocketConnected(session.socketId)) {
+                        const oldSock = io.sockets.sockets.get ? io.sockets.sockets.get(session.socketId) : (io.sockets.connected && io.sockets.connected[session.socketId]);
+                        if (oldSock) {
+                            oldSock.disconnect(true);
+                        }
+                    }
                 }
                 const team = await getDb().collection('teams').findOne(
                     { teamId: session.teamId },
@@ -1386,29 +1389,33 @@ const ioConnection = () => {
             connectedUser.userType = session.role;
             connectedUser.name = session.userName || session.teamName;
             connectedUser.teamId = session.teamId;
-            connectedUser.gameId = session.gameId;
+            connectedUser.gameId = session.gameId || (data && data.gameId);
             await auth.updateSessionSocket(session.token, socket.id);
             if (session.role === 'admin') {
                 socket.join(ADMIN_NOTIFICATION_ROOM);
+                if (data && data.gameId) {
+                    socket.join(String(data.gameId));
+                }
             }
             if (session.role === 'player') {
-                if (session.gameId) {
-                    socket.join(String(session.gameId));
-                    const targetGame = games.find(g => String(g._id) === String(session.gameId));
+                const targetGameId = String(session.gameId || (data && data.gameId) || '');
+                if (targetGameId) {
+                    socket.join(targetGameId);
+                    const targetGame = games.find(g => String(g._id) === targetGameId);
                     if (targetGame && Array.isArray(targetGame.players)) {
                         const player = targetGame.players.find(p => belongsToSessionTeam(p, session));
                         if (player) {
                             player.socketId = socket.id;
                             player.status = 'active';
-                            updatePlayer(session.gameId, player._id, 'active', player.game_status, player.rounds, player.loans).catch(() => {});
+                            updatePlayer(targetGameId, player._id, 'active', player.game_status, player.rounds, player.loans).catch(() => {});
                         }
                     }
                     if (targetGame) {
-                        broadcastGameUpdated(session.gameId, targetGame);
+                        broadcastGameUpdated(targetGameId, targetGame);
                     }
                 }
                 io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', {
-                    gameId: session.gameId,
+                    gameId: targetGameId,
                     teamId: session.teamId,
                     isConnected: true
                 });
@@ -1427,37 +1434,44 @@ const ioConnection = () => {
             io.to(socket.id).emit('session-verification-error', { message: 'Session verification unavailable.' });
         }
         });
-        socket.on('disconnect', () => {
+        socket.on('disconnect', async () => {
             const connectedUser = users.find(user => user.socketId === socket.id);
             if (connectedUser) {
                 connectedUser.status = 'inactive';
                 if (connectedUser.teamId) {
                     const gameId = String(connectedUser.gameId || '');
+                    const activeSession = await auth.findSessionByTeamId(connectedUser.teamId).catch(() => null);
+                    const isReconnectedInSession = !!(activeSession &&
+                        activeSession.socketId &&
+                        activeSession.socketId !== socket.id &&
+                        isSocketConnected(activeSession.socketId));
+
                     const hasOtherActiveSocket = users.some(u =>
                         u.socketId !== socket.id &&
                         u.teamId === connectedUser.teamId &&
                         u.status === 'active' &&
                         isSocketConnected(u.socketId)
                     );
-                    if (!hasOtherActiveSocket) {
-                        const game = games.find(g => String(g._id) === gameId);
-                        if (game && game.players) {
-                            const player = game.players.find(p => p.teamId === connectedUser.teamId || p.socketId === socket.id);
-                            if (player) {
-                                player.status = 'inactive';
-                                updatePlayer(gameId, player._id, 'inactive', player.game_status, player.rounds, player.loans).catch(() => {});
-                                notifyAdmins('Team disconnected', `${player.name || connectedUser.teamId} disconnected from "${game.name || 'Game'}".`);
-                            }
-                        }
-                        if (game) {
-                            broadcastGameUpdated(gameId, game);
-                        }
-                        io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', {
-                            gameId,
-                            teamId: connectedUser.teamId,
-                            isConnected: false
-                        });
+                    if (isReconnectedInSession || hasOtherActiveSocket) {
+                        return;
                     }
+                    const game = games.find(g => String(g._id) === gameId);
+                    if (game && game.players) {
+                        const player = game.players.find(p => p.teamId === connectedUser.teamId || p.socketId === socket.id);
+                        if (player) {
+                            player.status = 'inactive';
+                            updatePlayer(gameId, player._id, 'inactive', player.game_status, player.rounds, player.loans).catch(() => {});
+                            notifyAdmins('Team disconnected', `${player.name || connectedUser.teamId} disconnected from "${game.name || 'Game'}".`);
+                        }
+                    }
+                    if (game) {
+                        broadcastGameUpdated(gameId, game);
+                    }
+                    io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', {
+                        gameId,
+                        teamId: connectedUser.teamId,
+                        isConnected: false
+                    });
                 }
             }
         });
@@ -1480,7 +1494,7 @@ const ioConnection = () => {
             }
 
             users.forEach(user => {
-                if (user.socketId === data.socketId) {
+                if (user.socketId === socket.id) {
                     user.gameId = data.gameId;
                 }
             });
@@ -1522,10 +1536,13 @@ const ioConnection = () => {
                     io.to(socket.id).emit("player-add-error", { error: true, msg: "Server unavailable." });
                     return;
                 }
-                if (activeSess && activeSess.socketId && activeSess.socketId !== socket.id && isSocketConnected(activeSess.socketId)) {
-                    io.to(socket.id).emit("player-add-error", { error: true, msg: "Team already connected." });
-                    notifyAdmins('Player connection error', `${session.teamName || session.teamId} tried to connect while already active.`);
-                    return;
+                if (activeSess && activeSess.socketId && activeSess.socketId !== socket.id) {
+                    if (isSocketConnected(activeSess.socketId)) {
+                        const oldSock = io.sockets.sockets.get ? io.sockets.sockets.get(activeSess.socketId) : (io.sockets.connected && io.sockets.connected[activeSess.socketId]);
+                        if (oldSock) {
+                            oldSock.disconnect(true);
+                        }
+                    }
                 }
                 try {
                     await auth.updateSessionSocket(session.token, socket.id);
@@ -1538,7 +1555,7 @@ const ioConnection = () => {
                 let targetGame = null;
                 let existingPlayer = null;
                 games.forEach(g => {
-                    if (JSON.stringify(g._id) === JSON.stringify(data.gameId)) {
+                    if (String(g._id) === String(data.gameId)) {
                         targetGame = g;
                         g.players.forEach(p => {
                             if (belongsToSessionTeam(p, session)) {
@@ -1560,7 +1577,8 @@ const ioConnection = () => {
                     return;
                 }
 
-                if (targetGame && targetGame.players.length >= 4) {
+                const uniqueTeamsInGame = new Set(targetGame ? targetGame.players.map(p => String(p.teamId || p.name)) : []);
+                if (uniqueTeamsInGame.size >= 4 && !uniqueTeamsInGame.has(String(session.teamId || session.teamName))) {
                     io.to(socket.id).emit("player-add-error", { error: true, msg: "Game full." });
                     notifyAdmins('Player connection error', `${session.teamName || session.teamId} could not join a full game.`);
                     return;
@@ -1571,7 +1589,7 @@ const ioConnection = () => {
                         let player = value.players[value.players.length - 1];
                         if (ok === 1) {
                             games.forEach(game => {
-                                if (JSON.stringify(game._id) === JSON.stringify(value._id)) {
+                                if (String(game._id) === String(value._id)) {
                                     game.players = value.players;
                                 }
                             });
@@ -1581,7 +1599,7 @@ const ioConnection = () => {
                                 gameId: data.gameId
                             });
                             io.to(socket.id).emit("player-added-to-game", {player: player, gameId: data.gameId});
-                            const updatedGame = games.find(g => JSON.stringify(g._id) === JSON.stringify(value._id)) || value;
+                            const updatedGame = games.find(g => String(g._id) === String(value._id)) || value;
                             broadcastGameUpdated(data.gameId, updatedGame);
                             io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { gameId: data.gameId, teamId: session.teamId, isConnected: true });
                             notifyAdmins('Team joined game', `${player.name} joined "${value.name || 'a game session'}".`);
@@ -2028,18 +2046,29 @@ const createNewGame = (customName) => {
         });
 };
 
-const addPlayerToGame = (gameId, socketId, name, teamId) => {
+const addPlayerToGame = async (gameId, socketId, name, teamId) => {
     const db = getDb();
+    const effectiveTeamId = teamId || name;
+    const existing = await db.collection('games').findOne({
+        _id: new ObjectID(gameId),
+        "players.teamId": effectiveTeamId
+    });
+    if (existing) {
+        return { value: existing, ok: 1 };
+    }
     return db.collection('games')
         .findOneAndUpdate(
-            {_id: new ObjectID(gameId)},
             {
-                $addToSet: {
+                _id: new ObjectID(gameId),
+                "players.teamId": { $ne: effectiveTeamId }
+            },
+            {
+                $push: {
                     players: {
                         _id: new ObjectID(),
                         socketId: socketId,
                         name: name,
-                        teamId: teamId || name,
+                        teamId: effectiveTeamId,
                         status: 'active',
                         game_status: 'paused',
                         starting_portfolio_value: 1000000,
@@ -2049,7 +2078,7 @@ const addPlayerToGame = (gameId, socketId, name, teamId) => {
                 }
             },
             {returnOriginal: false}
-        )
+        );
 };
 
 const getInvestmentReturn = (investment_option, investemnt, dice_value) => {

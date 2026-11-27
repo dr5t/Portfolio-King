@@ -1,4 +1,4 @@
-import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {PortfolioService} from "../services/portfolio/portfolio.service";
 import {ActivatedRoute, NavigationExtras, Router} from "@angular/router";
 import {UtilityService} from "../shared/utils/utility-service";
@@ -11,7 +11,7 @@ import {OwlOptions} from 'ngx-owl-carousel-o';
   templateUrl: './game-status.component.html',
   styleUrls: ['./game-status.component.scss']
 })
-export class GameStatusComponent implements OnInit {
+export class GameStatusComponent implements OnInit, OnDestroy {
 
   private gameId: any;
   public user: any;
@@ -43,7 +43,14 @@ export class GameStatusComponent implements OnInit {
 
   constructor(public portfolioService: PortfolioService,
               private route: Router,
-              private activatedRoute: ActivatedRoute) {
+              private activatedRoute: ActivatedRoute,
+              private changeDetector: ChangeDetectorRef) {
+  }
+
+  private updateView() {
+    if (this.changeDetector && !(this.changeDetector as any)['destroyed']) {
+      this.changeDetector.detectChanges();
+    }
   }
 
   exportGameCsv() {
@@ -98,6 +105,7 @@ export class GameStatusComponent implements OnInit {
     };
     this.activatedRoute.params.subscribe(({id}) => {
       this.gameId = id;
+      this.portfolioService.activeGameId = id;
       this.user = this.portfolioService.user;
       let userType = 'player';
       if (this.user.isAdmin) {
@@ -113,6 +121,7 @@ export class GameStatusComponent implements OnInit {
       this.gameUpdateSub = this.portfolioService.gameUpdated.subscribe((g: any) => {
         if (g && String(g._id) === String(this.gameId)) {
           this.game = g;
+          this.updateView();
         }
       });
       this.gameStatus = this.portfolioService.gameStatus.subscribe((res: any) => {
@@ -220,11 +229,20 @@ export class GameStatusComponent implements OnInit {
             }
           }
           this.onPlayerReady = game_status;
+          this.updateView();
         }
       });
-      this.portfolioService.onJoinGame(this.gameId, this.user.socketId, userType, this.user.userName, this.user.id);
+      this.portfolioService.onJoinGame(this.gameId, this.portfolioService.socket?.id || this.user.socketId, userType, this.user.userName, this.user.id);
       this.portfolioService.onGetGame(this.gameId);
     });
+  }
+
+  ngOnDestroy() {
+    this.portfolioService.activeGameId = null;
+    if (this.gameUpdateSub) this.gameUpdateSub.unsubscribe();
+    if (this.gameStatus) this.gameStatus.unsubscribe();
+    clearTimeout(this.status_timer);
+    this.pauseCrackers();
   }
 
   onGameStart() {
