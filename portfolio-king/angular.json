@@ -46,14 +46,13 @@
               "src/favicon-48x48.png",
               "src/favicon-192x192.png",
               "src/favicon-512x512.png",
-              "src/apple-touch-icon.png"
+              "src/apple-touch-icon.png",
+              "src/robots.txt"
             ],
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": [
-              "src/assets/js/lottie.min.js"
-            ]
+            "scripts": []
           },
           "configurations": {
             "production": {

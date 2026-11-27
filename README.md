@@ -562,7 +562,7 @@ Portfolio King is configured for single-click deployment on **Render** using the
 2. **Select Blueprint:** Render will automatically detect `render.yaml`.
 3. **Configure Environment Variables:**
    - `NODE_VERSION`: `26.13.1`
-   - `MONGODB_URI`: Your MongoDB Atlas connection string (e.g., `mongodb+srv://<username>:<password>@cluster.mongodb.net/portfolio?retryWrites=true&w=majority`).
+   - `MONGODB_URI`: Your MongoDB Atlas connection string (e.g., `mongodb+srv://<username>:<password>@<cluster-host>/portfolio?retryWrites=true&w=majority`).
    - `ADMIN_USERNAME`: Master administrator username.
    - `ADMIN_PASSWORD`: High-entropy master administrator password.
 4. **Deploy:** Render will trigger the build pipeline:

@@ -1854,12 +1854,18 @@ app.get('/update-game', auth.authenticateAdmin, function (req, res) {
 if (fs.existsSync(clientDistPath)) {
     const zlib = require('zlib');
     app.use((req, res, next) => {
+        if (req.path.startsWith('/socket.io') || req.path.startsWith('/api')) {
+            return next();
+        }
+        if (req.path.startsWith('/admin') || req.path.startsWith('/game') || req.path.startsWith('/investment') || req.path.startsWith('/game-status')) {
+            res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+        }
         const acceptEncoding = req.headers['accept-encoding'] || '';
-        if (!acceptEncoding.includes('gzip') || req.method !== 'GET') {
+        if (!acceptEncoding.includes('gzip') || (req.method !== 'GET' && req.method !== 'HEAD')) {
             return next();
         }
         const ext = path.extname(req.path).toLowerCase();
-        if (['.js', '.css', '.html', '.svg', '.json'].includes(ext) || req.path === '/' || !ext) {
+        if (['.js', '.css', '.html', '.svg', '.json', '.png', '.ico', '.txt', '.webp'].includes(ext) || req.path === '/' || !ext) {
             let filePath = path.join(clientDistPath, ext ? req.path : 'index.html');
             if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
                 const mimeTypes = {
@@ -1867,19 +1873,34 @@ if (fs.existsSync(clientDistPath)) {
                     '.css': 'text/css',
                     '.html': 'text/html',
                     '.svg': 'image/svg+xml',
-                    '.json': 'application/json'
+                    '.json': 'application/json',
+                    '.png': 'image/png',
+                    '.ico': 'image/x-icon',
+                    '.txt': 'text/plain; charset=UTF-8',
+                    '.webp': 'image/webp'
                 };
                 const contentType = mimeTypes[path.extname(filePath).toLowerCase()] || 'text/html';
                 res.setHeader('Content-Type', contentType);
                 res.setHeader('Content-Encoding', 'gzip');
                 res.setHeader('Vary', 'Accept-Encoding');
+                if (ext && ext !== '.html') {
+                    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+                } else {
+                    res.setHeader('Cache-Control', 'no-cache');
+                }
+                if (req.method === 'HEAD') {
+                    return res.end();
+                }
                 return fs.createReadStream(filePath).pipe(zlib.createGzip()).pipe(res);
             }
         }
         next();
     });
-    app.use(express.static(clientDistPath));
+    app.use(express.static(clientDistPath, { maxAge: '1y', immutable: true }));
     app.get('*', function (req, res) {
+        if (req.path.startsWith('/admin') || req.path.startsWith('/game') || req.path.startsWith('/investment') || req.path.startsWith('/game-status')) {
+            res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+        }
         res.sendFile(path.join(clientDistPath, 'index.html'));
     });
 }

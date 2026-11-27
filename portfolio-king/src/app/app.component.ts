@@ -84,8 +84,6 @@ export class AppComponent implements OnInit {
         setTimeout(initAnim, 150);
       }
 
-      // Mutation observer to guarantee 3s maximum duration and Lottie playback
-      // even if external or legacy scripts directly manipulate .loader display
       const loaderEl = document.querySelector('.loader');
       if (loaderEl && typeof MutationObserver !== 'undefined') {
         let maxDurationTimer: any = null;

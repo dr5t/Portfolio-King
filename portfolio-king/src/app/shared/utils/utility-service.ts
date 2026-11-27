@@ -16,7 +16,6 @@ export class UtilityService {
       }
     } catch (e) {}
 
-    // Hard ceiling: max 3 seconds loading duration
     this.loaderTimer = setTimeout(() => {
       this.hideLoader();
     }, 3000);
