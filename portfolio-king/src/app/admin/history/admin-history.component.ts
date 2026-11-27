@@ -1,4 +1,5 @@
 import {ChangeDetectorRef, Component, OnDestroy, OnInit} from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
 import {PortfolioService} from '../../services/portfolio/portfolio.service';
 import {getGameLeaderboard} from '../../shared/utils/game-results';
 
@@ -21,11 +22,19 @@ export class AdminHistoryComponent implements OnInit, OnDestroy {
   private notificationHandler: () => void;
   private destroyed = false;
 
-  constructor(private portfolioService: PortfolioService, private changeDetector: ChangeDetectorRef) {
+  constructor(private portfolioService: PortfolioService,
+              private activatedRoute: ActivatedRoute,
+              private changeDetector: ChangeDetectorRef) {
   }
 
   ngOnInit() {
     this.loadGames();
+    this.activatedRoute.queryParams.subscribe(params => {
+      if (params.status) {
+        this.statusFilter = String(params.status).toLowerCase();
+        if (!this.destroyed) this.changeDetector.detectChanges();
+      }
+    });
     const socket = this.portfolioService.socket;
     if (socket) {
       this.socketHandler = () => this.loadGames();

@@ -67,6 +67,7 @@
           <label class="selector-label" for="session-select">Selected Session:</label>
           <select id="session-select" class="session-dropdown" [(ngModel)]="selectedGameId" (change)="onSelectManageGame(selectedGameId)">
             <option value="all">All Registered Teams ({{allRegisteredTeamsCount}})</option>
+            <option value="assigned">Assigned Teams ({{assignedTeamsCount}})</option>
             <option value="unassigned">Unassigned Teams ({{unassignedTeamsCount}})</option>
             <optgroup label="Trading Sessions">
               <option *ngFor="let g of allGames" [value]="g._id">
@@ -77,15 +78,15 @@
         </div>
 
         <div class="team-mgmt-actions">
-          <button type="button" class="btn btn-primary" [disabled]="!selectedGameId || selectedGameId === 'unassigned' || selectedGameId === 'all' || isSelectedGameFull" (click)="onAutoGenerateTeams()" [title]="isSelectedGameFull ? 'Session already at capacity (4/4 teams)' : 'Auto-generate 4 teams'">
+          <button type="button" class="btn btn-primary" [disabled]="!selectedGameId || selectedGameId === 'unassigned' || selectedGameId === 'all' || selectedGameId === 'assigned' || isSelectedGameFull" (click)="onAutoGenerateTeams()" [title]="isSelectedGameFull ? 'Session already at capacity (4/4 teams)' : (selectedGameVacantSlots === 4 ? 'Auto-generate 4 teams' : 'Auto-fill remaining ' + selectedGameVacantSlots + ' teams')">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
               <circle cx="9" cy="7" r="4"></circle>
               <polyline points="16 11 18 13 22 9"></polyline>
             </svg>
-            Auto-Generate 4 Teams
+            {{ autoGenerateButtonLabel }}
           </button>
-          <button type="button" class="btn btn-secondary" [disabled]="!selectedGameId || selectedGameId === 'unassigned' || selectedGameId === 'all' || isSelectedGameFull" (click)="showCreateTeamForm = !showCreateTeamForm" [title]="isSelectedGameFull ? 'Session already at capacity (4/4 teams)' : 'Add a single team'">
+          <button type="button" class="btn btn-secondary" [disabled]="!selectedGameId || selectedGameId === 'unassigned' || selectedGameId === 'all' || selectedGameId === 'assigned' || isSelectedGameFull" (click)="showCreateTeamForm = !showCreateTeamForm" [title]="isSelectedGameFull ? 'Session already at capacity (4/4 teams)' : 'Add a single team'">
             + Add Team
           </button>
         </div>
@@ -152,7 +153,7 @@
               </th>
               <th>Team ID</th>
               <th>Team Name</th>
-              <th *ngIf="selectedGameId === 'all'">Assigned Session</th>
+              <th *ngIf="selectedGameId === 'all' || selectedGameId === 'assigned'">Assigned Session</th>
               <th>Status</th>
               <th>Connection</th>
               <th class="text-right">Actions</th>
@@ -174,7 +175,7 @@
                   <button type="button" class="btn btn-sm btn-secondary" (click)="cancelEditTeam()">Cancel</button>
                 </div>
               </td>
-              <td *ngIf="selectedGameId === 'all'">
+              <td *ngIf="selectedGameId === 'all' || selectedGameId === 'assigned'">
                 <span class="game-short-id">{{t.assignedGameName || 'Unassigned'}}</span>
               </td>
               <td>
@@ -197,8 +198,8 @@
               </td>
             </tr>
             <tr *ngIf="teamsList.length === 0">
-              <td [attr.colspan]="selectedGameId === 'all' ? 7 : 6" class="empty-cell">
-                {{selectedGameId === 'unassigned' ? 'No unassigned teams. All teams are assigned to active sessions.' : (selectedGameId === 'all' ? 'No registered teams found.' : 'No teams provisioned for this game yet. Click "Auto-Generate 4 Teams" to initialize.')}}
+              <td [attr.colspan]="(selectedGameId === 'all' || selectedGameId === 'assigned') ? 7 : 6" class="empty-cell">
+                {{selectedGameId === 'unassigned' ? 'No unassigned teams. All teams are assigned to active sessions.' : (selectedGameId === 'assigned' ? 'No assigned teams found.' : (selectedGameId === 'all' ? 'No registered teams found.' : 'No teams provisioned for this game yet.'))}}
               </td>
             </tr>
           </tbody>

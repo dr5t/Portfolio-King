@@ -1,5 +1,5 @@
 import {ChangeDetectorRef, Component, OnDestroy, OnInit} from '@angular/core';
-import {Router} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {PortfolioService} from '../../services/portfolio/portfolio.service';
 import {UtilityService} from '../../shared/utils/utility-service';
 
@@ -13,16 +13,24 @@ export class AdminSessionsComponent implements OnInit, OnDestroy {
   games: any[] = [];
   loading = true;
   error = '';
+  statusFilter: string = 'all';
   private socketHandler: (game: any) => void;
   private socketDeleteHandler: (event: any) => void;
   private notificationHandler: () => void;
 
   constructor(private portfolioService: PortfolioService, private router: Router,
+              private activatedRoute: ActivatedRoute,
               private changeDetector: ChangeDetectorRef) {
   }
 
   ngOnInit() {
     this.loadGames();
+    this.activatedRoute.queryParams.subscribe(params => {
+      if (params.status) {
+        this.statusFilter = String(params.status).toLowerCase();
+        this.changeDetector.detectChanges();
+      }
+    });
     const socket = this.portfolioService.socket;
     if (socket) {
       this.socketHandler = game => this.updateGame(game);
@@ -67,9 +75,22 @@ export class AdminSessionsComponent implements OnInit, OnDestroy {
   }
 
   get sessions(): any[] {
-    return this.games.filter(game =>
+    let list = this.games.filter(game =>
       ['active', 'in_progress', 'paused', 'waiting', 'ready'].indexOf(game.game_status) >= 0
     );
+    if (this.statusFilter && this.statusFilter !== 'all') {
+      list = list.filter(game => {
+        const s = game.game_status;
+        if (this.statusFilter === 'active' || this.statusFilter === 'in_progress') {
+          return s === 'active' || s === 'in_progress';
+        }
+        if (this.statusFilter === 'waiting') {
+          return s === 'waiting' || s === 'ready';
+        }
+        return s === this.statusFilter;
+      });
+    }
+    return list;
   }
 
   get connectedTeamsCount(): number {
@@ -82,7 +103,19 @@ export class AdminSessionsComponent implements OnInit, OnDestroy {
   }
 
   connectedPlayers(game: any): any[] {
-    return (game.players || []).filter(player => player.status === 'active');
+    if (!game || !Array.isArray(game.players)) return [];
+    const seen = new Set<string>();
+    const uniqueActive: any[] = [];
+    for (const p of game.players) {
+      if (p && p.status === 'active') {
+        const key = String(p.teamId || p._id || p.name || '');
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          uniqueActive.push(p);
+        }
+      }
+    }
+    return uniqueActive;
   }
 
   currentRound(game: any): number {

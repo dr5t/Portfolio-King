@@ -37,6 +37,25 @@ var diceTimer;
 const ADMIN_NOTIFICATION_ROOM = 'portfolio-king-admin-notifications';
 const gameDeletionLocks = new Set();
 const teamDeletionLocks = new Set();
+const gameTeamQueues = new Map();
+
+async function withGameTeamLock(gameId, action) {
+    const key = String(gameId);
+    const prevPromise = gameTeamQueues.get(key) || Promise.resolve();
+    let resolveCurrent;
+    const currentPromise = new Promise(resolve => { resolveCurrent = resolve; });
+    gameTeamQueues.set(key, currentPromise);
+
+    await prevPromise.catch(() => {});
+    try {
+        return await action();
+    } finally {
+        if (gameTeamQueues.get(key) === currentPromise) {
+            gameTeamQueues.delete(key);
+        }
+        resolveCurrent();
+    }
+}
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
@@ -226,12 +245,18 @@ async function deleteTeamRecords(teamObjectIds, expectedGameId) {
             teamDeletionLocks.add(String(team.teamId));
             lockedKeys.push(String(team.teamId));
         });
-        if (expectedGameId) {
+        if (expectedGameId && expectedGameId !== 'all') {
             if (expectedGameId === 'unassigned') {
                 const allGames = await getAllGames();
                 const validGameIds = new Set(allGames.map(g => String(g._id)));
                 if (teams.some(team => team.gameId && validGameIds.has(String(team.gameId)))) {
                     throw requestError(400, 'All selected teams must be unassigned.');
+                }
+            } else if (expectedGameId === 'assigned') {
+                const allGames = await getAllGames();
+                const validGameIds = new Set(allGames.map(g => String(g._id)));
+                if (teams.some(team => !team.gameId || !validGameIds.has(String(team.gameId)))) {
+                    throw requestError(400, 'All selected teams must be assigned to a game.');
                 }
             } else if (teams.some(team => String(team.gameId) !== String(expectedGameId))) {
                 throw requestError(400, 'All selected teams must belong to the selected game.');
@@ -542,7 +567,18 @@ app.get('/api/teams/stats', auth.authenticateAdmin, async function (req, res) {
         const validGameIdSet = new Set(allGames.map(g => String(g._id)));
         const allTeams = await db.collection('teams').find({}).toArray();
         const activeSessions = await auth.findSessionsByTeamIds(allTeams.map(team => team.teamId));
-        const sessionsByTeam = new Map(activeSessions.map(session => [session.teamId, session]));
+
+        const connectedTeamIds = new Set();
+        users.forEach(u => {
+            if (u.teamId && u.status === 'active' && isSocketConnected(u.socketId)) {
+                connectedTeamIds.add(String(u.teamId));
+            }
+        });
+        activeSessions.forEach(s => {
+            if (s.teamId && s.socketId && isSocketConnected(s.socketId)) {
+                connectedTeamIds.add(String(s.teamId));
+            }
+        });
 
         let assignedCount = 0;
         let unassignedCount = 0;
@@ -555,8 +591,7 @@ app.get('/api/teams/stats', auth.authenticateAdmin, async function (req, res) {
             } else {
                 unassignedCount++;
             }
-            const session = sessionsByTeam.get(t.teamId);
-            if (session && session.socketId && isSocketConnected(session.socketId)) {
+            if (connectedTeamIds.has(String(t.teamId))) {
                 connectedCount++;
             }
         });
@@ -589,16 +624,31 @@ app.get('/api/teams', auth.authenticateAdmin, async function (req, res) {
                     { gameId: { $nin: Array.from(validGameIdSet) } }
                 ]
             };
+        } else if (req.query.gameId === 'assigned') {
+            query = {
+                gameId: { $in: Array.from(validGameIdSet) }
+            };
         } else if (req.query.gameId && req.query.gameId !== 'all') {
             query = { gameId: String(req.query.gameId) };
         }
 
         const teams = await db.collection('teams').find(query).toArray();
         const activeSessions = await auth.findSessionsByTeamIds(teams.map(team => team.teamId));
-        const sessionsByTeam = new Map(activeSessions.map(session => [session.teamId, session]));
+
+        const connectedTeamIds = new Set();
+        users.forEach(u => {
+            if (u.teamId && u.status === 'active' && isSocketConnected(u.socketId)) {
+                connectedTeamIds.add(String(u.teamId));
+            }
+        });
+        activeSessions.forEach(s => {
+            if (s.teamId && s.socketId && isSocketConnected(s.socketId)) {
+                connectedTeamIds.add(String(s.teamId));
+            }
+        });
+
         const sanitized = teams.map(t => {
-            const session = sessionsByTeam.get(t.teamId);
-            const isConnected = !!(session && session.socketId && isSocketConnected(session.socketId));
+            const isConnected = connectedTeamIds.has(String(t.teamId));
             const isAssigned = !!(t.gameId && validGameIdSet.has(String(t.gameId)));
             const assignedGame = isAssigned ? gameMap.get(String(t.gameId)) : null;
             return {
@@ -628,62 +678,61 @@ app.post('/api/teams', auth.authenticateAdmin, async function (req, res) {
     if (gameDeletionLocks.has(lockId)) {
         return res.status(409).json({ message: 'This game is being deleted. Please try again later.' });
     }
-    gameDeletionLocks.add(lockId);
-    try {
-        const db = getDb();
-        const game = await db.collection('games').findOne({ _id: new ObjectID(gameId) });
-        if (!game) {
-            return res.status(404).json({ message: 'Game not found.' });
+    return withGameTeamLock(lockId, async () => {
+        try {
+            const db = getDb();
+            const game = await db.collection('games').findOne({ _id: new ObjectID(gameId) });
+            if (!game) {
+                return res.status(404).json({ message: 'Game not found.' });
+            }
+            const existingCount = await db.collection('teams').countDocuments({ gameId: String(gameId) });
+            const playersCount = (game.players || []).length;
+            if (existingCount >= 4 || playersCount >= 4) {
+                return res.status(400).json({ message: 'Game already has maximum 4 teams.' });
+            }
+            if (req.body.teamId !== undefined && typeof req.body.teamId !== 'string') {
+                return res.status(400).json({ message: 'A valid Team ID is required.' });
+            }
+            let teamId = req.body.teamId ? req.body.teamId.trim().toUpperCase() : null;
+            if (!teamId) {
+                teamId = auth.generateTeamId(1, existingCount + 1);
+            }
+            const dup = await db.collection('teams').findOne({ teamId });
+            if (dup) {
+                return res.status(400).json({ message: `Team ID ${teamId} already exists.` });
+            }
+            if (req.body.password !== undefined && typeof req.body.password !== 'string') {
+                return res.status(400).json({ message: 'A valid team password is required.' });
+            }
+            const rawPassword = req.body.password && req.body.password.trim() ? req.body.password.trim() : auth.generatePassword();
+            const passwordHash = await auth.hashPassword(rawPassword);
+            const newTeam = {
+                teamId,
+                name: name.trim(),
+                passwordHash,
+                gameId: String(gameId),
+                status: 'active',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            const insertResult = await db.collection('teams').insertOne(newTeam);
+            const cachedGame = games.find(item => String(item._id) === String(gameId));
+            notifyAdmins('Team registered', `${newTeam.name} was registered for "${cachedGame ? cachedGame.name : 'a game session'}".`);
+            io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { gameId: String(gameId), action: 'created' });
+            res.json({
+                team: {
+                    _id: insertResult.insertedId,
+                    teamId: newTeam.teamId,
+                    name: newTeam.name,
+                    gameId: newTeam.gameId,
+                    status: newTeam.status
+                },
+                rawPassword
+            });
+        } catch (err) {
+            res.status(500).json({ message: 'Server unavailable.' });
         }
-        const existingCount = await db.collection('teams').countDocuments({ gameId: String(gameId) });
-        const playersCount = (game.players || []).length;
-        if (existingCount >= 4 || playersCount >= 4) {
-            return res.status(400).json({ message: 'Game already has maximum 4 teams.' });
-        }
-        if (req.body.teamId !== undefined && typeof req.body.teamId !== 'string') {
-            return res.status(400).json({ message: 'A valid Team ID is required.' });
-        }
-        let teamId = req.body.teamId ? req.body.teamId.trim().toUpperCase() : null;
-        if (!teamId) {
-            teamId = auth.generateTeamId(1, existingCount + 1);
-        }
-        const dup = await db.collection('teams').findOne({ teamId });
-        if (dup) {
-            return res.status(400).json({ message: `Team ID ${teamId} already exists.` });
-        }
-        if (req.body.password !== undefined && typeof req.body.password !== 'string') {
-            return res.status(400).json({ message: 'A valid team password is required.' });
-        }
-        const rawPassword = req.body.password && req.body.password.trim() ? req.body.password.trim() : auth.generatePassword();
-        const passwordHash = await auth.hashPassword(rawPassword);
-        const newTeam = {
-            teamId,
-            name: name.trim(),
-            passwordHash,
-            gameId: String(gameId),
-            status: 'active',
-            createdAt: new Date(),
-            updatedAt: new Date()
-        };
-        const insertResult = await db.collection('teams').insertOne(newTeam);
-        const cachedGame = games.find(item => String(item._id) === String(gameId));
-        notifyAdmins('Team registered', `${newTeam.name} was registered for "${cachedGame ? cachedGame.name : 'a game session'}".`);
-        io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { gameId: String(gameId), action: 'created' });
-        res.json({
-            team: {
-                _id: insertResult.insertedId,
-                teamId: newTeam.teamId,
-                name: newTeam.name,
-                gameId: newTeam.gameId,
-                status: newTeam.status
-            },
-            rawPassword
-        });
-    } catch (err) {
-        res.status(500).json({ message: 'Server unavailable.' });
-    } finally {
-        gameDeletionLocks.delete(lockId);
-    }
+    });
 });
 
 app.post('/api/teams/generate-all', auth.authenticateAdmin, async function (req, res) {
@@ -695,68 +744,94 @@ app.post('/api/teams/generate-all', auth.authenticateAdmin, async function (req,
     if (gameDeletionLocks.has(lockId)) {
         return res.status(409).json({ message: 'This game is being deleted. Please try again later.' });
     }
-    gameDeletionLocks.add(lockId);
-    try {
-        const db = getDb();
-        const allGames = await getAllGames();
-        const game = allGames.find(item => String(item._id) === String(gameId));
-        if (!game) {
-            return res.status(404).json({ message: 'Game not found.' });
-        }
-        let gameIndex = 1;
-        allGames.forEach((g, idx) => {
-            if (String(g._id) === String(gameId)) gameIndex = idx + 1;
-        });
-
-        const existingTeams = await db.collection('teams').find({ gameId: String(gameId) }).toArray();
-        const currentCount = existingTeams.length;
-        const playersCount = (game.players || []).length;
-        if (currentCount >= 4 || playersCount >= 4) {
-            return res.status(400).json({ message: 'Game already has maximum 4 teams.' });
-        }
-
-        const generated = [];
-        for (let i = currentCount + 1; i <= 4; i++) {
-            let teamId = auth.generateTeamId(gameIndex, i);
-            let dup = await db.collection('teams').findOne({ teamId });
-            let offset = 1;
-            while (dup && offset < 20) {
-                teamId = auth.generateTeamId(gameIndex, i + offset * 10);
-                dup = await db.collection('teams').findOne({ teamId });
-                offset++;
+    return withGameTeamLock(lockId, async () => {
+        try {
+            const db = getDb();
+            const allGames = await getAllGames();
+            const game = allGames.find(item => String(item._id) === String(gameId));
+            if (!game) {
+                return res.status(404).json({ message: 'Game not found.' });
             }
-            const name = `Team ${i}`;
-            const rawPassword = auth.generatePassword();
-            const passwordHash = await auth.hashPassword(rawPassword);
-            const teamDoc = {
-                teamId,
-                name,
-                passwordHash,
-                gameId: String(gameId),
-                status: 'active',
-                createdAt: new Date(),
-                updatedAt: new Date()
-            };
-            const result = await db.collection('teams').insertOne(teamDoc);
-            generated.push({
-                _id: result.insertedId,
-                teamId,
-                name,
-                gameId: String(gameId),
-                status: 'active',
-                rawPassword
+            let gameIndex = 1;
+            allGames.forEach((g, idx) => {
+                if (String(g._id) === String(gameId)) gameIndex = idx + 1;
             });
+
+            const existingTeams = await db.collection('teams').find({ gameId: String(gameId) }).toArray();
+            const currentCount = existingTeams.length;
+            const playersCount = (game.players || []).length;
+            const totalCount = Math.max(currentCount, playersCount);
+            if (totalCount >= 4) {
+                return res.status(400).json({ message: 'Game already has maximum 4 teams.' });
+            }
+
+            const vacantSlotsNeeded = 4 - totalCount;
+            const usedSlots = new Set();
+            const existingNames = new Set(existingTeams.map(t => (t.name || '').trim().toLowerCase()));
+
+            for (const team of existingTeams) {
+                const match = (team.name || '').match(/^Team\s*(\d+)$/i);
+                if (match) {
+                    usedSlots.add(parseInt(match[1], 10));
+                }
+            }
+
+            const availableSlots = [];
+            for (let s = 1; s <= 4; s++) {
+                if (!usedSlots.has(s) && !existingNames.has(`team ${s}`)) {
+                    availableSlots.push(s);
+                }
+            }
+            let nextSlot = 1;
+            while (availableSlots.length < vacantSlotsNeeded) {
+                if (!usedSlots.has(nextSlot) && !existingNames.has(`team ${nextSlot}`)) {
+                    availableSlots.push(nextSlot);
+                }
+                nextSlot++;
+            }
+
+            const generated = [];
+            for (let i = 0; i < vacantSlotsNeeded; i++) {
+                const slotNum = availableSlots[i];
+                const name = `Team ${slotNum}`;
+                let teamId = auth.generateTeamId(gameIndex, slotNum);
+                let dup = await db.collection('teams').findOne({ teamId });
+                let offset = 1;
+                while (dup && offset < 20) {
+                    teamId = auth.generateTeamId(gameIndex, slotNum + offset * 10);
+                    dup = await db.collection('teams').findOne({ teamId });
+                    offset++;
+                }
+                const rawPassword = auth.generatePassword();
+                const passwordHash = await auth.hashPassword(rawPassword);
+                const teamDoc = {
+                    teamId,
+                    name,
+                    passwordHash,
+                    gameId: String(gameId),
+                    status: 'active',
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                };
+                const result = await db.collection('teams').insertOne(teamDoc);
+                generated.push({
+                    _id: result.insertedId,
+                    teamId,
+                    name,
+                    gameId: String(gameId),
+                    status: 'active',
+                    rawPassword
+                });
+            }
+            if (generated.length > 0) {
+                notifyAdmins('Teams registered', `${generated.length} team account(s) were registered for "${game ? game.name : 'a game session'}".`);
+                io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { gameId: String(gameId), action: 'generated', count: generated.length });
+            }
+            res.json({ teams: generated });
+        } catch (err) {
+            res.status(500).json({ message: 'Server unavailable.' });
         }
-        if (generated.length > 0) {
-            notifyAdmins('Teams registered', `${generated.length} team account(s) were registered for "${game ? game.name : 'a game session'}".`);
-            io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { gameId: String(gameId), action: 'generated', count: generated.length });
-        }
-        res.json({ teams: generated });
-    } catch (err) {
-        res.status(500).json({ message: 'Server unavailable.' });
-    } finally {
-        gameDeletionLocks.delete(lockId);
-    }
+    });
 });
 
 app.put('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
@@ -860,8 +935,8 @@ app.delete('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
 
 app.post('/api/teams/bulk-delete', auth.authenticateAdmin, async function (req, res) {
     const body = req.body || {};
-    if (!isValidObjectId(body.gameId) && body.gameId !== 'unassigned') {
-        return res.status(400).json({ message: 'A valid gameId or "unassigned" is required.' });
+    if (!isValidObjectId(body.gameId) && body.gameId !== 'unassigned' && body.gameId !== 'assigned' && body.gameId !== 'all') {
+        return res.status(400).json({ message: 'A valid gameId or "unassigned", "assigned", "all" is required.' });
     }
 
     try {
@@ -883,6 +958,14 @@ app.post('/api/teams/bulk-delete', auth.authenticateAdmin, async function (req, 
                         { gameId: { $nin: validGameIds } }
                     ]
                 };
+            } else if (body.gameId === 'assigned') {
+                const allGames = await getAllGames();
+                const validGameIds = allGames.map(g => String(g._id));
+                teamsQuery = {
+                    gameId: { $in: validGameIds }
+                };
+            } else if (body.gameId === 'all') {
+                teamsQuery = {};
             } else {
                 teamsQuery = { gameId: String(body.gameId) };
             }
@@ -1305,21 +1388,29 @@ const ioConnection = () => {
                 connectedUser.status = 'inactive';
                 if (connectedUser.teamId) {
                     const gameId = String(connectedUser.gameId || '');
-                    const game = games.find(g => String(g._id) === gameId);
-                    if (game && game.players) {
-                        const player = game.players.find(p => p.teamId === connectedUser.teamId || p.socketId === socket.id);
-                        if (player) {
-                            player.status = 'inactive';
-                            updatePlayer(gameId, player._id, 'inactive', player.game_status, player.rounds, player.loans).catch(() => {});
-                            broadcastGameUpdated(gameId, game);
-                            notifyAdmins('Team disconnected', `${player.name || connectedUser.teamId} disconnected from "${game.name || 'Game'}".`);
+                    const hasOtherActiveSocket = users.some(u =>
+                        u.socketId !== socket.id &&
+                        u.teamId === connectedUser.teamId &&
+                        u.status === 'active' &&
+                        isSocketConnected(u.socketId)
+                    );
+                    if (!hasOtherActiveSocket) {
+                        const game = games.find(g => String(g._id) === gameId);
+                        if (game && game.players) {
+                            const player = game.players.find(p => p.teamId === connectedUser.teamId || p.socketId === socket.id);
+                            if (player) {
+                                player.status = 'inactive';
+                                updatePlayer(gameId, player._id, 'inactive', player.game_status, player.rounds, player.loans).catch(() => {});
+                                broadcastGameUpdated(gameId, game);
+                                notifyAdmins('Team disconnected', `${player.name || connectedUser.teamId} disconnected from "${game.name || 'Game'}".`);
+                            }
                         }
+                        io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', {
+                            gameId,
+                            teamId: connectedUser.teamId,
+                            isConnected: false
+                        });
                     }
-                    io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', {
-                        gameId,
-                        teamId: connectedUser.teamId,
-                        isConnected: false
-                    });
                 }
             }
         });
@@ -1465,7 +1556,7 @@ const ioConnection = () => {
             if (player) {
                 player.status = 'inactive';
                 try {
-                    await updatePlayer(gameId, player._id, 'inactive', 'paused', player.rounds, player.loans);
+                    await updatePlayer(gameId, player._id, 'inactive', player.game_status, player.rounds, player.loans);
                     broadcastGameUpdated(gameId, game);
                     io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { gameId, teamId: session.teamId, isConnected: false });
                     notifyAdmins('Team left game', `${player.name} left "${game.name || 'a game session'}".`);

@@ -15,25 +15,45 @@
 
   <ng-container *ngIf="!loadingGames && !loadingTeams">
     <section class="admin-stat-grid" aria-label="Portfolio King summary">
-      <article class="admin-stat-card">
+      <article class="admin-stat-card clickable" tabindex="0" role="button" aria-label="View all games"
+               (click)="navigateToGames('all')" (keydown.enter)="navigateToGames('all')" (keydown.space)="navigateToGames('all')">
         <span class="admin-stat-label">Total Games</span>
         <strong class="admin-stat-value">{{games.length}}</strong>
       </article>
-      <article class="admin-stat-card">
+      <article class="admin-stat-card clickable" tabindex="0" role="button" aria-label="View live sessions"
+               (click)="navigateToSessions()" (keydown.enter)="navigateToSessions()" (keydown.space)="navigateToSessions()">
         <span class="admin-stat-label">Active Sessions</span>
         <strong class="admin-stat-value">{{activeGamesCount}}</strong>
       </article>
-      <article class="admin-stat-card">
+      <article class="admin-stat-card clickable" tabindex="0" role="button" aria-label="View all registered teams"
+               (click)="navigateToTeams('all')" (keydown.enter)="navigateToTeams('all')" (keydown.space)="navigateToTeams('all')">
         <span class="admin-stat-label">Registered Teams</span>
         <strong class="admin-stat-value">{{totalTeamsCount}}</strong>
         <span class="admin-stat-subtext" *ngIf="unassignedTeamsCount > 0">
-          {{assignedTeamsCount}} assigned &middot; {{unassignedTeamsCount}} unassigned
+          <span class="admin-stat-subtext-link" role="link" tabindex="0"
+                (click)="navigateToTeams('assigned', $event)"
+                (keydown.enter)="navigateToTeams('assigned', $event)"
+                (keydown.space)="navigateToTeams('assigned', $event)">{{assignedTeamsCount}} assigned</span>
+          &middot;
+          <span class="admin-stat-subtext-link" role="link" tabindex="0"
+                (click)="navigateToTeams('unassigned', $event)"
+                (keydown.enter)="navigateToTeams('unassigned', $event)"
+                (keydown.space)="navigateToTeams('unassigned', $event)">{{unassignedTeamsCount}} unassigned</span>
         </span>
         <span class="admin-stat-subtext" *ngIf="unassignedTeamsCount === 0">
-          {{assignedTeamsCount}} assigned &middot; {{connectedTeamsCount}} online
+          <span class="admin-stat-subtext-link" role="link" tabindex="0"
+                (click)="navigateToTeams('assigned', $event)"
+                (keydown.enter)="navigateToTeams('assigned', $event)"
+                (keydown.space)="navigateToTeams('assigned', $event)">{{assignedTeamsCount}} assigned</span>
+          &middot;
+          <span class="admin-stat-subtext-link" role="link" tabindex="0"
+                (click)="navigateToTeams('all', $event)"
+                (keydown.enter)="navigateToTeams('all', $event)"
+                (keydown.space)="navigateToTeams('all', $event)">{{connectedTeamsCount}} online</span>
         </span>
       </article>
-      <article class="admin-stat-card">
+      <article class="admin-stat-card clickable" tabindex="0" role="button" aria-label="View completed games"
+               (click)="navigateToGames('completed')" (keydown.enter)="navigateToGames('completed')" (keydown.space)="navigateToGames('completed')">
         <span class="admin-stat-label">Completed Games</span>
         <strong class="admin-stat-value">{{completedGamesCount}}</strong>
       </article>
@@ -60,7 +80,11 @@
     </section>
 
     <section class="admin-stat-grid">
-      <article class="admin-stat-card" *ngFor="let status of statuses">
+      <article class="admin-stat-card clickable" *ngFor="let status of statuses" tabindex="0" role="button"
+               [attr.aria-label]="'View ' + (status === 'active' ? 'in progress' : status) + ' games'"
+               (click)="navigateToGames(status === 'active' ? 'in_progress' : status)"
+               (keydown.enter)="navigateToGames(status === 'active' ? 'in_progress' : status)"
+               (keydown.space)="navigateToGames(status === 'active' ? 'in_progress' : status)">
         <span class="admin-stat-label">{{status === 'active' ? 'In Progress' : (status | titlecase)}}</span>
         <strong class="admin-stat-value">{{countByStatus(status)}}</strong>
       </article>

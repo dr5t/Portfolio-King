@@ -135,8 +135,15 @@ export class AdminOverviewComponent implements OnInit, OnDestroy {
   }
 
   getConnectedCount(game: any): number {
-    if (!game || !game.players) return 0;
-    return game.players.filter((p: any) => p.status === 'active').length;
+    if (!game || !Array.isArray(game.players)) return 0;
+    const activeTeams = new Set<string>();
+    for (const p of game.players) {
+      if (p && p.status === 'active') {
+        const key = String(p.teamId || p._id || p.name || '');
+        if (key) activeTeams.add(key);
+      }
+    }
+    return activeTeams.size;
   }
 
   countByStatus(status: string): number {
@@ -159,6 +166,25 @@ export class AdminOverviewComponent implements OnInit, OnDestroy {
 
   openCreateGame() {
     this.router.navigate(['/admin/games'], { queryParams: { action: 'create' } });
+  }
+
+  navigateToGames(status: string) {
+    this.router.navigate(['/admin/games'], {
+      queryParams: { status: status || 'all' }
+    });
+  }
+
+  navigateToSessions() {
+    this.router.navigate(['/admin/sessions']);
+  }
+
+  navigateToTeams(filter: string, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.router.navigate(['/admin/teams'], {
+      queryParams: { filter: filter || 'all' }
+    });
   }
 
   private buildMonthlyActivity(games: any[]): Array<{ label: string, count: number }> {

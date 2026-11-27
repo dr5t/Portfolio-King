@@ -45,6 +45,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   public createGamePending: boolean = false;
   public createTeamPending: boolean = false;
   public allRegisteredTeamsCount: number = 0;
+  public assignedTeamsCount: number = 0;
   public unassignedTeamsCount: number = 0;
   public allTeamsMap: Map<string, number> = new Map();
   public refreshPending: boolean = false;
@@ -387,7 +388,23 @@ export class HomeComponent implements OnInit, OnDestroy {
         return;
       }
       this.activatedRoute.queryParams.subscribe(params => {
-        if (params.gameId) this.selectedGameId = String(params.gameId);
+        if (params.gameId) {
+          this.selectedGameId = String(params.gameId);
+        }
+        if (params.filter) {
+          const f = String(params.filter).toLowerCase();
+          if (f === 'unassigned' || f === 'assigned' || f === 'all') {
+            this.selectedGameId = f;
+          }
+        }
+        if (params.status && !this.teamManagementOnly) {
+          const s = String(params.status).toLowerCase();
+          const validStatuses = ['all', 'waiting', 'in_progress', 'active', 'paused', 'completed', 'archived'];
+          if (validStatuses.indexOf(s) >= 0) {
+            this.gameStatusFilter = s === 'active' ? 'in_progress' : s;
+            this.applyGameFilters();
+          }
+        }
       });
       this.showManageTeams = this.teamManagementOnly;
       this.onGetGames(true);
@@ -420,7 +437,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         const validGameIds = this.allGames.map(game => String(game._id));
         this.selectedGameIds = this.selectedGameIds.filter(id => validGameIds.indexOf(id) >= 0);
         this.partitionGames();
-        if (!this.allGames.some(game => String(game._id) === String(this.selectedGameId)) && this.selectedGameId !== 'unassigned' && this.selectedGameId !== 'all') {
+        if (!this.allGames.some(game => String(game._id) === String(this.selectedGameId)) && this.selectedGameId !== 'unassigned' && this.selectedGameId !== 'all' && this.selectedGameId !== 'assigned') {
           this.selectedGameId = '';
         }
         if (this.currGames.length > 0 && !this.selectedGameId) {
@@ -690,7 +707,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   get isSelectedGameFull(): boolean {
-    if (!this.selectedGameId || this.selectedGameId === 'unassigned' || this.selectedGameId === 'all') {
+    if (!this.selectedGameId || this.selectedGameId === 'unassigned' || this.selectedGameId === 'all' || this.selectedGameId === 'assigned') {
       return false;
     }
     const game = this.allGames.find(g => String(g._id) === String(this.selectedGameId));
@@ -699,9 +716,28 @@ export class HomeComponent implements OnInit, OnDestroy {
     return Math.max(playersCount, teamsCount) >= 4;
   }
 
+  get selectedGameVacantSlots(): number {
+    if (!this.selectedGameId || this.selectedGameId === 'all' || this.selectedGameId === 'unassigned' || this.selectedGameId === 'assigned') return 0;
+    const count = this.getGameTeamsCount(this.selectedGameId);
+    return Math.max(0, 4 - count);
+  }
+
+  get autoGenerateButtonLabel(): string {
+    const vacant = this.selectedGameVacantSlots;
+    if (vacant === 4 || vacant === 0) return 'Auto-Generate Teams';
+    return `Auto-Generate Remaining (${vacant})`;
+  }
+
   getConnectedCount(game: any): number {
-    if (!game || !game.players) return 0;
-    return game.players.filter((p: any) => p.status === 'active').length;
+    if (!game || !Array.isArray(game.players)) return 0;
+    const activeTeams = new Set<string>();
+    for (const p of game.players) {
+      if (p && p.status === 'active') {
+        const key = String(p.teamId || p._id || p.name || '');
+        if (key) activeTeams.add(key);
+      }
+    }
+    return activeTeams.size;
   }
 
   getGameTeamsCount(gameId: string): number {
@@ -712,6 +748,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.portfolioService.getTeams('all').subscribe((all: any) => {
       const list = all || [];
       this.allRegisteredTeamsCount = list.length;
+      this.assignedTeamsCount = list.filter((t: any) => t.isAssigned).length;
       this.unassignedTeamsCount = list.filter((t: any) => !t.isAssigned).length;
       this.allTeamsMap = new Map();
       list.forEach((t: any) => {
@@ -728,7 +765,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (!this.selectedGameId && this.allGames && this.allGames.length > 0) {
       this.selectedGameId = this.allGames[this.allGames.length - 1]._id;
     }
-    if (!this.selectedGameId || this.selectedGameId === 'unassigned' || this.selectedGameId === 'all') {
+    if (!this.selectedGameId || this.selectedGameId === 'unassigned' || this.selectedGameId === 'all' || this.selectedGameId === 'assigned') {
       UtilityService.showError('Select a specific trading session to generate teams.');
       return;
     }
@@ -754,7 +791,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   onCreateSingleTeam() {
-    if (!this.selectedGameId || this.selectedGameId === 'unassigned' || this.selectedGameId === 'all') {
+    if (!this.selectedGameId || this.selectedGameId === 'unassigned' || this.selectedGameId === 'all' || this.selectedGameId === 'assigned') {
       UtilityService.showError('Select a specific trading session to create a team.');
       return;
     }

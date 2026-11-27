@@ -11,7 +11,7 @@
   <div class="admin-loading" *ngIf="loading">Loading sessions…</div>
   <ng-container *ngIf="!loading">
     <section class="admin-stat-grid">
-      <article class="admin-stat-card">
+      <article class="admin-stat-card clickable" tabindex="0" role="button" aria-label="Show all active sessions" (click)="statusFilter = 'all'" (keydown.enter)="statusFilter = 'all'" (keydown.space)="statusFilter = 'all'">
         <span class="admin-stat-label">Active Sessions</span>
         <strong class="admin-stat-value">{{sessions.length}}</strong>
       </article>
@@ -19,11 +19,11 @@
         <span class="admin-stat-label">Connected Teams</span>
         <strong class="admin-stat-value">{{connectedTeamsCount}}</strong>
       </article>
-      <article class="admin-stat-card">
+      <article class="admin-stat-card clickable" tabindex="0" role="button" aria-label="Filter paused sessions" (click)="statusFilter = (statusFilter === 'paused' ? 'all' : 'paused')" (keydown.enter)="statusFilter = (statusFilter === 'paused' ? 'all' : 'paused')" (keydown.space)="statusFilter = (statusFilter === 'paused' ? 'all' : 'paused')">
         <span class="admin-stat-label">Paused Sessions</span>
         <strong class="admin-stat-value">{{countByStatus('paused')}}</strong>
       </article>
-      <article class="admin-stat-card">
+      <article class="admin-stat-card clickable" tabindex="0" role="button" aria-label="Filter waiting sessions" (click)="statusFilter = (statusFilter === 'waiting' ? 'all' : 'waiting')" (keydown.enter)="statusFilter = (statusFilter === 'waiting' ? 'all' : 'waiting')" (keydown.space)="statusFilter = (statusFilter === 'waiting' ? 'all' : 'waiting')">
         <span class="admin-stat-label">Waiting Sessions</span>
         <strong class="admin-stat-value">{{countByStatus('waiting')}}</strong>
       </article>
