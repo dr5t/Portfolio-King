@@ -34,6 +34,12 @@ export class GameComponent implements OnInit {
   public diceAnimationTimer: any;
   public waitingTimer: any;
 
+  get connectedPlayerCount(): number {
+    return (this.game && this.game.players)
+      ? this.game.players.filter(p => p.status === 'active').length
+      : 0;
+  }
+
   get isSpectator(): boolean {
     return this.user && (this.user.isSpectator || this.user.userType === 'spectator');
   }

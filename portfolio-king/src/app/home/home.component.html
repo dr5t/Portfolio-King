@@ -66,14 +66,18 @@
         <div class="session-selector-wrap">
           <label class="selector-label" for="session-select">Selected Session:</label>
           <select id="session-select" class="session-dropdown" [(ngModel)]="selectedGameId" (change)="onSelectManageGame(selectedGameId)">
-            <option *ngFor="let g of allGames" [value]="g._id">
-              {{g.name || 'Game ' + g._index}} ({{g.game_status || 'waiting'}})
-            </option>
+            <option value="all">All Registered Teams ({{allRegisteredTeamsCount}})</option>
+            <option value="unassigned">Unassigned Teams ({{unassignedTeamsCount}})</option>
+            <optgroup label="Trading Sessions">
+              <option *ngFor="let g of allGames" [value]="g._id">
+                {{g.name || 'Game ' + g._index}} ({{getGameTeamsCount(g._id)}}/4 teams{{g.game_status ? ' · ' + g.game_status : ''}})
+              </option>
+            </optgroup>
           </select>
         </div>
 
         <div class="team-mgmt-actions">
-          <button type="button" class="btn btn-primary" [disabled]="!selectedGameId" (click)="onAutoGenerateTeams()">
+          <button type="button" class="btn btn-primary" [disabled]="!selectedGameId || selectedGameId === 'unassigned' || selectedGameId === 'all' || isSelectedGameFull" (click)="onAutoGenerateTeams()" [title]="isSelectedGameFull ? 'Session already at capacity (4/4 teams)' : 'Auto-generate 4 teams'">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
               <circle cx="9" cy="7" r="4"></circle>
@@ -81,7 +85,7 @@
             </svg>
             Auto-Generate 4 Teams
           </button>
-          <button type="button" class="btn btn-secondary" [disabled]="!selectedGameId" (click)="showCreateTeamForm = !showCreateTeamForm">
+          <button type="button" class="btn btn-secondary" [disabled]="!selectedGameId || selectedGameId === 'unassigned' || selectedGameId === 'all' || isSelectedGameFull" (click)="showCreateTeamForm = !showCreateTeamForm" [title]="isSelectedGameFull ? 'Session already at capacity (4/4 teams)' : 'Add a single team'">
             + Add Team
           </button>
         </div>
@@ -116,7 +120,7 @@
           <input type="text" [(ngModel)]="newTeamName" placeholder="Team Name (e.g. Navigators)" class="input-control">
           <input type="text" [(ngModel)]="newTeamId" placeholder="Team ID (optional, auto-generated if blank)" class="input-control">
           <input type="text" [(ngModel)]="newTeamPassword" placeholder="Password (optional, auto-generated if blank)" class="input-control">
-          <button type="button" class="btn btn-primary" (click)="onCreateSingleTeam()">Save Team</button>
+          <button type="button" class="btn btn-primary" [disabled]="isSelectedGameFull || createTeamPending" (click)="onCreateSingleTeam()">{{createTeamPending ? 'Saving…' : 'Save Team'}}</button>
           <button type="button" class="btn btn-secondary" (click)="showCreateTeamForm = false">Cancel</button>
         </div>
       </div>
@@ -148,6 +152,7 @@
               </th>
               <th>Team ID</th>
               <th>Team Name</th>
+              <th *ngIf="selectedGameId === 'all'">Assigned Session</th>
               <th>Status</th>
               <th>Connection</th>
               <th class="text-right">Actions</th>
@@ -169,6 +174,9 @@
                   <button type="button" class="btn btn-sm btn-secondary" (click)="cancelEditTeam()">Cancel</button>
                 </div>
               </td>
+              <td *ngIf="selectedGameId === 'all'">
+                <span class="game-short-id">{{t.assignedGameName || 'Unassigned'}}</span>
+              </td>
               <td>
                 <span class="status-indicator" [class.tag-disabled]="t.status === 'disabled'" [class.status-active]="t.status !== 'disabled'">
                   ● {{t.status === 'disabled' ? 'Disabled' : 'Active'}}
@@ -189,7 +197,9 @@
               </td>
             </tr>
             <tr *ngIf="teamsList.length === 0">
-              <td colspan="6" class="empty-cell">No teams provisioned for this game yet. Click "Auto-Generate 4 Teams" to initialize.</td>
+              <td [attr.colspan]="selectedGameId === 'all' ? 7 : 6" class="empty-cell">
+                {{selectedGameId === 'unassigned' ? 'No unassigned teams. All teams are assigned to active sessions.' : (selectedGameId === 'all' ? 'No registered teams found.' : 'No teams provisioned for this game yet. Click "Auto-Generate 4 Teams" to initialize.')}}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -264,7 +274,12 @@
             </td>
 
             <td class="tabular-nums">
-              {{g.players ? g.players.length : 0}} / 4
+              <span *ngIf="g.game_status === 'waiting' || g.game_status === 'ready'" [title]="getConnectedCount(g) + ' of 4 joined'">
+                Waiting for participants ({{getConnectedCount(g)}}/4 joined)
+              </span>
+              <span *ngIf="g.game_status !== 'waiting' && g.game_status !== 'ready'">
+                {{getConnectedCount(g)}}/4 connected ({{g.players ? g.players.length : 0}}/4 joined)
+              </span>
             </td>
 
             <td class="tabular-nums">
@@ -496,7 +511,14 @@
             <td class="row-num text-muted">{{i + 1}}</td>
             <td class="font-semibold">{{g.name || 'Game ' + g._index}}</td>
             <td><code>{{getGameShortId(g._id)}}</code></td>
-            <td class="tabular-nums">{{g.players ? g.players.length : 0}} / 4</td>
+            <td class="tabular-nums">
+              <span *ngIf="g.game_status === 'waiting' || g.game_status === 'ready'">
+                Waiting for participants ({{getConnectedCount(g)}}/4 joined)
+              </span>
+              <span *ngIf="g.game_status !== 'waiting' && g.game_status !== 'ready'">
+                {{getConnectedCount(g)}} / 4 connected
+              </span>
+            </td>
             <td>
               <span class="status-pill status-active" *ngIf="g.game_status === 'active'">Active</span>
               <span class="status-pill status-waiting" *ngIf="g.game_status !== 'active'">{{g.game_status || 'Waiting'}}</span>
@@ -518,7 +540,7 @@
       </div>
       <div class="modal-body">
         <label class="modal-label" for="new-game-input">Session Name</label>
-        <input id="new-game-input" type="text" [(ngModel)]="newGameName" placeholder="e.g. IT Utsav - Round 1" class="input-control">
+        <input id="new-game-input" type="text" [(ngModel)]="newGameName" placeholder="e.g. Championship - Round 1" class="input-control">
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="cancelCreateGame()">Cancel</button>

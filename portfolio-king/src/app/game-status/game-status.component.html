@@ -19,8 +19,13 @@
 
       <div class="session-status-tag" *ngIf="!gameEnd">
         <span class="pulse-dot"></span>
-        <span class="session-label">Fiscal Period:</span>
-        <span class="session-val tabular-nums font-semibold">Year {{year}} &middot; Q{{quarter}}</span>
+        <span class="session-label">{{game?.game_status === 'waiting' ? 'Status:' : 'Fiscal Period:'}}</span>
+        <span class="session-val tabular-nums font-semibold" *ngIf="game?.game_status === 'waiting'">
+          Waiting for participants ({{connectedPlayerCount}}/4 joined)
+        </span>
+        <span class="session-val tabular-nums font-semibold" *ngIf="game?.game_status !== 'waiting'">
+          Year {{year}} &middot; Q{{quarter}}
+        </span>
       </div>
 
       <div *ngIf="gameEnd" class="round-nav-group">
@@ -64,7 +69,7 @@
       </div>
 
       <div class="session-selector-badge">
-        <span class="session-name font-semibold">{{game?.name || 'IT Utsav - Round 1'}}</span>
+        <span class="session-name font-semibold">{{game?.name || 'Portfolio King'}}</span>
         <span class="session-id">({{getGameShortId()}})</span>
         <svg class="dropdown-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="6 9 12 15 18 9"></polyline>
@@ -140,7 +145,7 @@
           </tr>
 
           <tr *ngIf="!game?.players || game?.players?.length === 0">
-            <td colspan="6" class="empty-cell">Awaiting participating teams to join session.</td>
+            <td colspan="6" class="empty-cell">Waiting for participants ({{connectedPlayerCount}}/4 joined)</td>
           </tr>
         </tbody>
       </table>

@@ -25,7 +25,13 @@
       </article>
       <article class="admin-stat-card">
         <span class="admin-stat-label">Registered Teams</span>
-        <strong class="admin-stat-value">{{teams.length}}</strong>
+        <strong class="admin-stat-value">{{totalTeamsCount}}</strong>
+        <span class="admin-stat-subtext" *ngIf="unassignedTeamsCount > 0">
+          {{assignedTeamsCount}} assigned &middot; {{unassignedTeamsCount}} unassigned
+        </span>
+        <span class="admin-stat-subtext" *ngIf="unassignedTeamsCount === 0">
+          {{assignedTeamsCount}} assigned &middot; {{connectedTeamsCount}} online
+        </span>
       </article>
       <article class="admin-stat-card">
         <span class="admin-stat-label">Completed Games</span>
@@ -77,7 +83,14 @@
             <tr *ngFor="let game of recentGames">
               <td><a [routerLink]="['/game-status', game._id]" class="admin-link">{{game.name || 'Game'}}</a></td>
               <td><span class="admin-status" [ngClass]="statusClass(game.game_status)">{{game.game_status || 'waiting'}}</span></td>
-              <td>{{game.players ? game.players.length : 0}} / 4</td>
+              <td>
+                <span *ngIf="game.game_status === 'waiting' || game.game_status === 'ready'">
+                  Waiting for participants ({{getConnectedCount(game)}}/4 joined)
+                </span>
+                <span *ngIf="game.game_status !== 'waiting' && game.game_status !== 'ready'">
+                  {{getConnectedCount(game)}}/4 connected ({{game.players ? game.players.length : 0}}/4 joined)
+                </span>
+              </td>
               <td>{{(game.timestamp || game.createdAt) | date:'mediumDate'}}</td>
             </tr>
           </tbody>

@@ -43,6 +43,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   public bulkDeletePending: boolean = false;
   public deleteGamePending: boolean = false;
   public createGamePending: boolean = false;
+  public createTeamPending: boolean = false;
+  public allRegisteredTeamsCount: number = 0;
+  public unassignedTeamsCount: number = 0;
+  public allTeamsMap: Map<string, number> = new Map();
   public refreshPending: boolean = false;
   public duplicatePendingGameIds: string[] = [];
 
@@ -171,6 +175,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.teamsList = this.teamsList.filter(team => deletedIds.indexOf(String(team._id)) < 0);
         this.selectedTeamIds = this.selectedTeamIds.filter(id => deletedIds.indexOf(id) < 0);
         this.showBulkDeleteModal = false;
+        this.refreshTeamCounts();
         if (res.partial) {
           UtilityService.showError(`${res.deletedCount} team(s) deleted; some could not be deleted.`);
         } else {
@@ -322,7 +327,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     const socket = this.portfolioService.socket;
     if (socket && this.socketHandler) socket.off('game-updated', this.socketHandler);
     if (socket && this.socketDeleteHandler) socket.off('game-deleted', this.socketDeleteHandler);
-    if (socket && this.notificationHandler) socket.off('admin-notification', this.notificationHandler);
+    if (socket && this.notificationHandler) {
+      socket.off('admin-notification', this.notificationHandler);
+      socket.off('teams-updated', this.notificationHandler);
+    }
   }
 
   private updateView() {
@@ -361,11 +369,14 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.onGetGames(false);
           if ((this.teamManagementOnly || this.showManageTeams) && this.selectedGameId) {
             this.loadTeamsForSelectedGame();
+          } else {
+            this.refreshTeamCounts();
           }
         };
         socket.on('game-updated', this.socketHandler);
         socket.on('game-deleted', this.socketDeleteHandler);
         socket.on('admin-notification', this.notificationHandler);
+        socket.on('teams-updated', this.notificationHandler);
       }
 
       if (currentPath === '/' || currentPath === '') {
@@ -409,7 +420,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         const validGameIds = this.allGames.map(game => String(game._id));
         this.selectedGameIds = this.selectedGameIds.filter(id => validGameIds.indexOf(id) >= 0);
         this.partitionGames();
-        if (!this.allGames.some(game => String(game._id) === String(this.selectedGameId))) {
+        if (!this.allGames.some(game => String(game._id) === String(this.selectedGameId)) && this.selectedGameId !== 'unassigned' && this.selectedGameId !== 'all') {
           this.selectedGameId = '';
         }
         if (this.currGames.length > 0 && !this.selectedGameId) {
@@ -417,6 +428,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         } else if (this.allGames.length > 0 && !this.selectedGameId) {
           this.selectedGameId = this.allGames[0]._id;
         }
+        this.refreshTeamCounts();
         if ((this.teamManagementOnly || this.showManageTeams) && this.selectedGameId) {
           this.loadTeamsForSelectedGame();
         }
@@ -667,6 +679,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.teamsList = teams || [];
         const validTeamIds = this.teamsList.map(team => String(team._id));
         this.selectedTeamIds = this.selectedTeamIds.filter(id => validTeamIds.indexOf(id) >= 0);
+        this.refreshTeamCounts();
         this.updateView();
       },
       (err: any) => {
@@ -676,11 +689,53 @@ export class HomeComponent implements OnInit, OnDestroy {
     );
   }
 
+  get isSelectedGameFull(): boolean {
+    if (!this.selectedGameId || this.selectedGameId === 'unassigned' || this.selectedGameId === 'all') {
+      return false;
+    }
+    const game = this.allGames.find(g => String(g._id) === String(this.selectedGameId));
+    const playersCount = (game && game.players) ? game.players.length : 0;
+    const teamsCount = this.teamsList ? this.teamsList.filter(t => String(t.gameId) === String(this.selectedGameId)).length : 0;
+    return Math.max(playersCount, teamsCount) >= 4;
+  }
+
+  getConnectedCount(game: any): number {
+    if (!game || !game.players) return 0;
+    return game.players.filter((p: any) => p.status === 'active').length;
+  }
+
+  getGameTeamsCount(gameId: string): number {
+    return this.allTeamsMap ? (this.allTeamsMap.get(String(gameId)) || 0) : 0;
+  }
+
+  refreshTeamCounts() {
+    this.portfolioService.getTeams('all').subscribe((all: any) => {
+      const list = all || [];
+      this.allRegisteredTeamsCount = list.length;
+      this.unassignedTeamsCount = list.filter((t: any) => !t.isAssigned).length;
+      this.allTeamsMap = new Map();
+      list.forEach((t: any) => {
+        if (t.gameId) {
+          const gId = String(t.gameId);
+          this.allTeamsMap.set(gId, (this.allTeamsMap.get(gId) || 0) + 1);
+        }
+      });
+      this.updateView();
+    });
+  }
+
   onAutoGenerateTeams() {
     if (!this.selectedGameId && this.allGames && this.allGames.length > 0) {
       this.selectedGameId = this.allGames[this.allGames.length - 1]._id;
     }
-    if (!this.selectedGameId) return;
+    if (!this.selectedGameId || this.selectedGameId === 'unassigned' || this.selectedGameId === 'all') {
+      UtilityService.showError('Select a specific trading session to generate teams.');
+      return;
+    }
+    if (this.isSelectedGameFull) {
+      UtilityService.showError('Game already has maximum 4 teams.');
+      return;
+    }
     UtilityService.showLoader();
     this.portfolioService.generateAllTeams(this.selectedGameId).subscribe(
       (res: any) => {
@@ -699,11 +754,19 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   onCreateSingleTeam() {
-    if (!this.selectedGameId) return;
+    if (!this.selectedGameId || this.selectedGameId === 'unassigned' || this.selectedGameId === 'all') {
+      UtilityService.showError('Select a specific trading session to create a team.');
+      return;
+    }
+    if (this.isSelectedGameFull) {
+      UtilityService.showError('Game already has maximum 4 teams.');
+      return;
+    }
     if (!this.newTeamName || !this.newTeamName.trim()) {
       UtilityService.showError('Missing required fields.');
       return;
     }
+    this.createTeamPending = true;
     UtilityService.showLoader();
     this.portfolioService.createTeam({
       gameId: this.selectedGameId,
@@ -712,6 +775,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       password: this.newTeamPassword.trim() || undefined
     }).subscribe(
       (res: any) => {
+        this.createTeamPending = false;
         UtilityService.hideLoader();
         this.latestCredentials = [{
           name: res.team.name,
@@ -727,6 +791,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.updateView();
       },
       (err: any) => {
+        this.createTeamPending = false;
         UtilityService.hideLoader();
         this.showAdminRequestError(err, 'Failed to create team.');
         this.updateView();
@@ -819,6 +884,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.teamsList = this.teamsList.filter(t => String(t._id) !== deletedId);
         this.selectedTeamIds = this.selectedTeamIds.filter(id => id !== deletedId);
         this.cancelDeleteTeam();
+        this.refreshTeamCounts();
         UtilityService.showMessage('Team deleted successfully.', false, 2000);
         this.updateView();
       },

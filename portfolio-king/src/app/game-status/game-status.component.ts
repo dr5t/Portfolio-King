@@ -278,4 +278,10 @@ export class GameStatusComponent implements OnInit {
   getRoundValue(i) {
     this.roundNumber = i;
   }
+
+  get connectedPlayerCount(): number {
+    return (this.game && this.game.players)
+      ? this.game.players.filter((p: any) => p.status === 'active').length
+      : 0;
+  }
 }

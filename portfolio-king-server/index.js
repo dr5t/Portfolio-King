@@ -180,6 +180,7 @@ async function deleteGameRecord(gameId) {
 
         io.to(id).emit('game-deleted', { gameId: id, gameName: game.name || 'Game' });
         io.to(ADMIN_NOTIFICATION_ROOM).emit('game-deleted', { gameId: id, gameName: game.name || 'Game' });
+        io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { gameId: id, action: 'game-deleted', preservedTeams: teams.length });
         const revokedSessions = await auth.revokeSessionsForGame(io, id);
         users.forEach(user => {
             if (String(user.gameId) === id) {
@@ -225,33 +226,40 @@ async function deleteTeamRecords(teamObjectIds, expectedGameId) {
             teamDeletionLocks.add(String(team.teamId));
             lockedKeys.push(String(team.teamId));
         });
-        if (expectedGameId && teams.some(team => String(team.gameId) !== String(expectedGameId))) {
-            throw requestError(400, 'All selected teams must belong to the selected game.');
+        if (expectedGameId) {
+            if (expectedGameId === 'unassigned') {
+                const allGames = await getAllGames();
+                const validGameIds = new Set(allGames.map(g => String(g._id)));
+                if (teams.some(team => team.gameId && validGameIds.has(String(team.gameId)))) {
+                    throw requestError(400, 'All selected teams must be unassigned.');
+                }
+            } else if (teams.some(team => String(team.gameId) !== String(expectedGameId))) {
+                throw requestError(400, 'All selected teams must belong to the selected game.');
+            }
         }
 
         const gameGroups = new Map();
         try {
             for (const team of teams) {
-                if (!isValidObjectId(String(team.gameId || ''))) {
-                    throw requestError(409, `Team "${team.name}" is not assigned to a game and cannot be deleted here.`);
-                }
-                const gameId = String(team.gameId);
-                const game = await db.collection('games').findOne({ _id: new ObjectID(gameId) });
-                if (!game) {
-                    throw requestError(409, `The game for team "${team.name}" no longer exists.`);
-                }
-                if (game.game_status === 'active' || game.game_status === 'in_progress') {
-                    throw requestError(409, `Team "${team.name}" is in an active game. End the game before deleting the team.`);
-                }
-                const player = (game.players || []).find(item =>
-                    item.teamId === team.teamId || (!item.teamId && item.name === team.name)
-                );
-                if (player && player.rounds && player.rounds.length > 0) {
-                    throw requestError(409, `Team "${team.name}" has historical results and cannot be deleted.`);
-                }
-                if (player) {
-                    if (!gameGroups.has(gameId)) gameGroups.set(gameId, []);
-                    gameGroups.get(gameId).push({ teamId: String(team._id), player });
+                const hasValidGameId = isValidObjectId(String(team.gameId || ''));
+                if (hasValidGameId) {
+                    const gameId = String(team.gameId);
+                    const game = await db.collection('games').findOne({ _id: new ObjectID(gameId) });
+                    if (game) {
+                        if (game.game_status === 'active' || game.game_status === 'in_progress') {
+                            throw requestError(409, `Team "${team.name}" is in an active game. End the game before deleting the team.`);
+                        }
+                        const player = (game.players || []).find(item =>
+                            item.teamId === team.teamId || (!item.teamId && item.name === team.name)
+                        );
+                        if (player && player.rounds && player.rounds.length > 0) {
+                            throw requestError(409, `Team "${team.name}" has historical results and cannot be deleted.`);
+                        }
+                        if (player) {
+                            if (!gameGroups.has(gameId)) gameGroups.set(gameId, []);
+                            gameGroups.get(gameId).push({ teamId: String(team._id), player });
+                        }
+                    }
                 }
             }
 
@@ -343,6 +351,13 @@ async function deleteTeamRecords(teamObjectIds, expectedGameId) {
                 partial ? 'Teams partially deleted' : 'Teams deleted',
                 `${deletedTeams.length} of ${teams.length} team account(s) were deleted.`
             );
+            io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { action: 'deleted', deletedCount: deletedTeams.length });
+            for (const affectedGameId of gameGroups.keys()) {
+                const affectedGame = games.find(g => String(g._id) === String(affectedGameId));
+                if (affectedGame) {
+                    broadcastGameUpdated(affectedGameId, affectedGame);
+                }
+            }
         }
         return {
             deletedCount: deletedTeams.length,
@@ -520,24 +535,79 @@ app.post('/login', async function (req, res) {
     }
 });
 
+app.get('/api/teams/stats', auth.authenticateAdmin, async function (req, res) {
+    try {
+        const db = getDb();
+        const allGames = await getAllGames();
+        const validGameIdSet = new Set(allGames.map(g => String(g._id)));
+        const allTeams = await db.collection('teams').find({}).toArray();
+        const activeSessions = await auth.findSessionsByTeamIds(allTeams.map(team => team.teamId));
+        const sessionsByTeam = new Map(activeSessions.map(session => [session.teamId, session]));
+
+        let assignedCount = 0;
+        let unassignedCount = 0;
+        let connectedCount = 0;
+
+        allTeams.forEach(t => {
+            const isAssigned = !!(t.gameId && validGameIdSet.has(String(t.gameId)));
+            if (isAssigned) {
+                assignedCount++;
+            } else {
+                unassignedCount++;
+            }
+            const session = sessionsByTeam.get(t.teamId);
+            if (session && session.socketId && isSocketConnected(session.socketId)) {
+                connectedCount++;
+            }
+        });
+
+        res.json({
+            totalRegistered: allTeams.length,
+            assigned: assignedCount,
+            unassigned: unassignedCount,
+            connected: connectedCount
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Server unavailable.' });
+    }
+});
+
 app.get('/api/teams', auth.authenticateAdmin, async function (req, res) {
     try {
         const db = getDb();
-        const query = {};
-        if (req.query.gameId) {
-            query.gameId = String(req.query.gameId);
+        const allGames = await getAllGames();
+        const gameMap = new Map(allGames.map(g => [String(g._id), g]));
+        const validGameIdSet = new Set(allGames.map(g => String(g._id)));
+
+        let query = {};
+        if (req.query.gameId === 'unassigned') {
+            query = {
+                $or: [
+                    { gameId: null },
+                    { gameId: '' },
+                    { gameId: { $exists: false } },
+                    { gameId: { $nin: Array.from(validGameIdSet) } }
+                ]
+            };
+        } else if (req.query.gameId && req.query.gameId !== 'all') {
+            query = { gameId: String(req.query.gameId) };
         }
+
         const teams = await db.collection('teams').find(query).toArray();
         const activeSessions = await auth.findSessionsByTeamIds(teams.map(team => team.teamId));
         const sessionsByTeam = new Map(activeSessions.map(session => [session.teamId, session]));
         const sanitized = teams.map(t => {
             const session = sessionsByTeam.get(t.teamId);
             const isConnected = !!(session && session.socketId && isSocketConnected(session.socketId));
+            const isAssigned = !!(t.gameId && validGameIdSet.has(String(t.gameId)));
+            const assignedGame = isAssigned ? gameMap.get(String(t.gameId)) : null;
             return {
                 _id: t._id,
                 teamId: t.teamId,
                 name: t.name,
                 gameId: t.gameId,
+                isAssigned,
+                assignedGameName: assignedGame ? (assignedGame.name || 'Game') : null,
                 status: t.status || 'active',
                 isConnected,
                 createdAt: t.createdAt
@@ -566,7 +636,8 @@ app.post('/api/teams', auth.authenticateAdmin, async function (req, res) {
             return res.status(404).json({ message: 'Game not found.' });
         }
         const existingCount = await db.collection('teams').countDocuments({ gameId: String(gameId) });
-        if (existingCount >= 4) {
+        const playersCount = (game.players || []).length;
+        if (existingCount >= 4 || playersCount >= 4) {
             return res.status(400).json({ message: 'Game already has maximum 4 teams.' });
         }
         if (req.body.teamId !== undefined && typeof req.body.teamId !== 'string') {
@@ -597,6 +668,7 @@ app.post('/api/teams', auth.authenticateAdmin, async function (req, res) {
         const insertResult = await db.collection('teams').insertOne(newTeam);
         const cachedGame = games.find(item => String(item._id) === String(gameId));
         notifyAdmins('Team registered', `${newTeam.name} was registered for "${cachedGame ? cachedGame.name : 'a game session'}".`);
+        io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { gameId: String(gameId), action: 'created' });
         res.json({
             team: {
                 _id: insertResult.insertedId,
@@ -627,7 +699,8 @@ app.post('/api/teams/generate-all', auth.authenticateAdmin, async function (req,
     try {
         const db = getDb();
         const allGames = await getAllGames();
-        if (!allGames.some(game => String(game._id) === String(gameId))) {
+        const game = allGames.find(item => String(item._id) === String(gameId));
+        if (!game) {
             return res.status(404).json({ message: 'Game not found.' });
         }
         let gameIndex = 1;
@@ -637,13 +710,21 @@ app.post('/api/teams/generate-all', auth.authenticateAdmin, async function (req,
 
         const existingTeams = await db.collection('teams').find({ gameId: String(gameId) }).toArray();
         const currentCount = existingTeams.length;
-        if (currentCount >= 4) {
-            return res.status(400).json({ message: 'Game already has 4 teams.' });
+        const playersCount = (game.players || []).length;
+        if (currentCount >= 4 || playersCount >= 4) {
+            return res.status(400).json({ message: 'Game already has maximum 4 teams.' });
         }
 
         const generated = [];
         for (let i = currentCount + 1; i <= 4; i++) {
-            const teamId = auth.generateTeamId(gameIndex, i);
+            let teamId = auth.generateTeamId(gameIndex, i);
+            let dup = await db.collection('teams').findOne({ teamId });
+            let offset = 1;
+            while (dup && offset < 20) {
+                teamId = auth.generateTeamId(gameIndex, i + offset * 10);
+                dup = await db.collection('teams').findOne({ teamId });
+                offset++;
+            }
             const name = `Team ${i}`;
             const rawPassword = auth.generatePassword();
             const passwordHash = await auth.hashPassword(rawPassword);
@@ -667,8 +748,8 @@ app.post('/api/teams/generate-all', auth.authenticateAdmin, async function (req,
             });
         }
         if (generated.length > 0) {
-            const game = allGames.find(item => String(item._id) === String(gameId));
             notifyAdmins('Teams registered', `${generated.length} team account(s) were registered for "${game ? game.name : 'a game session'}".`);
+            io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { gameId: String(gameId), action: 'generated', count: generated.length });
         }
         res.json({ teams: generated });
     } catch (err) {
@@ -718,6 +799,7 @@ app.put('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
             'Team account updated',
             `${result.value.name} was ${updates.status ? updates.status : 'renamed'}.`
         );
+        io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { teamId: result.value.teamId, action: 'updated' });
         res.json(result.value);
     } catch (err) {
         res.status(500).json({ message: 'Server unavailable.' });
@@ -749,6 +831,7 @@ app.post('/api/teams/:id/reset-password', auth.authenticateAdmin, async function
         }
         await auth.revokeSessionsForTeam(io, team.value.teamId, 'password-reset');
         notifyAdmins('Team password reset', `The password for ${team.value.teamId} was reset.`);
+        io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { teamId: team.value.teamId, action: 'password-reset' });
         res.json({ teamId: team.value.teamId, rawPassword });
     } catch (err) {
         res.status(500).json({ message: 'Server unavailable.' });
@@ -777,8 +860,8 @@ app.delete('/api/teams/:id', auth.authenticateAdmin, async function (req, res) {
 
 app.post('/api/teams/bulk-delete', auth.authenticateAdmin, async function (req, res) {
     const body = req.body || {};
-    if (!isValidObjectId(body.gameId)) {
-        return res.status(400).json({ message: 'A valid gameId is required.' });
+    if (!isValidObjectId(body.gameId) && body.gameId !== 'unassigned') {
+        return res.status(400).json({ message: 'A valid gameId or "unassigned" is required.' });
     }
 
     try {
@@ -788,7 +871,22 @@ app.post('/api/teams/bulk-delete', auth.authenticateAdmin, async function (req, 
             if (body.confirmationText !== 'DELETE ALL TEAMS') {
                 return res.status(400).json({ message: 'Type DELETE ALL TEAMS to confirm.' });
             }
-            const teams = await db.collection('teams').find({ gameId: String(body.gameId) }).project({ _id: 1 }).toArray();
+            let teamsQuery;
+            if (body.gameId === 'unassigned') {
+                const allGames = await getAllGames();
+                const validGameIds = allGames.map(g => String(g._id));
+                teamsQuery = {
+                    $or: [
+                        { gameId: null },
+                        { gameId: '' },
+                        { gameId: { $exists: false } },
+                        { gameId: { $nin: validGameIds } }
+                    ]
+                };
+            } else {
+                teamsQuery = { gameId: String(body.gameId) };
+            }
+            const teams = await db.collection('teams').find(teamsQuery).project({ _id: 1 }).toArray();
             teamIds = teams.map(team => team._id);
         } else {
             if (!Array.isArray(body.teamIds) || body.teamIds.length === 0 || body.teamIds.length > 100) {
@@ -803,7 +901,7 @@ app.post('/api/teams/bulk-delete', auth.authenticateAdmin, async function (req, 
         if (teamIds.length === 0) {
             return res.status(400).json({ message: 'There are no teams to delete.' });
         }
-        const result = await deleteTeamRecords(teamIds, String(body.gameId));
+        const result = await deleteTeamRecords(teamIds, body.gameId);
         const statusCode = result.failed ? (result.deletedCount > 0 ? 207 : 500) : 200;
         res.status(statusCode).json({
             success: !result.failed,
@@ -1180,6 +1278,13 @@ const ioConnection = () => {
             if (session.role === 'admin') {
                 socket.join(ADMIN_NOTIFICATION_ROOM);
             }
+            if (session.role === 'player') {
+                io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', {
+                    gameId: session.gameId,
+                    teamId: session.teamId,
+                    isConnected: true
+                });
+            }
             io.to(socket.id).emit('update-user', {
                 token: session.token,
                 socketId: socket.id,
@@ -1195,11 +1300,28 @@ const ioConnection = () => {
         }
         });
         socket.on('disconnect', () => {
-            users.forEach(user => {
-                if (user.socketId === socket.id) {
-                    user.status = 'inactive'
+            const connectedUser = users.find(user => user.socketId === socket.id);
+            if (connectedUser) {
+                connectedUser.status = 'inactive';
+                if (connectedUser.teamId) {
+                    const gameId = String(connectedUser.gameId || '');
+                    const game = games.find(g => String(g._id) === gameId);
+                    if (game && game.players) {
+                        const player = game.players.find(p => p.teamId === connectedUser.teamId || p.socketId === socket.id);
+                        if (player) {
+                            player.status = 'inactive';
+                            updatePlayer(gameId, player._id, 'inactive', player.game_status, player.rounds, player.loans).catch(() => {});
+                            broadcastGameUpdated(gameId, game);
+                            notifyAdmins('Team disconnected', `${player.name || connectedUser.teamId} disconnected from "${game.name || 'Game'}".`);
+                        }
+                    }
+                    io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', {
+                        gameId,
+                        teamId: connectedUser.teamId,
+                        isConnected: false
+                    });
                 }
-            });
+            }
         });
         socket.on('join-game', async (data) => {
             let token = data && data.token;
@@ -1295,6 +1417,7 @@ const ioConnection = () => {
                     updatePlayer(data.gameId, existingPlayer._id, 'active', existingPlayer.game_status, existingPlayer.rounds, existingPlayer.loans)
                         .then(() => {
                             broadcastGameUpdated(data.gameId, targetGame);
+                            io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { gameId: data.gameId, teamId: session.teamId, isConnected: true });
                         });
                     return;
                 }
@@ -1322,6 +1445,7 @@ const ioConnection = () => {
                             io.to(socket.id).emit("player-added-to-game", {player: player, gameId: data.gameId});
                             const updatedGame = games.find(g => JSON.stringify(g._id) === JSON.stringify(value._id)) || value;
                             broadcastGameUpdated(data.gameId, updatedGame);
+                            io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { gameId: data.gameId, teamId: session.teamId, isConnected: true });
                             notifyAdmins('Team joined game', `${player.name} joined "${value.name || 'a game session'}".`);
                         }
                     });
@@ -1343,6 +1467,7 @@ const ioConnection = () => {
                 try {
                     await updatePlayer(gameId, player._id, 'inactive', 'paused', player.rounds, player.loans);
                     broadcastGameUpdated(gameId, game);
+                    io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', { gameId, teamId: session.teamId, isConnected: false });
                     notifyAdmins('Team left game', `${player.name} left "${game.name || 'a game session'}".`);
                 } catch (error) {
                     notifyAdmins('Game connection error', `Could not persist the disconnect for ${player.name}.`);

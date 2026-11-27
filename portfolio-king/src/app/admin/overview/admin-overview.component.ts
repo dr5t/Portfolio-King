@@ -58,6 +58,7 @@ export class AdminOverviewComponent implements OnInit, OnDestroy {
       socket.on('game-updated', this.socketHandler);
       socket.on('game-deleted', this.socketDeleteHandler);
       socket.on('admin-notification', this.notificationHandler);
+      socket.on('teams-updated', this.notificationHandler);
     }
   }
 
@@ -66,7 +67,10 @@ export class AdminOverviewComponent implements OnInit, OnDestroy {
     const socket = this.portfolioService.socket;
     if (socket && this.socketHandler) socket.off('game-updated', this.socketHandler);
     if (socket && this.socketDeleteHandler) socket.off('game-deleted', this.socketDeleteHandler);
-    if (socket && this.notificationHandler) socket.off('admin-notification', this.notificationHandler);
+    if (socket && this.notificationHandler) {
+      socket.off('admin-notification', this.notificationHandler);
+      socket.off('teams-updated', this.notificationHandler);
+    }
   }
 
   loadGames() {
@@ -110,6 +114,29 @@ export class AdminOverviewComponent implements OnInit, OnDestroy {
 
   get completedGamesCount(): number {
     return this.games.filter(game => game.game_status === 'completed').length;
+  }
+
+  get totalTeamsCount(): number {
+    return this.teams.length;
+  }
+
+  get assignedTeamsCount(): number {
+    const validGameIds = new Set(this.games.map(g => String(g._id)));
+    return this.teams.filter(t => t.gameId && validGameIds.has(String(t.gameId))).length;
+  }
+
+  get unassignedTeamsCount(): number {
+    const validGameIds = new Set(this.games.map(g => String(g._id)));
+    return this.teams.filter(t => !t.gameId || !validGameIds.has(String(t.gameId))).length;
+  }
+
+  get connectedTeamsCount(): number {
+    return this.teams.filter(t => t.isConnected).length;
+  }
+
+  getConnectedCount(game: any): number {
+    if (!game || !game.players) return 0;
+    return game.players.filter((p: any) => p.status === 'active').length;
   }
 
   countByStatus(status: string): number {

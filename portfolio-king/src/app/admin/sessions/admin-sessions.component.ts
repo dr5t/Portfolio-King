@@ -35,6 +35,7 @@ export class AdminSessionsComponent implements OnInit, OnDestroy {
       socket.on('game-updated', this.socketHandler);
       socket.on('game-deleted', this.socketDeleteHandler);
       socket.on('admin-notification', this.notificationHandler);
+      socket.on('teams-updated', this.notificationHandler);
     }
   }
 
@@ -42,7 +43,10 @@ export class AdminSessionsComponent implements OnInit, OnDestroy {
     const socket = this.portfolioService.socket;
     if (socket && this.socketHandler) socket.off('game-updated', this.socketHandler);
     if (socket && this.socketDeleteHandler) socket.off('game-deleted', this.socketDeleteHandler);
-    if (socket && this.notificationHandler) socket.off('admin-notification', this.notificationHandler);
+    if (socket && this.notificationHandler) {
+      socket.off('admin-notification', this.notificationHandler);
+      socket.off('teams-updated', this.notificationHandler);
+    }
   }
 
   loadGames() {
