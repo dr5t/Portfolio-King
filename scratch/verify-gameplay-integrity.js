@@ -245,61 +245,71 @@ async function runLiveTests() {
   adminSocket.emit('join-game', { gameId, userType: 'admin' });
 
   const playerSockets = [];
+  const playerAddedPromises = [];
   for (let i = 0; i < playerTokens.length; i++) {
     const pt = playerTokens[i];
     const s = ioClient(`http://127.0.0.1:${TEST_PORT}`, { transports: ['websocket'] });
     sockets.push(s);
     playerSockets.push(s);
+    playerAddedPromises.push(new Promise(resolve => {
+      s.on('player-added-to-game', ({ player }) => resolve(player));
+    }));
     s.emit('authenticate', { token: pt.token, gameId });
     s.emit('join-game', { gameId, userType: 'player', userName: pt.teamId, playerId: pt.playerId });
   }
 
-  await wait(2000);
+  const addedPlayers = await Promise.all(playerAddedPromises);
+  console.log(`✓ 4 Players joined game: ${addedPlayers.map(p => p.name + ' (' + p._id + ')').join(', ')}`);
 
-  // Start the game via admin lifecycle status
-  await request('PUT', `/api/games/${gameId}/lifecycle-status`, {
-    status: 'active'
-  }, { Authorization: `Bearer ${adminToken}` });
+  // Each player submits initial allocation with their authoritative player._id
+  for (let i = 0; i < addedPlayers.length; i++) {
+    const pl = addedPlayers[i];
+    playerSockets[i].emit('player-ready', {
+      gameId,
+      userId: pl._id,
+      totalInvestment: 1000000,
+      round: [
+        { name: 'bank_FD', value: 100000, return_rate: 4, return_value: 104000 },
+        { name: 'govt_bond', value: 400000, return_rate: 0, return_value: 0 },
+        { name: 'corporate_bond', value: 500000, return_rate: 0, return_value: 0 },
+        { name: 'blue_chip', value: 0, return_rate: 0, return_value: 0 },
+        { name: 'mid_cap', value: 0, return_rate: 0, return_value: 0 },
+        { name: 'speculative_stock', value: 0, return_rate: 0, return_value: 0 },
+        { name: 'international_stock', value: 0, return_rate: 0, return_value: 0 },
+        { name: 'US_dollar', value: 0, return_rate: 0, return_value: 0 },
+        { name: 'gold_ETF', value: 0, return_rate: 0, return_value: 0 }
+      ],
+      prevLoans: []
+    });
+  }
 
-  // Refresh game state
+  await wait(1500);
+
+  // Admin starts game
+  adminSocket.emit('game-start', { gameId });
+  await wait(1500);
+
+  // Get game to verify round_seq
   const updatedGameRes = await request('GET', `/get-game?gameId=${gameId}`, null, { Authorization: `Bearer ${adminToken}` });
   const liveGame = Array.isArray(updatedGameRes.body) ? updatedGameRes.body[0] : updatedGameRes.body;
-  console.log(`✓ Game state retrieved. Players in game: ${liveGame.players ? liveGame.players.length : 0}`);
+  console.log(`✓ Game started. Turn sequence length: ${liveGame.round_seq ? liveGame.round_seq.length : 0}`);
 
-  // Setup initial player round and round_seq
-  liveGame.players.forEach(p => {
-    p.game_status = 'active';
-    p.rounds = [
-      {
-        round_starting_value: 1000000,
-        total_portfolio_value: 1000000,
-        status: 'in_progress',
-        investment: [
-          { name: 'govt_bond', value: 100000, return_rate: 0, return_value: 100000 }
-        ]
-      }
-    ];
-  });
-  liveGame.round_seq = [
-    { playerId: liveGame.players[0]._id, investment: 'govt_bond' },
-    { playerId: liveGame.players[1]._id, investment: 'govt_bond' }
-  ];
+  const activeTurnPlayerId = liveGame.round_seq[0].playerId;
+  const activeSocketIndex = playerTokens.findIndex(p => String(p.playerId) === String(activeTurnPlayerId));
+  const otherSocketIndex = (activeSocketIndex + 1) % playerTokens.length;
 
-  // Update game in database directly via update-game endpoint or put
-  await request('PUT', `/api/games/${gameId}/lifecycle-status`, {
-    status: 'active'
-  }, { Authorization: `Bearer ${adminToken}` });
+  console.log(`✓ Active turn belongs to: Team ${playerTokens[activeSocketIndex].teamId}`);
 
   // TEST 3A: Admin attempts to roll dice -> Must be ignored/rejected
   console.log('Testing unauthorized roll: Admin attempting to roll dice...');
   let adminRollReceived = false;
-  playerSockets[0].on('get-rolled-dice', () => { adminRollReceived = true; });
+  playerSockets[activeSocketIndex].on('get-rolled-dice', () => { adminRollReceived = true; });
 
   adminSocket.emit('dice-rolled', {
     gameId,
     diceValue1: 6,
     diceValue2: 6,
-    player_id: liveGame.players[0]._id
+    player_id: activeTurnPlayerId
   });
 
   await wait(800);
@@ -309,49 +319,48 @@ async function runLiveTests() {
   }
   console.log('✓ PASS: Admin roll correctly REJECTED.');
 
-  // TEST 3B: Player 2 attempts to roll during Player 1 turn -> Must be rejected
-  console.log('Testing out-of-turn roll: Player 2 attempting to roll during Player 1 turn...');
+  // TEST 3B: Non-active player attempts to roll during active player turn -> Must be rejected
+  console.log(`Testing out-of-turn roll: Team ${playerTokens[otherSocketIndex].teamId} attempting to roll during active turn...`);
   let outOfTurnReceived = false;
-  playerSockets[0].on('get-rolled-dice', () => { outOfTurnReceived = true; });
+  playerSockets[activeSocketIndex].on('get-rolled-dice', () => { outOfTurnReceived = true; });
 
-  playerSockets[1].emit('dice-rolled', {
+  playerSockets[otherSocketIndex].emit('dice-rolled', {
     gameId,
     diceValue1: 6,
     diceValue2: 6,
-    player_id: liveGame.players[1]._id
+    player_id: playerTokens[otherSocketIndex].playerId
   });
 
   await wait(800);
   if (outOfTurnReceived) {
-    console.error('FAIL: Player 2 was able to roll out-of-turn!');
+    console.error('FAIL: Out-of-turn roll was accepted!');
     process.exit(1);
   }
   console.log('✓ PASS: Out-of-turn roll correctly REJECTED.');
 
-  // TEST 3C: Player 1 sends manipulated dice values (e.g. 6 and 6)
-  console.log('Testing client manipulation: Player 1 sends fake diceValue1=6, diceValue2=6...');
-  let rollsCaptured = [];
+  // TEST 3C: Active player sends manipulated dice values (e.g. 6 and 6)
+  console.log('Testing client manipulation: Active player sends fake diceValue1=6, diceValue2=6...');
+  let rollResult = null;
   const capturePromise = new Promise(resolve => {
-    playerSockets[0].on('get-rolled-dice', data => {
-      rollsCaptured.push(data);
+    playerSockets[activeSocketIndex].on('get-rolled-dice', data => {
       resolve(data);
     });
   });
 
   // Client attempts to cheat by injecting 6 and 6
-  playerSockets[0].emit('dice-rolled', {
+  playerSockets[activeSocketIndex].emit('dice-rolled', {
     gameId,
     diceValue1: 6,
     diceValue2: 6,
     investment_opt: 'govt_bond',
-    investment: 100000,
-    player_id: liveGame.players[0]._id,
+    investment: 500000,
+    player_id: activeTurnPlayerId,
     isRetry: false,
     retryTaken: false,
     retryEnable: false
   });
 
-  const rollResult = await capturePromise;
+  rollResult = await capturePromise;
   console.log(`Server broadcast outcome: Die 1 = ${rollResult.diceValue1}, Die 2 = ${rollResult.diceValue2} (Total: ${rollResult.diceValue1 + rollResult.diceValue2})`);
 
   if (rollResult.diceValue1 < 1 || rollResult.diceValue1 > 6 || rollResult.diceValue2 < 1 || rollResult.diceValue2 > 6) {
