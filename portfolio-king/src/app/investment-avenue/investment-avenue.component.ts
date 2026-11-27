@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, OnDestroy} from '@angular/core';
 import {NgForm} from "@angular/forms";
 import {UtilityService} from "../shared/utils/utility-service";
 import {PortfolioService} from "../services/portfolio/portfolio.service";
@@ -12,7 +12,7 @@ import * as $ from 'jquery';
   templateUrl: './investment-avenue.component.html',
   styleUrls: ['./investment-avenue.component.scss']
 })
-export class InvestmentAvenueComponent implements OnInit {
+export class InvestmentAvenueComponent implements OnInit, OnDestroy {
 
   public totalPortfolioValue: number;
   private investmentArray: any = [];
@@ -63,6 +63,11 @@ export class InvestmentAvenueComponent implements OnInit {
       this.gameId = id;
       this.game = this.portfolioService._getAllGames();
       this.user = this.portfolioService.user;
+      this.totalTime = 180;
+      this.totalMin = 3;
+      if (this._timer) {
+        clearInterval(this._timer);
+      }
       let temp = true;
       let i;
       this.fof_status = false;
@@ -166,6 +171,12 @@ export class InvestmentAvenueComponent implements OnInit {
         }
       }, 1000);
     });
+  }
+
+  ngOnDestroy() {
+    if (this._timer) {
+      clearInterval(this._timer);
+    }
   }
 
   onSubmitForm(e, f) {

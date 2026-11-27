@@ -4,7 +4,7 @@
     <h1>Investment Avenue <span>{{totalMin}}::{{totalTime%60}}</span></h1>
     <h3>Total Amount: {{totalPortfolioValue}}</h3>
     <div class="investment-box">
-      <form #f="ngForm" (submit)="onSubmitForm($event,f)" class="investment-form">
+      <form #f="ngForm" (submit)="onSubmitForm($event,f)" (keydown.enter)="$event.preventDefault()" class="investment-form">
         <div class="investment-options">
           <div class="item-container">
             <label>Bank FD<input ngModel type="number" name="bank_FD"></label>
