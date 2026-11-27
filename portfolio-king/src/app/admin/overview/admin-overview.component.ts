@@ -135,6 +135,9 @@ export class AdminOverviewComponent implements OnInit, OnDestroy {
   }
 
   getConnectedCount(game: any): number {
+    if (game && typeof game.connectedPlayerCount === 'number') {
+      return game.connectedPlayerCount;
+    }
     if (!game || !Array.isArray(game.players)) return 0;
     const activeTeams = new Set<string>();
     for (const p of game.players) {

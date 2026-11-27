@@ -109,7 +109,7 @@
               <td><span class="admin-status" [ngClass]="statusClass(game.game_status)">{{game.game_status || 'waiting'}}</span></td>
               <td>
                 <span *ngIf="game.game_status === 'waiting' || game.game_status === 'ready'">
-                  Waiting for participants ({{getConnectedCount(game)}}/4 joined)
+                  {{getConnectedCount(game) >= 4 ? 'All participants joined (4/4). Waiting for admin to start.' : ('Waiting for participants (' + getConnectedCount(game) + '/4 joined)')}}
                 </span>
                 <span *ngIf="game.game_status !== 'waiting' && game.game_status !== 'ready'">
                   {{getConnectedCount(game)}}/4 connected ({{game.players ? game.players.length : 0}}/4 joined)

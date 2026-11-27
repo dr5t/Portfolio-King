@@ -120,11 +120,40 @@ function notifyAdmins(title, description) {
     });
 }
 
-function broadcastGameUpdated(gameId, game) {
-    if (gameId) {
-        io.to(String(gameId)).emit('game-updated', game);
+function getAuthoritativeConnectedCount(gameId) {
+    if (!gameId) return 0;
+    const targetGameId = String(gameId);
+    const activeTeams = new Set();
+    users.forEach(u => {
+        if (u.status === 'active' &&
+            u.teamId &&
+            u.userType === 'player' &&
+            String(u.gameId) === targetGameId &&
+            isSocketConnected(u.socketId)) {
+            activeTeams.add(String(u.teamId));
+        }
+    });
+    const targetGame = games.find(g => String(g._id) === targetGameId);
+    if (targetGame && Array.isArray(targetGame.players)) {
+        targetGame.players.forEach(p => {
+            if (p && p.teamId && p.status === 'active') {
+                if (p.socketId && isSocketConnected(p.socketId)) {
+                    activeTeams.add(String(p.teamId));
+                }
+            }
+        });
     }
-    io.to(ADMIN_NOTIFICATION_ROOM).emit('game-updated', game);
+    return activeTeams.size;
+}
+
+function broadcastGameUpdated(gameId, game) {
+    if (game) {
+        game.connectedPlayerCount = getAuthoritativeConnectedCount(gameId || game._id);
+    }
+    const emitter = gameId
+        ? io.to(String(gameId)).to(ADMIN_NOTIFICATION_ROOM)
+        : io.to(ADMIN_NOTIFICATION_ROOM);
+    emitter.emit('game-updated', game);
 }
 
 function requestError(status, message) {
@@ -1306,6 +1335,7 @@ app.get('/get-game', auth.authenticateSession, async function (req, res) {
     if (!game) {
         return res.status(404).json({ message: 'Game not found.' });
     }
+    game.connectedPlayerCount = getAuthoritativeConnectedCount(id);
     res.send(game);
 });
 
@@ -1362,6 +1392,21 @@ const ioConnection = () => {
                 socket.join(ADMIN_NOTIFICATION_ROOM);
             }
             if (session.role === 'player') {
+                if (session.gameId) {
+                    socket.join(String(session.gameId));
+                    const targetGame = games.find(g => String(g._id) === String(session.gameId));
+                    if (targetGame && Array.isArray(targetGame.players)) {
+                        const player = targetGame.players.find(p => belongsToSessionTeam(p, session));
+                        if (player) {
+                            player.socketId = socket.id;
+                            player.status = 'active';
+                            updatePlayer(session.gameId, player._id, 'active', player.game_status, player.rounds, player.loans).catch(() => {});
+                        }
+                    }
+                    if (targetGame) {
+                        broadcastGameUpdated(session.gameId, targetGame);
+                    }
+                }
                 io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', {
                     gameId: session.gameId,
                     teamId: session.teamId,
@@ -1401,9 +1446,11 @@ const ioConnection = () => {
                             if (player) {
                                 player.status = 'inactive';
                                 updatePlayer(gameId, player._id, 'inactive', player.game_status, player.rounds, player.loans).catch(() => {});
-                                broadcastGameUpdated(gameId, game);
                                 notifyAdmins('Team disconnected', `${player.name || connectedUser.teamId} disconnected from "${game.name || 'Game'}".`);
                             }
+                        }
+                        if (game) {
+                            broadcastGameUpdated(gameId, game);
                         }
                         io.to(ADMIN_NOTIFICATION_ROOM).emit('teams-updated', {
                             gameId,
@@ -1439,10 +1486,10 @@ const ioConnection = () => {
             });
 
             if (session.role === 'admin') {
-                socket.join(data.gameId);
+                socket.join(String(data.gameId));
                 const targetGame = games.find(g => String(g._id) === String(data.gameId));
                 if (targetGame) {
-                    io.to(socket.id).emit("game-updated", targetGame);
+                    broadcastGameUpdated(data.gameId, targetGame);
                 }
                 return;
             }
@@ -1504,7 +1551,7 @@ const ioConnection = () => {
                 if (existingPlayer) {
                     existingPlayer.socketId = socket.id;
                     existingPlayer.status = 'active';
-                    socket.join(data.gameId);
+                    socket.join(String(data.gameId));
                     updatePlayer(data.gameId, existingPlayer._id, 'active', existingPlayer.game_status, existingPlayer.rounds, existingPlayer.loans)
                         .then(() => {
                             broadcastGameUpdated(data.gameId, targetGame);
@@ -1528,8 +1575,8 @@ const ioConnection = () => {
                                     game.players = value.players;
                                 }
                             });
-                            socket.join(data.gameId);
-                            socket.broadcast.to(data.gameId).emit("player-added-to-game", {
+                            socket.join(String(data.gameId));
+                            socket.broadcast.to(String(data.gameId)).emit("player-added-to-game", {
                                 player: player,
                                 gameId: data.gameId
                             });

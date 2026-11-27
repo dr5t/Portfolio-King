@@ -21,7 +21,7 @@
         <span class="pulse-dot"></span>
         <span class="session-label">{{game?.game_status === 'waiting' ? 'Status:' : 'Fiscal Period:'}}</span>
         <span class="session-val tabular-nums font-semibold" *ngIf="game?.game_status === 'waiting'">
-          Waiting for participants ({{connectedPlayerCount}}/4 joined)
+          {{connectedPlayerCount >= 4 ? 'All participants joined (4/4). Waiting for admin to start.' : ('Waiting for participants (' + connectedPlayerCount + '/4 joined)')}}
         </span>
         <span class="session-val tabular-nums font-semibold" *ngIf="game?.game_status !== 'waiting'">
           Year {{year}} &middot; Q{{quarter}}
@@ -38,7 +38,7 @@
     <div class="strip-right">
       <div class="action-buttons-group">
         <button (click)="onRoundContinue()" *ngIf="user.isAdmin && !roundReady && !gameEnd"
-                [disabled]="game?.players?.length !== 4" class="btn btn-primary">
+                [disabled]="connectedPlayerCount < 4" class="btn btn-primary">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
@@ -145,7 +145,9 @@
           </tr>
 
           <tr *ngIf="!game?.players || game?.players?.length === 0">
-            <td colspan="6" class="empty-cell">Waiting for participants ({{connectedPlayerCount}}/4 joined)</td>
+            <td colspan="6" class="empty-cell">
+              {{connectedPlayerCount >= 4 ? 'All participants joined (4/4). Waiting for admin to start.' : ('Waiting for participants (' + connectedPlayerCount + '/4 joined)')}}
+            </td>
           </tr>
         </tbody>
       </table>

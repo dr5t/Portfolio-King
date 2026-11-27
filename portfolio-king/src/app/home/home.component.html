@@ -276,7 +276,7 @@
 
             <td class="tabular-nums">
               <span *ngIf="g.game_status === 'waiting' || g.game_status === 'ready'" [title]="getConnectedCount(g) + ' of 4 joined'">
-                Waiting for participants ({{getConnectedCount(g)}}/4 joined)
+                {{getConnectedCount(g) >= 4 ? 'All participants joined (4/4). Waiting for admin to start.' : ('Waiting for participants (' + getConnectedCount(g) + '/4 joined)')}}
               </span>
               <span *ngIf="g.game_status !== 'waiting' && g.game_status !== 'ready'">
                 {{getConnectedCount(g)}}/4 connected ({{g.players ? g.players.length : 0}}/4 joined)
@@ -514,7 +514,7 @@
             <td><code>{{getGameShortId(g._id)}}</code></td>
             <td class="tabular-nums">
               <span *ngIf="g.game_status === 'waiting' || g.game_status === 'ready'">
-                Waiting for participants ({{getConnectedCount(g)}}/4 joined)
+                {{getConnectedCount(g) >= 4 ? 'All participants joined (4/4). Waiting for admin to start.' : ('Waiting for participants (' + getConnectedCount(g) + '/4 joined)')}}
               </span>
               <span *ngIf="g.game_status !== 'waiting' && g.game_status !== 'ready'">
                 {{getConnectedCount(g)}} / 4 connected

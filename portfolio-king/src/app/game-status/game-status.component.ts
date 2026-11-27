@@ -34,6 +34,7 @@ export class GameStatusComponent implements OnInit {
   public audio2: any;
   public roundNumber: any = 0;
   public activeViewMode: 'leaderboard' | 'carousel' = 'leaderboard';
+  private gameUpdateSub: any;
 
   public showCelebration = false;
   public videoEnded = false;
@@ -103,8 +104,17 @@ export class GameStatusComponent implements OnInit {
         userType = 'admin';
       }
       this.loadCrackers();
-      this.portfolioService.onJoinGame(this.gameId, this.user.socketId, userType, this.user.userName, this.user.id);
-      this.portfolioService.onGetGame(this.gameId);
+      if (this.portfolioService.game && String(this.portfolioService.game._id) === String(this.gameId)) {
+        this.game = this.portfolioService.game;
+      }
+      if (this.gameUpdateSub) {
+        this.gameUpdateSub.unsubscribe();
+      }
+      this.gameUpdateSub = this.portfolioService.gameUpdated.subscribe((g: any) => {
+        if (g && String(g._id) === String(this.gameId)) {
+          this.game = g;
+        }
+      });
       this.gameStatus = this.portfolioService.gameStatus.subscribe((res: any) => {
         if (res === undefined || (res && res.error) || (res && res.msg)) {
           let errorMsg = (res && res.msg) ? res.msg : 'Game full. Please refresh.';
@@ -212,6 +222,8 @@ export class GameStatusComponent implements OnInit {
           this.onPlayerReady = game_status;
         }
       });
+      this.portfolioService.onJoinGame(this.gameId, this.user.socketId, userType, this.user.userName, this.user.id);
+      this.portfolioService.onGetGame(this.gameId);
     });
   }
 
@@ -232,6 +244,7 @@ export class GameStatusComponent implements OnInit {
   }
 
   onBack() {
+    if (this.gameUpdateSub) this.gameUpdateSub.unsubscribe();
     this.gameStatus.unsubscribe();
     this.portfolioService.onPlayerLeaveGame(this.gameId, this.user.socketId, this.user.id);
     clearTimeout(this.status_timer);
@@ -264,6 +277,7 @@ export class GameStatusComponent implements OnInit {
   }
 
   onGoBack() {
+    if (this.gameUpdateSub) this.gameUpdateSub.unsubscribe();
     this.gameStatus.unsubscribe();
     this.portfolioService.onPlayerLeaveGame(this.gameId, this.user.socketId, this.user.id);
     clearTimeout(this.status_timer);
@@ -286,9 +300,18 @@ export class GameStatusComponent implements OnInit {
   }
 
   get connectedPlayerCount(): number {
-    return (this.game && this.game.players)
-      ? this.game.players.filter((p: any) => p.status === 'active').length
-      : 0;
+    if (this.game && typeof this.game.connectedPlayerCount === 'number') {
+      return this.game.connectedPlayerCount;
+    }
+    if (!this.game || !Array.isArray(this.game.players)) return 0;
+    const activeTeams = new Set<string>();
+    for (const p of this.game.players) {
+      if (p && p.status === 'active') {
+        const key = String(p.teamId || p._id || p.name || '');
+        if (key) activeTeams.add(key);
+      }
+    }
+    return activeTeams.size;
   }
 
   private get winnerEntry(): any {

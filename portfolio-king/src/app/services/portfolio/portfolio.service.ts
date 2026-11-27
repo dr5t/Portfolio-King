@@ -27,6 +27,7 @@ export class PortfolioService {
   private _socket: Socket | any;
   private _user: any = false;
   public gameStatus = new Subject<boolean>();
+  public gameUpdated = new Subject<any>();
   public sessionExpired = new Subject<string>();
   public notifications: AppNotification[] = [];
   public game: any;
@@ -57,6 +58,9 @@ export class PortfolioService {
     this._socket = io(this.url);
     this._socket.on('update-user', (user) => {
       this.user = user;
+    });
+    this._socket.on('game-updated', (game) => {
+      this.onGameUpdated(game);
     });
     this._socket.on('connect', () => {
       if (this.user && this.user.token) {
@@ -371,8 +375,8 @@ export class PortfolioService {
 
   onGameUpdated = (game) => {
     this.game = game;
-    console.log(this.game, this.game.players);
-    if (this.game.players.length === 4 && this.game.game_status !== 'done') {
+    this.gameUpdated.next(game);
+    if (this.game && this.game.players && this.game.players.length === 4 && this.game.game_status !== 'done') {
       let gameStatus = true;
       this.game.players.forEach(player => {
         if (player.game_status !== "ready") {
@@ -380,7 +384,7 @@ export class PortfolioService {
         }
       });
       this.gameStatus.next(gameStatus);
-    } else if (this.game.game_status !== 'done') {
+    } else if (this.game && this.game.game_status !== 'done') {
       this.gameStatus.next(false);
     }
   }
@@ -393,7 +397,8 @@ export class PortfolioService {
     }
     this.api.get(getGame, {gameId: gameId}, reqOpts).subscribe((game) => {
       this.game = game;
-      if (this.game.players.length === 4 && this.game.game_status !== 'done') {
+      this.gameUpdated.next(game);
+      if (this.game && this.game.players && this.game.players.length === 4 && this.game.game_status !== 'done') {
         let gameStatus = true;
         this.game.players.forEach(player => {
           if (player.game_status !== "ready") {
@@ -401,7 +406,7 @@ export class PortfolioService {
           }
         });
         this.gameStatus.next(gameStatus);
-      } else if (this.game.game_status !== 'done') {
+      } else if (this.game && this.game.game_status !== 'done') {
         this.gameStatus.next(false);
       }
     });

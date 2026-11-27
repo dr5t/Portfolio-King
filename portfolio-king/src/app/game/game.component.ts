@@ -35,9 +35,18 @@ export class GameComponent implements OnInit {
   public waitingTimer: any;
 
   get connectedPlayerCount(): number {
-    return (this.game && this.game.players)
-      ? this.game.players.filter(p => p.status === 'active').length
-      : 0;
+    if (this.game && typeof this.game.connectedPlayerCount === 'number') {
+      return this.game.connectedPlayerCount;
+    }
+    if (!this.game || !Array.isArray(this.game.players)) return 0;
+    const activeTeams = new Set<string>();
+    for (const p of this.game.players) {
+      if (p && p.status === 'active') {
+        const key = String(p.teamId || p._id || p.name || '');
+        if (key) activeTeams.add(key);
+      }
+    }
+    return activeTeams.size;
   }
 
   get isSpectator(): boolean {
