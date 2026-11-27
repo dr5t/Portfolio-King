@@ -12,7 +12,6 @@ import {Router, NavigationEnd, ActivatedRoute} from "@angular/router";
 export class AppComponent implements OnInit {
   public currentUrl: string = typeof window !== 'undefined' ? window.location.pathname : '';
   public activeTab: string = 'overview';
-  public isMuted: boolean = false;
   public isFullscreen: boolean = false;
   public sidebarCollapsed: boolean = false;
   public mobileNavOpen: boolean = false;
@@ -169,11 +168,6 @@ export class AppComponent implements OnInit {
     if (this.mobileNavOpen) {
       this.closeMobileNav();
     }
-  }
-
-  toggleAudio() {
-    this.isMuted = !this.isMuted;
-    this.portfolioService.isMuted = this.isMuted;
   }
 
   toggleFullscreen() {

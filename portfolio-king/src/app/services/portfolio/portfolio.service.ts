@@ -30,7 +30,6 @@ export class PortfolioService {
   public sessionExpired = new Subject<string>();
   public notifications: AppNotification[] = [];
   public game: any;
-  public isMuted: boolean = false;
 
   constructor(private api: ApiService,
               private endpoint: EndPoints,

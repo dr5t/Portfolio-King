@@ -32,8 +32,10 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       text-align: center;
-      padding: 56px 40px 0;
+      padding: 48px 40px 12px;
+      flex: 1 0 auto;
       z-index: 2;
 
       .brand-logo-wrap {
@@ -68,20 +70,41 @@
 
     .bull-bear-illustration-wrap {
       width: 100%;
-      margin: auto 0 0 0;
+      max-width: 620px;
+      margin-top: auto;
+      padding: 0 20px 20px;
+      box-sizing: border-box;
       display: flex;
       justify-content: center;
       align-items: flex-end;
       z-index: 1;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+
+      .artwork-backdrop {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        position: relative;
+        overflow: hidden;
+        -webkit-mask-image: radial-gradient(ellipse 85% 58% at 50% 64%, #000 20%, rgba(0, 0, 0, 0.85) 45%, rgba(0, 0, 0, 0.3) 70%, transparent 88%);
+        mask-image: radial-gradient(ellipse 85% 58% at 50% 64%, #000 20%, rgba(0, 0, 0, 0.85) 45%, rgba(0, 0, 0, 0.3) 70%, transparent 88%);
+      }
 
       .bull-bear-img {
         width: 100%;
         height: auto;
-        max-height: 400px;
+        max-height: 460px;
         aspect-ratio: 494 / 274;
         object-fit: cover;
         object-position: bottom center;
         display: block;
+        mix-blend-mode: multiply;
+        opacity: 0.86;
+        filter: contrast(1.08) brightness(1.04);
+        -webkit-user-drag: none;
       }
     }
   }
@@ -375,12 +398,13 @@
       border-bottom: 1px solid var(--border-color);
 
       .branding-content {
-        padding: 40px 24px 0;
+        padding: 40px 24px 12px;
       }
 
       .bull-bear-illustration-wrap {
-        max-width: 360px;
-        margin-top: 24px;
+        max-width: 440px;
+        padding: 0 20px 20px;
+        margin-top: 16px;
       }
     }
 
@@ -395,7 +419,7 @@
   .split-login-container {
     .login-branding-side {
       .branding-content {
-        padding: 24px 16px 0;
+        padding: 24px 16px 8px;
 
         .brand-logo-wrap {
           margin-bottom: 10px;
@@ -416,9 +440,10 @@
       }
 
       .bull-bear-illustration-wrap {
-        max-width: 260px;
-        max-height: 180px;
-        margin-top: 12px;
+        max-width: 320px;
+        max-height: 200px;
+        padding: 0 16px 16px;
+        margin-top: 10px;
       }
     }
 
